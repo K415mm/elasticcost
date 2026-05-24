@@ -58,3 +58,10 @@ CLAUDE.md
 /lean_ctx_summary.md
 /rtk_summary.md
 
+
+# Auto-generated agent rules (personalized per developer)
+.brainsync/agent-rules.md
+
+# Auto-generated AI agent exclusions
+.cursorrules
+.clineRules
