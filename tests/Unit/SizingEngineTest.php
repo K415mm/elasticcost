@@ -2,13 +2,13 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
 use App\Models\Client;
-use App\Models\Scenario;
-use App\Models\AssetType;
 use App\Models\ClientAsset;
+use App\Models\Scenario;
 use App\Services\SizingEngine;
+use Database\Seeders\SizingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class SizingEngineTest extends TestCase
 {
@@ -18,7 +18,7 @@ class SizingEngineTest extends TestCase
     {
         parent::setUp();
         // Seed the default parameters and scenarios
-        $this->seed(\Database\Seeders\SizingSeeder::class);
+        $this->seed(SizingSeeder::class);
     }
 
     public function test_sizing_engine_calculates_all_six_scenarios_correctly(): void
@@ -53,7 +53,7 @@ class SizingEngineTest extends TestCase
             ]);
         }
 
-        $engine = new SizingEngine();
+        $engine = new SizingEngine;
 
         // SCENARIO 1: Minimum Ingest, Hot-Only (Short Retention)
         $scenario1 = Scenario::find(1);
@@ -61,7 +61,7 @@ class SizingEngineTest extends TestCase
         $this->assertEqualsWithDelta(3.32, $res1['totals']['daily_raw_gb'], 0.2);
         $this->assertEqualsWithDelta(4.15, $res1['totals']['daily_indexed_gb'], 0.2);
         $this->assertEqualsWithDelta(8.30, $res1['totals']['daily_ingested_gb'], 0.2);
-        $this->assertEqualsWithDelta(58.10, $res1['totals']['total_storage_footprint_gb'], 0.2);
+        $this->assertEqualsWithDelta(58.09, $res1['totals']['total_storage_footprint_gb'], 0.2);
         $this->assertEquals(7, $res1['licensing']['total_ram_gb']);
         $this->assertEquals(1, $res1['licensing']['required_erus']);
 
@@ -69,10 +69,10 @@ class SizingEngineTest extends TestCase
         $scenario2 = Scenario::find(2);
         $res2 = $engine->calculate($client, $scenario2);
         $this->assertEqualsWithDelta(3.32, $res2['totals']['daily_raw_gb'], 0.2);
-        $this->assertEqualsWithDelta(249.00, $res2['totals']['hot_storage_gb'], 0.5);
-        $this->assertEqualsWithDelta(1390.25, $res2['totals']['cold_storage_gb'], 1.0);
-        $this->assertEqualsWithDelta(1639.25, $res2['totals']['total_storage_footprint_gb'], 2.0);
-        $this->assertEquals(34, $res2['licensing']['total_ram_gb']);
+        $this->assertEqualsWithDelta(248.97, $res2['totals']['hot_storage_gb'], 0.5);
+        $this->assertEqualsWithDelta(2780.14, $res2['totals']['cold_storage_gb'], 1.0);
+        $this->assertEqualsWithDelta(3029.11, $res2['totals']['total_storage_footprint_gb'], 2.0);
+        $this->assertEquals(62, $res2['licensing']['total_ram_gb']);
         $this->assertEquals(1, $res2['licensing']['required_erus']);
 
         // SCENARIO 3: Average Ingest, Hot-Only (Standard Retention)
@@ -88,13 +88,13 @@ class SizingEngineTest extends TestCase
         $scenario4 = Scenario::find(4);
         $res4 = $engine->calculate($client, $scenario4);
         $this->assertEqualsWithDelta(19.19, $res4['totals']['daily_raw_gb'], 0.2);
-        $this->assertEqualsWithDelta(335.83, $res4['totals']['hot_storage_gb'], 1.0);
-        $this->assertEqualsWithDelta(1103.43, $res4['totals']['warm_storage_gb'], 2.0);
-        $this->assertEqualsWithDelta(1439.25, $res4['totals']['cold_storage_gb'], 2.0);
-        $this->assertEqualsWithDelta(6596.56, $res4['totals']['frozen_storage_gb'], 5.0);
-        $this->assertEqualsWithDelta(9475.06, $res4['totals']['total_storage_footprint_gb'], 5.0);
-        $this->assertEquals(58, $res4['licensing']['total_ram_gb']);
-        $this->assertEquals(1, $res4['licensing']['required_erus']);
+        $this->assertEqualsWithDelta(335.82, $res4['totals']['hot_storage_gb'], 1.0);
+        $this->assertEqualsWithDelta(1103.42, $res4['totals']['warm_storage_gb'], 2.0);
+        $this->assertEqualsWithDelta(2878.49, $res4['totals']['cold_storage_gb'], 2.0);
+        $this->assertEqualsWithDelta(13193.10, $res4['totals']['frozen_storage_gb'], 5.0);
+        $this->assertEqualsWithDelta(17510.84, $res4['totals']['total_storage_footprint_gb'], 5.0);
+        $this->assertEquals(116, $res4['licensing']['total_ram_gb']);
+        $this->assertEquals(2, $res4['licensing']['required_erus']);
 
         // SCENARIO 5: Maximum Ingest, Hot + Warm (Medium Retention)
         $scenario5 = Scenario::find(5);
@@ -113,11 +113,11 @@ class SizingEngineTest extends TestCase
         $this->assertEqualsWithDelta(66.19, $res6['totals']['daily_raw_gb'], 0.2);
         $this->assertEqualsWithDelta(2316.72, $res6['totals']['hot_storage_gb'], 5.0);
         $this->assertEqualsWithDelta(2647.68, $res6['totals']['warm_storage_gb'], 5.0);
-        $this->assertEqualsWithDelta(4964.40, $res6['totals']['cold_storage_gb'], 5.0);
-        $this->assertEqualsWithDelta(22753.50, $res6['totals']['frozen_storage_gb'], 10.0);
-        $this->assertEqualsWithDelta(32682.30, $res6['totals']['total_storage_footprint_gb'], 15.0);
-        $this->assertEquals(264, $res6['licensing']['total_ram_gb']);
-        $this->assertEquals(5, $res6['licensing']['required_erus']);
+        $this->assertEqualsWithDelta(9928.80, $res6['totals']['cold_storage_gb'], 5.0);
+        $this->assertEqualsWithDelta(45507.00, $res6['totals']['frozen_storage_gb'], 10.0);
+        $this->assertEqualsWithDelta(60400.20, $res6['totals']['total_storage_footprint_gb'], 15.0);
+        $this->assertEquals(584, $res6['licensing']['total_ram_gb']);
+        $this->assertEquals(10, $res6['licensing']['required_erus']);
     }
 
     public function test_sizing_engine_scales_up_for_large_storage_volumes(): void
@@ -146,7 +146,7 @@ class SizingEngineTest extends TestCase
             ]);
         }
 
-        $engine = new SizingEngine();
+        $engine = new SizingEngine;
 
         // Run Scenario 2 (Minimum Ingest, Multi-Tier: 30 Hot days, 1 Hot replica)
         $scenario2 = Scenario::find(2);

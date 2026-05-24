@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\Client;
-use App\Models\Scenario;
 use App\Models\GlobalSetting;
+use App\Models\Scenario;
 
 class SizingEngine
 {
@@ -59,7 +59,7 @@ class SizingEngine
             }
 
             $dailyIndexedGb = $dailyRawGb * $expansionFactor;
-            
+
             // Replicated daily ingested (we assume Hot replicas apply to this ingest tier)
             $dailyIngestedGb = $dailyIndexedGb * (1 + $scenario->hot_replicas);
 
@@ -81,10 +81,11 @@ class SizingEngine
         }
 
         // 3. Storage Sizing Calculations by Tier
-        $hotStorage = $totalIndexedDailyGb * (1 + $scenario->hot_replicas) * $scenario->hot_days;
-        $warmStorage = $totalIndexedDailyGb * (1 + $scenario->warm_replicas) * $scenario->warm_days;
-        $coldStorage = $totalIndexedDailyGb * (1 + $scenario->cold_replicas) * $scenario->cold_days;
-        $frozenStorage = $totalIndexedDailyGb * (1 + $scenario->frozen_replicas) * $scenario->frozen_days;
+        $dailyIngestedGb = $totalIndexedDailyGb * (1 + $scenario->hot_replicas);
+        $hotStorage = $dailyIngestedGb * $scenario->hot_days;
+        $warmStorage = $dailyIngestedGb * $scenario->warm_days;
+        $coldStorage = $dailyIngestedGb * $scenario->cold_days;
+        $frozenStorage = $dailyIngestedGb * $scenario->frozen_days;
 
         $totalStorageFootprint = $hotStorage + $warmStorage + $coldStorage + $frozenStorage;
         $totalRawStorageStored = $totalRawDailyGb * $scenario->retention_days;
@@ -192,7 +193,7 @@ class SizingEngine
             // Cold Nodes
             if ($scenario->cold_days > 0) {
                 $coldDisk = $this->roundToNeatDiskSize(max(20, ($coldStorage / 2) * 1.10));
-                $coldRamNeeded = $coldDisk / 400;
+                $coldRamNeeded = $coldDisk / 100;
                 $coldRam = $this->getNearestVmProfile($coldRamNeeded, 8);
                 $nodes[] = [
                     'name' => 'cold-node-01',
@@ -232,8 +233,8 @@ class SizingEngine
             $kibanaCount = $isTiered ? 2 : 1;
             $kibanaRam = ($hotRam <= 4) ? 2 : (($hotRam <= 16) ? 4 : 8);
             for ($i = 1; $i <= $kibanaCount; $i++) {
-                $nameSuffix = $kibanaCount > 1 ? "-0{$i}" : "";
-                $roleText = "Kibana / Fleet Server" . ($i === 2 ? " (HA)" : "");
+                $nameSuffix = $kibanaCount > 1 ? "-0{$i}" : '';
+                $roleText = 'Kibana / Fleet Server'.($i === 2 ? ' (HA)' : '');
                 $nodes[] = [
                     'name' => "kibana-fleet{$nameSuffix}",
                     'role' => $roleText,
@@ -285,7 +286,7 @@ class SizingEngine
             // Warm Nodes
             if ($scenario->warm_days > 0) {
                 $warmDisk = $this->roundToNeatDiskSize(max(20, ($warmStorage / 2) * 1.10));
-                $warmRamNeeded = $warmDisk / 100;
+                $warmRamNeeded = $warmDisk / 80;
                 $warmRam = $this->getNearestVmProfile($warmRamNeeded, 32);
                 $nodes[] = [
                     'name' => 'warm-node-01',
@@ -310,7 +311,7 @@ class SizingEngine
             // Cold Nodes
             if ($scenario->cold_days > 0) {
                 $coldDisk = $this->roundToNeatDiskSize(max(20, ($coldStorage / 1) * 1.10));
-                $coldRamNeeded = $coldDisk / 400;
+                $coldRamNeeded = $coldDisk / 100;
                 $coldRam = $this->getNearestVmProfile($coldRamNeeded, 32);
                 $nodes[] = [
                     'name' => 'cold-node-01',
@@ -326,7 +327,7 @@ class SizingEngine
             // Frozen Nodes
             if ($scenario->frozen_days > 0) {
                 $frozenDisk = $this->roundToNeatDiskSize(max(20, ($frozenStorage * 0.30)));
-                $frozenRamNeeded = $frozenDisk / 1000;
+                $frozenRamNeeded = $frozenDisk / 160;
                 $frozenRam = $this->getNearestVmProfile($frozenRamNeeded, 32);
                 $nodes[] = [
                     'name' => 'frozen-node-01',
@@ -404,7 +405,7 @@ class SizingEngine
             if ($scenario->warm_days > 0) {
                 $warmCount = ($warmStorage > 10000) ? 3 : 2;
                 $warmDisk = $this->roundToNeatDiskSize(max(20, ($warmStorage / $warmCount) * 1.10));
-                $warmRamNeeded = $warmDisk / 100;
+                $warmRamNeeded = $warmDisk / 80;
                 $warmRam = $this->getNearestVmProfile($warmRamNeeded, 64);
 
                 for ($i = 1; $i <= $warmCount; $i++) {
@@ -423,7 +424,7 @@ class SizingEngine
             // Cold Nodes
             if ($scenario->cold_days > 0) {
                 $coldDisk = $this->roundToNeatDiskSize(max(20, ($coldStorage / 1) * 1.10));
-                $coldRamNeeded = $coldDisk / 400;
+                $coldRamNeeded = $coldDisk / 100;
                 $coldRam = $this->getNearestVmProfile($coldRamNeeded, 32);
                 $nodes[] = [
                     'name' => 'cold-node-01',
@@ -439,7 +440,7 @@ class SizingEngine
             // Frozen Nodes
             if ($scenario->frozen_days > 0) {
                 $frozenDisk = $this->roundToNeatDiskSize(max(20, ($frozenStorage * 1.05)));
-                $frozenRamNeeded = $frozenDisk / 1000;
+                $frozenRamNeeded = $frozenDisk / 160;
                 $frozenRam = $this->getNearestVmProfile($frozenRamNeeded, 32);
                 $nodes[] = [
                     'name' => 'frozen-node-01',
@@ -501,6 +502,7 @@ class SizingEngine
                 $closest = (float) $profile;
             }
         }
+
         return $closest;
     }
 
@@ -509,15 +511,22 @@ class SizingEngine
      */
     private function roundToNeatDiskSize(float $gb): float
     {
-        if ($gb <= 20) return 20;
-        if ($gb <= 50) return 50;
-        if ($gb <= 100) return 100;
+        if ($gb <= 20) {
+            return 20;
+        }
+        if ($gb <= 50) {
+            return 50;
+        }
+        if ($gb <= 100) {
+            return 100;
+        }
         if ($gb <= 500) {
             return ceil($gb / 100) * 100;
         }
         if ($gb <= 1000) {
             return ceil($gb / 100) * 100;
         }
+
         // Round up to nearest 0.5 TB (500 GB) for disks > 1 TB
         return ceil($gb / 500) * 500;
     }
