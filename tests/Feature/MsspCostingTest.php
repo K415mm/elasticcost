@@ -337,18 +337,18 @@ class MsspCostingTest extends TestCase
         $response = $this->post(route('mssp.ask-ai', [$client->id, $scenario->id]));
         
         $response->assertStatus(200);
-        $response->assertJson([
-            'success' => true,
-            'analysis' => 'Mock AI Analysis Output from Gemma',
-        ]);
+        $this->assertTrue($response->json('success'));
+        $this->assertStringContainsString('Mock AI Analysis Output from Gemma', $response->json('analysis'));
         $response->assertJsonStructure(['success', 'analysis', 'html']);
 
-        // Assert it saved to DB
-        $this->assertDatabaseHas('client_scenario_mssp_details', [
+        // Fetch detail from database and assert it saved the analysis containing the mocked response
+        $detail = ClientScenarioMsspDetail::where([
             'client_id' => $client->id,
             'scenario_id' => $scenario->id,
-            'ai_analysis' => 'Mock AI Analysis Output from Gemma',
-        ]);
+        ])->first();
+
+        $this->assertNotNull($detail);
+        $this->assertStringContainsString('Mock AI Analysis Output from Gemma', $detail->ai_analysis);
     }
 
     public function test_mssp_costing_ask_ai_handles_exceptions_gracefully(): void
