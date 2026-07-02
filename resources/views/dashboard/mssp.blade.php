@@ -945,14 +945,17 @@
                             (<span class="text-info fw-bold">{{ $simInitial['edr'] }} EDR</span>, 
                             <span class="text-success fw-bold">{{ $simInitial['mdr'] }} MDR</span>, 
                             <span class="text-primary fw-bold">{{ $simInitial['siem'] }} SIEM</span> = <strong>{{ $simInitial['total'] }} Devices Total</strong>). 
-                            Base unit costs are synced from the scenario's active Rate Card.
+                            Base unit costs are synced directly from active scenario Rate Cards.
                         </p>
                     </div>
                     <div class="d-flex align-items-center gap-2">
+                        <button type="submit" form="mssp-costing-form" name="tab" value="simulator" class="btn btn-success btn-sm fw-bold shadow-sm d-inline-flex align-items-center gap-1">
+                            <i class="bi bi-play-circle-fill"></i> Update & Recalculate Simulation
+                        </button>
                         <form action="{{ route('mssp.reset-simulation', [$client->id, $scenario->id]) }}" method="POST" class="d-inline">
                             @csrf
                             <button type="submit" class="btn btn-outline-info btn-sm">
-                                <i class="bi bi-arrow-counterclockwise me-1"></i> Sync / Reset to Scenario Defaults
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Defaults
                             </button>
                         </form>
                     </div>
@@ -967,7 +970,7 @@
         <div class="card mb-4 bg-dark bg-opacity-40 border-secondary border-opacity-20">
             <div class="card-body py-3">
                 <div class="row align-items-center g-3">
-                    <div class="col-md-6">
+                    <div class="col-md-5">
                         <label class="form-label text-theme fw-bold small mb-1">Simulation Engine Mode</label>
                         <select class="form-select form-select-sm" name="agent_profit_simulation[mode]" id="sim_mode_select" onchange="toggleSimMode(this.value)">
                             <option value="agent" {{ $simSettings['mode'] === 'agent' ? 'selected' : '' }}>
@@ -978,7 +981,7 @@
                             </option>
                         </select>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-5">
                         <label class="form-label text-theme fw-bold small mb-1">Deduct Infrastructure Hosting Cost</label>
                         <select class="form-select form-select-sm" name="agent_profit_simulation[hosting_mode]" id="sim_hosting_mode_select">
                             <option value="none" {{ ($simSettings['hosting_mode'] ?? 'none') === 'none' ? 'selected' : '' }}>
@@ -991,6 +994,11 @@
                                 ☁️ Option B: Elastic Cloud (Deduct {{ \App\Services\CurrencyHelper::format($costData['cloud_option']['elastic_cloud_subscription_cost']) }}/mo Cloud Subscription)
                             </option>
                         </select>
+                    </div>
+                    <div class="col-md-2 text-end pt-3">
+                        <button type="submit" form="mssp-costing-form" name="tab" value="simulator" class="btn btn-success btn-sm w-100 fw-bold">
+                            <i class="bi bi-arrow-repeat me-1"></i> Recalculate
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1008,13 +1016,20 @@
                             <i class="bi bi-graph-up-arrow fs-18px"></i> Per-Agent Selling Price & Profit Margin Simulator
                         </h5>
                         <div class="text-muted small mt-1">
-                            Simulate monthly profitability, partner wholesale margins, and direct client revenue over 1M, 3M, 6M, 1YR, and 3YR horizons.
+                            Pricing formulas are based on <strong>Base Cost + Margin</strong>. Max limit defaults to system agent capacity cap.
                         </div>
                     </div>
+                    <button type="submit" form="mssp-costing-form" name="tab" value="simulator" class="btn btn-success btn-sm fw-bold">
+                        <i class="bi bi-play-fill me-1"></i> Apply & Run Simulation
+                    </button>
                 </div>
                 <div class="card-body">
                     <div class="row g-3 mb-4">
-                        <!-- EDR Agent Pricing & Capacity -->
+                        <!-- EDR Agent Package -->
+                        @php
+                            $edrPartnerMargin = round((($simSettings['edr_partner_price'] - $simSettings['edr_base_cost']) / max($simSettings['edr_base_cost'], 0.01)) * 100, 1);
+                            $edrRetailMargin = round((($simSettings['edr_client_price'] - $simSettings['edr_base_cost']) / max($simSettings['edr_base_cost'], 0.01)) * 100, 1);
+                        @endphp
                         <div class="col-md-4">
                             <div class="card bg-dark bg-opacity-40 border-secondary border-opacity-20 h-100">
                                 <div class="card-body">
@@ -1022,31 +1037,43 @@
                                         <span class="fw-bold text-info"><i class="bi bi-shield-fill-check me-1"></i> EDR Agent Package</span>
                                         <span class="badge bg-info bg-opacity-25 text-info-light">Current: {{ $simInitial['edr'] }}</span>
                                     </div>
-                                    <div class="small text-muted mb-3">Base Cost Price: <strong>{{ \App\Services\CurrencyHelper::format($simSettings['edr_base_cost']) }}/mo</strong></div>
+                                    <div class="small text-muted mb-3">Base Cost Price: <strong class="text-white">{{ \App\Services\CurrencyHelper::format($simSettings['edr_base_cost']) }}/mo</strong></div>
 
                                     <div class="mb-2">
-                                        <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
+                                            <span class="badge bg-success bg-opacity-20 text-success-light" style="font-size: 9px;">+{{ $edrPartnerMargin }}% margin</span>
+                                        </div>
                                         <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_partner_price]" value="{{ $simSettings['edr_partner_price'] }}">
                                     </div>
                                     <div class="mb-2">
-                                        <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
+                                            <span class="badge bg-info bg-opacity-20 text-info-light" style="font-size: 9px;">+{{ $edrRetailMargin }}% margin</span>
+                                        </div>
                                         <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_client_price]" value="{{ $simSettings['edr_client_price'] }}">
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-6">
                                             <label class="form-label small text-muted mb-1">Max Purchased Limit</label>
                                             <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_purchased_limit]" value="{{ $simSettings['edr_purchased_limit'] }}">
+                                            <span class="text-muted d-block mt-1" style="font-size: 9px;">Stop selling cap</span>
                                         </div>
                                         <div class="col-6">
                                             <label class="form-label small text-muted mb-1">Monthly Growth (+/mo)</label>
                                             <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_monthly_growth]" value="{{ $simSettings['edr_monthly_growth'] }}">
+                                            <span class="text-muted d-block mt-1" style="font-size: 9px;">Sales velocity</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- MDR Agent Pricing & Capacity -->
+                        <!-- MDR Agent Package -->
+                        @php
+                            $mdrPartnerMargin = round((($simSettings['mdr_partner_price'] - $simSettings['mdr_base_cost']) / max($simSettings['mdr_base_cost'], 0.01)) * 100, 1);
+                            $mdrRetailMargin = round((($simSettings['mdr_client_price'] - $simSettings['mdr_base_cost']) / max($simSettings['mdr_base_cost'], 0.01)) * 100, 1);
+                        @endphp
                         <div class="col-md-4">
                             <div class="card bg-dark bg-opacity-40 border-secondary border-opacity-20 h-100">
                                 <div class="card-body">
@@ -1054,31 +1081,43 @@
                                         <span class="fw-bold text-success"><i class="bi bi-shield-lock-fill me-1"></i> MDR Agent Package</span>
                                         <span class="badge bg-success bg-opacity-25 text-success-light">Current: {{ $simInitial['mdr'] }}</span>
                                     </div>
-                                    <div class="small text-muted mb-3">Base Cost Price: <strong>{{ \App\Services\CurrencyHelper::format($simSettings['mdr_base_cost']) }}/mo</strong></div>
+                                    <div class="small text-muted mb-3">Base Cost Price: <strong class="text-white">{{ \App\Services\CurrencyHelper::format($simSettings['mdr_base_cost']) }}/mo</strong></div>
 
                                     <div class="mb-2">
-                                        <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
+                                            <span class="badge bg-success bg-opacity-20 text-success-light" style="font-size: 9px;">+{{ $mdrPartnerMargin }}% margin</span>
+                                        </div>
                                         <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_partner_price]" value="{{ $simSettings['mdr_partner_price'] }}">
                                     </div>
                                     <div class="mb-2">
-                                        <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
+                                            <span class="badge bg-info bg-opacity-20 text-info-light" style="font-size: 9px;">+{{ $mdrRetailMargin }}% margin</span>
+                                        </div>
                                         <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_client_price]" value="{{ $simSettings['mdr_client_price'] }}">
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-6">
                                             <label class="form-label small text-muted mb-1">Max Purchased Limit</label>
                                             <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_purchased_limit]" value="{{ $simSettings['mdr_purchased_limit'] }}">
+                                            <span class="text-muted d-block mt-1" style="font-size: 9px;">Stop selling cap</span>
                                         </div>
                                         <div class="col-6">
                                             <label class="form-label small text-muted mb-1">Monthly Growth (+/mo)</label>
                                             <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_monthly_growth]" value="{{ $simSettings['mdr_monthly_growth'] }}">
+                                            <span class="text-muted d-block mt-1" style="font-size: 9px;">Sales velocity</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- SIEM Agent Pricing & Capacity -->
+                        <!-- SIEM Agent Package -->
+                        @php
+                            $siemPartnerMargin = round((($simSettings['siem_partner_price'] - $simSettings['siem_base_cost']) / max($simSettings['siem_base_cost'], 0.01)) * 100, 1);
+                            $siemRetailMargin = round((($simSettings['siem_client_price'] - $simSettings['siem_base_cost']) / max($simSettings['siem_base_cost'], 0.01)) * 100, 1);
+                        @endphp
                         <div class="col-md-4">
                             <div class="card bg-dark bg-opacity-40 border-secondary border-opacity-20 h-100">
                                 <div class="card-body">
@@ -1086,24 +1125,32 @@
                                         <span class="fw-bold text-primary"><i class="bi bi-display me-1"></i> SIEM Agent Package</span>
                                         <span class="badge bg-primary bg-opacity-25 text-primary-light">Current: {{ $simInitial['siem'] }}</span>
                                     </div>
-                                    <div class="small text-muted mb-3">Base Cost Price: <strong>{{ \App\Services\CurrencyHelper::format($simSettings['siem_base_cost']) }}/mo</strong></div>
+                                    <div class="small text-muted mb-3">Base Cost Price: <strong class="text-white">{{ \App\Services\CurrencyHelper::format($simSettings['siem_base_cost']) }}/mo</strong></div>
 
                                     <div class="mb-2">
-                                        <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
+                                            <span class="badge bg-success bg-opacity-20 text-success-light" style="font-size: 9px;">+{{ $siemPartnerMargin }}% margin</span>
+                                        </div>
                                         <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_partner_price]" value="{{ $simSettings['siem_partner_price'] }}">
                                     </div>
                                     <div class="mb-2">
-                                        <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
+                                            <span class="badge bg-info bg-opacity-20 text-info-light" style="font-size: 9px;">+{{ $siemRetailMargin }}% margin</span>
+                                        </div>
                                         <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_client_price]" value="{{ $simSettings['siem_client_price'] }}">
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-6">
                                             <label class="form-label small text-muted mb-1">Max Purchased Limit</label>
                                             <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_purchased_limit]" value="{{ $simSettings['siem_purchased_limit'] }}">
+                                            <span class="text-muted d-block mt-1" style="font-size: 9px;">Stop selling cap</span>
                                         </div>
                                         <div class="col-6">
                                             <label class="form-label small text-muted mb-1">Monthly Growth (+/mo)</label>
                                             <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_monthly_growth]" value="{{ $simSettings['siem_monthly_growth'] }}">
+                                            <span class="text-muted d-block mt-1" style="font-size: 9px;">Sales velocity</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1116,6 +1163,7 @@
                 </div>
             </div>
         </div>
+
 
         <!-- MODE 2: Custom Pack Builder & Extra Services -->
         <div id="sim_mode_pack_container" class="{{ $simSettings['mode'] === 'agent' ? 'd-none' : '' }}">
@@ -1256,8 +1304,14 @@
         <!-- Month-by-Month Cumulative Table (1 to 36 Months) -->
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="text-white fw-bold mb-0"><i class="bi bi-calendar3 text-success me-2"></i> Month-by-Month Projection Schedule (36 Months)</h6>
-            <span class="text-muted small">Automatic capacity capping applies when max purchased limit is reached.</span>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-muted small me-2">Automatic capacity capping applies when max purchased limit is reached.</span>
+                <button type="submit" form="mssp-costing-form" name="tab" value="simulator" class="btn btn-success btn-xs fw-bold px-3 py-1">
+                    <i class="bi bi-arrow-repeat me-1"></i> Update & Recalculate
+                </button>
+            </div>
         </div>
+
         <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
             <table class="table table-borderless table-hover align-middle mb-0" id="sim_schedule_table">
                 <thead class="sticky-top bg-dark border-bottom border-secondary border-opacity-30">

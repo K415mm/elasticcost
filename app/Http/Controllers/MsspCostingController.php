@@ -166,9 +166,15 @@ class MsspCostingController extends Controller
             );
         }
 
+        $activeTab = $request->input('tab');
+        $routeParams = [$client->id, $scenario->id];
+        if ($activeTab) {
+            $routeParams['tab'] = $activeTab;
+        }
+
         return redirect()
-            ->route('mssp.show', [$client->id, $scenario->id])
-            ->with('success', 'MSSP Costing parameters and SOC analyst allocations updated successfully!');
+            ->route('mssp.show', $routeParams)
+            ->with('success', 'MSSP Costing parameters and simulation updated successfully!');
     }
 
     /**

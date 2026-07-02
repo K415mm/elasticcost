@@ -18,27 +18,35 @@ class AgentProfitSimulatorService
         // 2. Get saved settings or merge with live scenario rate card defaults
         $saved = $msspDetail->agent_profit_simulation_settings ?? [];
 
+        $edrBase = (float) ($msspDetail->edr_agent_monthly_cost_per_device ?? 18.0);
+        $mdrBase = (float) ($msspDetail->mdr_agent_monthly_cost_per_device ?? 90.0);
+        $siemBase = (float) ($msspDetail->siem_agent_monthly_cost_per_device ?? 60.0);
+
+        $edrLimit = (int) ($saved['edr_purchased_limit'] ?? ($inventoryBaseline['edr'] > 0 ? $inventoryBaseline['edr'] : 300));
+        $mdrLimit = (int) ($saved['mdr_purchased_limit'] ?? ($inventoryBaseline['mdr'] > 0 ? $inventoryBaseline['mdr'] : 40));
+        $siemLimit = (int) ($saved['siem_purchased_limit'] ?? ($inventoryBaseline['siem'] > 0 ? $inventoryBaseline['siem'] : 20));
+
         $settings = array_merge([
             'mode' => $saved['mode'] ?? 'agent', // 'agent' or 'pack'
             'hosting_mode' => $saved['hosting_mode'] ?? 'none', // 'none', 'onprem', 'cloud'
 
-            'edr_base_cost' => (float) ($msspDetail->edr_agent_monthly_cost_per_device ?? 10.0),
-            'edr_partner_price' => (float) ($saved['edr_partner_price'] ?? 20.0),
-            'edr_client_price' => (float) ($saved['edr_client_price'] ?? 25.0),
-            'edr_purchased_limit' => (int) ($saved['edr_purchased_limit'] ?? max($inventoryBaseline['edr'] * 3, 500)),
-            'edr_monthly_growth' => (int) ($saved['edr_monthly_growth'] ?? 20),
+            'edr_base_cost' => $edrBase,
+            'edr_partner_price' => (float) ($saved['edr_partner_price'] ?? round($edrBase * 1.25, 2)),
+            'edr_client_price' => (float) ($saved['edr_client_price'] ?? round($edrBase * 1.50, 2)),
+            'edr_purchased_limit' => $edrLimit,
+            'edr_monthly_growth' => (int) ($saved['edr_monthly_growth'] ?? max(1, (int) ceil($edrLimit / 15))),
 
-            'mdr_base_cost' => (float) ($msspDetail->mdr_agent_monthly_cost_per_device ?? 30.0),
-            'mdr_partner_price' => (float) ($saved['mdr_partner_price'] ?? 45.0),
-            'mdr_client_price' => (float) ($saved['mdr_client_price'] ?? 60.0),
-            'mdr_purchased_limit' => (int) ($saved['mdr_purchased_limit'] ?? max($inventoryBaseline['mdr'] * 3, 300)),
-            'mdr_monthly_growth' => (int) ($saved['mdr_monthly_growth'] ?? 10),
+            'mdr_base_cost' => $mdrBase,
+            'mdr_partner_price' => (float) ($saved['mdr_partner_price'] ?? round($mdrBase * 1.25, 2)),
+            'mdr_client_price' => (float) ($saved['mdr_client_price'] ?? round($mdrBase * 1.50, 2)),
+            'mdr_purchased_limit' => $mdrLimit,
+            'mdr_monthly_growth' => (int) ($saved['mdr_monthly_growth'] ?? max(1, (int) ceil($mdrLimit / 10))),
 
-            'siem_base_cost' => (float) ($msspDetail->siem_agent_monthly_cost_per_device ?? 15.0),
-            'siem_partner_price' => (float) ($saved['siem_partner_price'] ?? 25.0),
-            'siem_client_price' => (float) ($saved['siem_client_price'] ?? 35.0),
-            'siem_purchased_limit' => (int) ($saved['siem_purchased_limit'] ?? max($inventoryBaseline['siem'] * 3, 500)),
-            'siem_monthly_growth' => (int) ($saved['siem_monthly_growth'] ?? 15),
+            'siem_base_cost' => $siemBase,
+            'siem_partner_price' => (float) ($saved['siem_partner_price'] ?? round($siemBase * 1.25, 2)),
+            'siem_client_price' => (float) ($saved['siem_client_price'] ?? round($siemBase * 1.50, 2)),
+            'siem_purchased_limit' => $siemLimit,
+            'siem_monthly_growth' => (int) ($saved['siem_monthly_growth'] ?? max(1, (int) ceil($siemLimit / 10))),
 
             'custom_packs' => $saved['custom_packs'] ?? $this->getDefaultPacks($msspDetail),
         ], $customParams);
@@ -100,27 +108,35 @@ class AgentProfitSimulatorService
     {
         $baseline = $this->getClientInventoryBaseline($client);
 
+        $edrBase = (float) ($msspDetail->edr_agent_monthly_cost_per_device ?? 18.0);
+        $mdrBase = (float) ($msspDetail->mdr_agent_monthly_cost_per_device ?? 90.0);
+        $siemBase = (float) ($msspDetail->siem_agent_monthly_cost_per_device ?? 60.0);
+
+        $edrLimit = $baseline['edr'] > 0 ? $baseline['edr'] : 300;
+        $mdrLimit = $baseline['mdr'] > 0 ? $baseline['mdr'] : 40;
+        $siemLimit = $baseline['siem'] > 0 ? $baseline['siem'] : 20;
+
         return [
             'mode' => 'agent',
             'hosting_mode' => 'none',
 
-            'edr_base_cost' => (float) ($msspDetail->edr_agent_monthly_cost_per_device ?? 10.0),
-            'edr_partner_price' => 20.0,
-            'edr_client_price' => 25.0,
-            'edr_purchased_limit' => max($baseline['edr'] * 3, 500),
-            'edr_monthly_growth' => 20,
+            'edr_base_cost' => $edrBase,
+            'edr_partner_price' => round($edrBase * 1.25, 2),
+            'edr_client_price' => round($edrBase * 1.50, 2),
+            'edr_purchased_limit' => $edrLimit,
+            'edr_monthly_growth' => max(1, (int) ceil($edrLimit / 15)),
 
-            'mdr_base_cost' => (float) ($msspDetail->mdr_agent_monthly_cost_per_device ?? 30.0),
-            'mdr_partner_price' => 45.0,
-            'mdr_client_price' => 60.0,
-            'mdr_purchased_limit' => max($baseline['mdr'] * 3, 300),
-            'mdr_monthly_growth' => 10,
+            'mdr_base_cost' => $mdrBase,
+            'mdr_partner_price' => round($mdrBase * 1.25, 2),
+            'mdr_client_price' => round($mdrBase * 1.50, 2),
+            'mdr_purchased_limit' => $mdrLimit,
+            'mdr_monthly_growth' => max(1, (int) ceil($mdrLimit / 10)),
 
-            'siem_base_cost' => (float) ($msspDetail->siem_agent_monthly_cost_per_device ?? 15.0),
-            'siem_partner_price' => 25.0,
-            'siem_client_price' => 35.0,
-            'siem_purchased_limit' => max($baseline['siem'] * 3, 500),
-            'siem_monthly_growth' => 15,
+            'siem_base_cost' => $siemBase,
+            'siem_partner_price' => round($siemBase * 1.25, 2),
+            'siem_client_price' => round($siemBase * 1.50, 2),
+            'siem_purchased_limit' => $siemLimit,
+            'siem_monthly_growth' => max(1, (int) ceil($siemLimit / 10)),
 
             'custom_packs' => $this->getDefaultPacks($msspDetail),
         ];
