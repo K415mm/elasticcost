@@ -319,7 +319,8 @@
     </div>
 </div>
 
-<form action="{{ route('mssp.update', [$client->id, $scenario->id]) }}" method="POST">
+<form action="{{ route('mssp.update', [$client->id, $scenario->id]) }}" method="POST" id="mssp-costing-form">
+
     @csrf
     <div class="row">
         <!-- Left Column: Staffing and Allocation Controls -->
@@ -587,11 +588,10 @@
                     <div class="card-arrow-bottom-right"></div>
                 </div>
             </div>
-        </div>
-    </div>
-</form>
+</div>
 
 <!-- 2. Proposal Deployment Options Breakdown -->
+
 <ul class="nav nav-tabs mb-3 border-secondary border-opacity-30" id="proposalTabs" role="tablist">
     <li class="nav-item" role="presentation">
         <button class="nav-link active text-uppercase tracking-wider fw-bold" id="onprem-tab" data-bs-toggle="tab" data-bs-target="#onprem-pane" type="button" role="tab" aria-controls="onprem-pane" aria-selected="true" style="font-size: 11px;">
@@ -1041,17 +1041,17 @@
 
                                     <div class="mb-2">
                                         <div class="d-flex justify-content-between align-items-center">
-                                            <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
+                                            <label class="form-label small text-muted mb-1">Partner Wholesale Price ({{ \App\Services\CurrencyHelper::symbol() }}/mo)</label>
                                             <span class="badge bg-success bg-opacity-20 text-success-light" style="font-size: 9px;">+{{ $edrPartnerMargin }}% margin</span>
                                         </div>
-                                        <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_partner_price]" value="{{ $simSettings['edr_partner_price'] }}">
+                                        <input type="number" step="0.01" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_partner_price]" value="{{ round(\App\Services\CurrencyHelper::convert($simSettings['edr_partner_price']), 2) }}">
                                     </div>
                                     <div class="mb-2">
                                         <div class="d-flex justify-content-between align-items-center">
-                                            <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
+                                            <label class="form-label small text-muted mb-1">Final Client Retail Price ({{ \App\Services\CurrencyHelper::symbol() }}/mo)</label>
                                             <span class="badge bg-info bg-opacity-20 text-info-light" style="font-size: 9px;">+{{ $edrRetailMargin }}% margin</span>
                                         </div>
-                                        <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_client_price]" value="{{ $simSettings['edr_client_price'] }}">
+                                        <input type="number" step="0.01" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_client_price]" value="{{ round(\App\Services\CurrencyHelper::convert($simSettings['edr_client_price']), 2) }}">
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-6">
@@ -1085,17 +1085,17 @@
 
                                     <div class="mb-2">
                                         <div class="d-flex justify-content-between align-items-center">
-                                            <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
+                                            <label class="form-label small text-muted mb-1">Partner Wholesale Price ({{ \App\Services\CurrencyHelper::symbol() }}/mo)</label>
                                             <span class="badge bg-success bg-opacity-20 text-success-light" style="font-size: 9px;">+{{ $mdrPartnerMargin }}% margin</span>
                                         </div>
-                                        <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_partner_price]" value="{{ $simSettings['mdr_partner_price'] }}">
+                                        <input type="number" step="0.01" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_partner_price]" value="{{ round(\App\Services\CurrencyHelper::convert($simSettings['mdr_partner_price']), 2) }}">
                                     </div>
                                     <div class="mb-2">
                                         <div class="d-flex justify-content-between align-items-center">
-                                            <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
+                                            <label class="form-label small text-muted mb-1">Final Client Retail Price ({{ \App\Services\CurrencyHelper::symbol() }}/mo)</label>
                                             <span class="badge bg-info bg-opacity-20 text-info-light" style="font-size: 9px;">+{{ $mdrRetailMargin }}% margin</span>
                                         </div>
-                                        <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_client_price]" value="{{ $simSettings['mdr_client_price'] }}">
+                                        <input type="number" step="0.01" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_client_price]" value="{{ round(\App\Services\CurrencyHelper::convert($simSettings['mdr_client_price']), 2) }}">
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-6">
@@ -1129,18 +1129,19 @@
 
                                     <div class="mb-2">
                                         <div class="d-flex justify-content-between align-items-center">
-                                            <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
+                                            <label class="form-label small text-muted mb-1">Partner Wholesale Price ({{ \App\Services\CurrencyHelper::symbol() }}/mo)</label>
                                             <span class="badge bg-success bg-opacity-20 text-success-light" style="font-size: 9px;">+{{ $siemPartnerMargin }}% margin</span>
                                         </div>
-                                        <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_partner_price]" value="{{ $simSettings['siem_partner_price'] }}">
+                                        <input type="number" step="0.01" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_partner_price]" value="{{ round(\App\Services\CurrencyHelper::convert($simSettings['siem_partner_price']), 2) }}">
                                     </div>
                                     <div class="mb-2">
                                         <div class="d-flex justify-content-between align-items-center">
-                                            <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
+                                            <label class="form-label small text-muted mb-1">Final Client Retail Price ({{ \App\Services\CurrencyHelper::symbol() }}/mo)</label>
                                             <span class="badge bg-info bg-opacity-20 text-info-light" style="font-size: 9px;">+{{ $siemRetailMargin }}% margin</span>
                                         </div>
-                                        <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_client_price]" value="{{ $simSettings['siem_client_price'] }}">
+                                        <input type="number" step="0.01" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_client_price]" value="{{ round(\App\Services\CurrencyHelper::convert($simSettings['siem_client_price']), 2) }}">
                                     </div>
+
                                     <div class="row g-2">
                                         <div class="col-6">
                                             <label class="form-label small text-muted mb-1">Max Purchased Limit</label>
@@ -1358,8 +1359,10 @@
 
     </div>
 </div>
+</form>
 
 @endsection
+
 
 @section('scripts')
 <script src="/assets/plugins/apexcharts/dist/apexcharts.min.js"></script>
