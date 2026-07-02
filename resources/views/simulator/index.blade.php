@@ -511,18 +511,83 @@
         }
     }
 
+    function renderMarkdownToHtml(md) {
+        if (!md) return '';
+
+        let lines = md.split('\n');
+        let inTable = false;
+        let tableHtml = '';
+        let processedLines = [];
+
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i].trim();
+
+            if (line.startsWith('|') && line.endsWith('|')) {
+                if (!inTable) {
+                    inTable = true;
+                    tableHtml = '<div class="table-responsive my-3"><table class="table table-sm table-dark table-striped table-bordered align-middle mb-0"><thead class="table-dark text-warning border-warning border-opacity-30"><tr>';
+                    let cells = line.split('|').slice(1, -1);
+                    cells.forEach(c => { tableHtml += `<th class="py-2 px-3 bg-dark bg-opacity-80 fw-bold">${c.trim()}</th>`; });
+                    tableHtml += '</tr></thead><tbody>';
+                } else if (line.includes('---')) {
+                    continue;
+                } else {
+                    tableHtml += '<tr>';
+                    let cells = line.split('|').slice(1, -1);
+                    cells.forEach(c => {
+                        let text = c.trim();
+                        text = text.replace(/✅\s*Aligned/gi, '<span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-30"><i class="bi bi-check-circle-fill me-1"></i>Aligned</span>');
+                        text = text.replace(/❌\s*Underpriced/gi, '<span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-30"><i class="bi bi-x-circle-fill me-1"></i>Underpriced</span>');
+                        text = text.replace(/⚠️\s*Soft/gi, '<span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-30"><i class="bi bi-exclamation-triangle-fill me-1"></i>Soft</span>');
+                        text = text.replace(/✅\s*Strong/gi, '<span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-30"><i class="bi bi-shield-check me-1"></i>Strong</span>');
+                        text = text.replace(/🏆\s*Anchor Product/gi, '<span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-30"><i class="bi bi-trophy-fill me-1"></i>Anchor Product</span>');
+                        tableHtml += `<td class="py-2 px-3 font-monospace fs-12px">${text}</td>`;
+                    });
+                    tableHtml += '</tr>';
+                }
+            } else {
+                if (inTable) {
+                    tableHtml += '</tbody></table></div>';
+                    processedLines.push(tableHtml);
+                    inTable = false;
+                    tableHtml = '';
+                }
+                processedLines.push(line);
+            }
+        }
+        if (inTable) {
+            tableHtml += '</tbody></table></div>';
+            processedLines.push(tableHtml);
+        }
+
+        let html = processedLines.join('\n');
+
+        html = html.replace(/^# (.*$)/gim, '<h3 class="text-warning fw-bold border-bottom border-warning border-opacity-25 pb-2 mb-3 mt-4"><i class="bi bi-graph-up me-2"></i>$1</h3>');
+        html = html.replace(/^## (.*$)/gim, '<h4 class="text-info fw-bold border-bottom border-secondary border-opacity-25 pb-2 mb-3 mt-4"><i class="bi bi-bookmark-fill me-2 fs-14px"></i>$1</h4>');
+        html = html.replace(/^### (.*$)/gim, '<h5 class="text-white fw-bold mb-2 mt-3"><i class="bi bi-chevron-right text-warning me-1"></i>$1</h5>');
+
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>');
+        html = html.replace(/\*(.*?)\*/g, '<em class="text-muted">$1</em>');
+
+        html = html.replace(/^\* (.*$)/gim, '<li class="ms-3 mb-1 text-light">$1</li>');
+        html = html.replace(/^- (.*$)/gim, '<li class="ms-3 mb-1 text-light">$1</li>');
+
+        html = html.replace(/\n\n/g, '<br><br>');
+
+        return html;
+    }
+
     document.getElementById('btn-run-ai-market')?.addEventListener('click', function() {
-        var btn = this;
         var card = document.getElementById('ai-market-report-card');
-        var content = document.getElementById('ai-market-report-content');
-        var scoreBadge = document.getElementById('ai-market-score-badge');
+        var loading = document.getElementById('ai-market-loading');
+        var content = document.getElementById('ai-market-content');
 
         if (!card || !content) return;
 
         card.style.display = 'block';
+        if (loading) loading.style.display = 'block';
+        content.innerHTML = '';
         card.scrollIntoView({ behavior: 'smooth' });
-
-        content.innerHTML = '<div class="text-center py-4 text-warning"><div class="spinner-border me-2" role="status"></div><strong>AI Market Buying Agent is simulating market purchasing personas and analyzing profit margins...</strong></div>';
 
         fetch("{{ route('simulator.ai-analysis', [$client->id, $scenario->id]) }}", {
             method: 'POST',
@@ -533,17 +598,130 @@
         })
         .then(response => response.json())
         .then(data => {
+            if (loading) loading.style.display = 'none';
+
             if (data.status === 'success' && data.analysis) {
-                var report = data.analysis;
-                if (scoreBadge) scoreBadge.innerText = 'Attractiveness: ' + (report.market_attractiveness_score || 8) + '/10';
-                content.innerHTML = report.full_market_report ? report.full_market_report.replace(/\n/g, '<br>') : '<p>Analysis completed successfully.</p>';
+                var r = data.analysis;
+                var score = r.market_attractiveness_score || 8;
+                var scoreColor = score >= 8 ? 'success' : (score >= 5 ? 'warning' : 'danger');
+
+                var html = `
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-black bg-opacity-40 border-${scoreColor} border-opacity-30 h-100 p-3">
+                                <div class="text-muted small uppercase-tracking mb-1">Market Attractiveness Score</div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="fs-36px fw-bold text-${scoreColor}">${score}<small class="fs-18px text-muted">/10</small></span>
+                                    <div class="flex-grow-1">
+                                        <div class="progress bg-secondary bg-opacity-30" style="height: 8px;">
+                                            <div class="progress-bar bg-${scoreColor}" style="width: ${score * 10}%"></div>
+                                        </div>
+                                        <span class="badge bg-${scoreColor} bg-opacity-20 text-${scoreColor} border border-${scoreColor} border-opacity-30 mt-2">
+                                            ${score >= 8 ? 'High Commercial Fit' : 'Moderate Commercial Fit'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card bg-black bg-opacity-40 border-secondary border-opacity-30 h-100 p-3">
+                                <div class="text-muted small uppercase-tracking mb-1">AI Provider & Execution Harness</div>
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <span class="badge bg-theme text-black fw-bold"><i class="bi bi-robot me-1"></i> ${r.ai_provider_used || 'Ollama'}</span>
+                                    <span class="badge bg-dark text-info border border-info border-opacity-30"><i class="bi bi-cpu me-1"></i> ${r.ai_model_used || 'gemma4:e2b'}</span>
+                                    <span class="badge bg-dark text-success border border-success border-opacity-30"><i class="bi bi-diagram-3 me-1"></i> phpkaiharness Session</span>
+                                </div>
+                                <p class="text-white-50 small mb-0">Analysis compiled by autonomous Market Buying Agent evaluating partner wholesale margins (+25%) vs direct retail margins (+50%) on On-Premise Deployment Offer.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Structured Insights Grid -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-dark bg-opacity-50 border-info border-opacity-30 h-100">
+                                <div class="card-body">
+                                    <h6 class="text-info fw-bold mb-2"><i class="bi bi-people me-2"></i> Buyer Persona & Market Behavior</h6>
+                                    <p class="text-white-50 small mb-0">${r.buyer_persona_behavior || 'Analysis of partner vs direct client purchasing behavior.'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-dark bg-opacity-50 border-success border-opacity-30 h-100">
+                                <div class="card-body">
+                                    <h6 class="text-success fw-bold mb-2"><i class="bi bi-currency-dollar me-2"></i> Pricing Strategy & Margins</h6>
+                                    <p class="text-white-50 small mb-0">${r.pricing_strategy_feedback || 'Assessment of partner wholesale vs client retail margins.'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-dark bg-opacity-50 border-warning border-opacity-30 h-100">
+                                <div class="card-body">
+                                    <h6 class="text-warning fw-bold mb-2"><i class="bi bi-box-seam me-2"></i> Pack vs Standalone Unit Preference</h6>
+                                    <p class="text-white-50 small mb-0">${r.pack_vs_agent_preference || 'Comparison of standalone unit agents vs custom service packs.'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-dark bg-opacity-50 border-primary border-opacity-30 h-100">
+                                <div class="card-body">
+                                    <h6 class="text-primary fw-bold mb-2"><i class="bi bi-speedometer2 me-2"></i> Capacity & Stockout Risk Forecast</h6>
+                                    <p class="text-white-50 small mb-0">${r.capacity_sold_out_forecast || 'Forecast of capacity limit caps.'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if (r.optimization_recommendations && Array.isArray(r.optimization_recommendations) && r.optimization_recommendations.length > 0) {
+                    html += `
+                        <div class="card bg-warning bg-opacity-10 border-warning border-opacity-30 mb-4">
+                            <div class="card-body">
+                                <h6 class="text-warning fw-bold mb-3"><i class="bi bi-lightbulb-fill me-2"></i> Actionable Profit Optimization Recommendations</h6>
+                                <div class="row g-2">
+                    `;
+                    r.optimization_recommendations.forEach(function(rec, idx) {
+                        html += `
+                            <div class="col-12">
+                                <div class="bg-black bg-opacity-40 border border-secondary border-opacity-20 rounded p-2 px-3 d-flex align-items-start gap-2">
+                                    <span class="badge bg-warning text-black font-monospace fw-bold">${idx + 1}</span>
+                                    <span class="text-white small">${rec}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += `
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (r.full_market_report) {
+                    html += `
+                        <div class="card bg-black bg-opacity-40 border-secondary border-opacity-30">
+                            <div class="card-header bg-dark bg-opacity-50 border-bottom border-secondary border-opacity-20 py-2">
+                                <span class="text-white-50 small fw-bold uppercase-tracking"><i class="bi bi-file-earmark-text me-2"></i> Comprehensive Market Analysis Report</span>
+                            </div>
+                            <div class="card-body py-3">
+                                <div class="markdown-body text-white text-opacity-90">
+                                    ${renderMarkdownToHtml(r.full_market_report)}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                content.innerHTML = html;
             } else {
                 content.innerHTML = '<div class="alert alert-danger mb-0">Failed to generate AI Market Buying Report.</div>';
             }
         })
         .catch(err => {
-            content.innerHTML = '<div class="alert alert-danger mb-0">Error communicating with AI Market Buying Agent.</div>';
+            if (loading) loading.style.display = 'none';
+            content.innerHTML = '<div class="alert alert-danger mb-0">Error communicating with AI Market Buying Agent: ' + err.message + '</div>';
         });
     });
 </script>
 @endsection
+
