@@ -6,11 +6,15 @@ set -e
 EXPORT_DIR="/tmp/elasticcost_export"
 mkdir -p "$EXPORT_DIR"
 
+export PGPASSWORD="${PGPASSWORD:-secret}"
+export PGUSER="${PGUSER:-elasticcost}"
+
 echo "=== 1. Exporting PostgreSQL database (elasticcost) ==="
 if command -v pg_dump &> /dev/null; then
-    pg_dump -U elasticcost -h localhost -d elasticcost -F c -b -v -f "$EXPORT_DIR/elasticcost_pg.dump" || \
+    pg_dump -U "$PGUSER" -h localhost -d elasticcost -F c -b -v -f "$EXPORT_DIR/elasticcost_pg.dump" || \
     pg_dump -U postgres -h localhost -d elasticcost -F c -b -v -f "$EXPORT_DIR/elasticcost_pg.dump"
     echo "[SUCCESS] PostgreSQL dump saved to $EXPORT_DIR/elasticcost_pg.dump"
+
 else
     echo "[WARNING] pg_dump command not found. Please install postgresql-client or run pg_dump manually."
 fi

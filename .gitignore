@@ -32,6 +32,8 @@
 *.log
 
 /vendor
+/packages/phpkaiharness/vendor
+
 _ide_helper.php
 Homestead.json
 Homestead.yaml
