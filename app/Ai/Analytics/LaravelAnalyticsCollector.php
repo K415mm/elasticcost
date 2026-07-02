@@ -2,6 +2,7 @@
 
 namespace App\Ai\Analytics;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Phpkaiharness\Contracts\AnalyticsCollectorInterface;
 use Phpkaiharness\Monitor\SqliteMonitorStore;
@@ -15,6 +16,10 @@ class LaravelAnalyticsCollector implements AnalyticsCollectorInterface
         try {
             $resolvedPath = $dbPath ?? config('harness.cache.db_path');
             if ($resolvedPath) {
+                $dir = dirname($resolvedPath);
+                if (! file_exists($dir)) {
+                    @mkdir($dir, 0777, true);
+                }
                 $this->store = new SqliteMonitorStore($resolvedPath);
             }
         } catch (\Throwable $e) {
@@ -33,13 +38,6 @@ class LaravelAnalyticsCollector implements AnalyticsCollectorInterface
         }
     }
 
-    private function isValidJson(string $string): bool
-    {
-        json_decode($string);
-
-        return json_last_error() === JSON_ERROR_NONE;
-    }
-
     /**
      * Start tracking a new agent session.
      */
@@ -53,6 +51,7 @@ class LaravelAnalyticsCollector implements AnalyticsCollectorInterface
         ?string $requestId = null,
         string $sessionType = 'interaction'
     ): void {
+        // 1. Write to SQLite store
         $this->runOnSqlite(fn ($store) => $store->startSession(
             $sessionId,
             $prompt,
@@ -63,6 +62,21 @@ class LaravelAnalyticsCollector implements AnalyticsCollectorInterface
             $requestId,
             $sessionType
         ));
+
+        // 2. Write to MySQL database harness_sessions table for the web dashboard
+        try {
+            DB::table('harness_sessions')->updateOrInsert(
+                ['id' => $sessionId],
+                [
+                    'prompt' => $prompt,
+                    'method' => $method ?: 'agent-loop',
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('LaravelAnalyticsCollector MySQL startSession failed: '.$e->getMessage());
+        }
     }
 
     /**
@@ -70,7 +84,20 @@ class LaravelAnalyticsCollector implements AnalyticsCollectorInterface
      */
     public function endSession(string $sessionId, string $response, int $totalDurationMs, int $iterations): void
     {
+        // 1. Write to SQLite store
         $this->runOnSqlite(fn ($store) => $store->endSession($sessionId, $response, $totalDurationMs, $iterations));
+
+        // 2. Update MySQL database harness_sessions table
+        try {
+            DB::table('harness_sessions')->where('id', $sessionId)->update([
+                'response' => $response,
+                'total_duration_ms' => $totalDurationMs,
+                'iterations' => $iterations,
+                'updated_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('LaravelAnalyticsCollector MySQL endSession failed: '.$e->getMessage());
+        }
     }
 
     /**
@@ -84,7 +111,26 @@ class LaravelAnalyticsCollector implements AnalyticsCollectorInterface
         int $durationMs,
         array $usage
     ): void {
+        // 1. Write to SQLite store
         $this->runOnSqlite(fn ($store) => $store->recordLlmCall($sessionId, $model, $payload, $response, $durationMs, $usage));
+
+        // 2. Insert into MySQL database harness_details table
+        try {
+            DB::table('harness_details')->insert([
+                'session_id' => $sessionId,
+                'type' => 'llm_call',
+                'name' => $model ?: 'llm-agent',
+                'payload' => json_encode($payload),
+                'response' => json_encode($response),
+                'duration_ms' => $durationMs,
+                'tokens_prompt' => $usage['prompt_tokens'] ?? $usage['tokens_prompt'] ?? 0,
+                'tokens_completion' => $usage['completion_tokens'] ?? $usage['tokens_completion'] ?? 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('LaravelAnalyticsCollector MySQL recordLlmCall failed: '.$e->getMessage());
+        }
     }
 
     /**
@@ -97,7 +143,24 @@ class LaravelAnalyticsCollector implements AnalyticsCollectorInterface
         string $result,
         int $durationMs
     ): void {
+        // 1. Write to SQLite store
         $this->runOnSqlite(fn ($store) => $store->recordToolCall($sessionId, $toolName, $arguments, $result, $durationMs));
+
+        // 2. Insert into MySQL database harness_details table
+        try {
+            DB::table('harness_details')->insert([
+                'session_id' => $sessionId,
+                'type' => 'tool_call',
+                'name' => $toolName ?: 'tool',
+                'payload' => json_encode($arguments),
+                'response' => $result,
+                'duration_ms' => $durationMs,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('LaravelAnalyticsCollector MySQL recordToolCall failed: '.$e->getMessage());
+        }
     }
 
     public function recordEvent(
@@ -113,7 +176,6 @@ class LaravelAnalyticsCollector implements AnalyticsCollectorInterface
 
     public function recordFact(string $sessionId, string $fact): void
     {
-        // Write to SQLite
         $this->runOnSqlite(fn ($store) => $store->recordFact($sessionId, $fact));
     }
 }
