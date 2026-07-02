@@ -36,8 +36,9 @@ services:
       - elasticcost-network
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:alpine
     container_name: elasticcost-db
+
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_DATABASE:-elasticcost}
