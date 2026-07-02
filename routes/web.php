@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AgentJobStatusController;
+use App\Http\Controllers\AgentProfitSimulatorController;
 use App\Http\Controllers\AiAgentController;
 use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\AssetTypeController;
@@ -20,6 +21,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect()->route('dashboard');
 });
+
+// Dedicated Profit & Revenue Simulator Dashboard
+Route::get('simulator', [AgentProfitSimulatorController::class, 'index'])->name('simulator.index');
+Route::post('simulator/{client}/{scenario}', [AgentProfitSimulatorController::class, 'update'])->name('simulator.update');
+Route::post('simulator/{client}/{scenario}/ai-analysis', [AgentProfitSimulatorController::class, 'runAiAnalysis'])->name('simulator.ai-analysis');
 
 // Main Sizing Dashboard landing page
 Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');

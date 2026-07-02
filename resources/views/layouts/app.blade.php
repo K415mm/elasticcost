@@ -243,6 +243,14 @@
                         </a>
                     </div>
 
+                    <div class="menu-item {{ Request::is('simulator*') ? 'active' : '' }}">
+                        <a href="{{ route('simulator.index') }}" class="menu-link">
+                            <span class="menu-icon"><i class="bi bi-graph-up-arrow text-success"></i></span>
+                            <span class="menu-text">Profit Simulator</span>
+                        </a>
+                    </div>
+
+
                     <div class="menu-item {{ Request::is('ai-chat*') ? 'active' : '' }}">
                         <a href="{{ route('ai-chat.index') }}" class="menu-link">
                             <span class="menu-icon"><i class="bi bi-chat-dots"></i></span>

@@ -114,15 +114,15 @@ class AgentProfitSimulatorTest extends TestCase
         $this->assertEquals('pack', $result['settings']['mode']);
         $this->assertArrayHasKey('timeline', $result);
 
-        // Pack base cost = (10 EDR * $10) + $50 CTI = $150/pack
-        // Month 1: 1 pack deployed
-        // Monthly cost = 1 * 150 = 150
-        // Direct revenue = 1 * 250 = 250
-        // Direct profit = 250 - 150 = 100
+        // Month 1: 1 * monthly_growth = 2 packs deployed
+        // Monthly cost = 2 * 150 = 300
+        // Direct revenue = 2 * 250 = 500
+        // Direct profit = 500 - 300 = 200
         $m1 = $result['timeline'][1];
-        $this->assertEquals(1, $m1['total_deployed']);
-        $this->assertEquals(150.0, $m1['monthly_cost']);
-        $this->assertEquals(250.0, $m1['direct_revenue']);
-        $this->assertEquals(100.0, $m1['direct_profit']);
+        $this->assertEquals(2, $m1['total_deployed']);
+        $this->assertEquals(300.0, $m1['monthly_cost']);
+        $this->assertEquals(500.0, $m1['direct_revenue']);
+        $this->assertEquals(200.0, $m1['direct_profit']);
+
     }
 }

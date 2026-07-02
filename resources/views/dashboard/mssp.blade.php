@@ -1304,7 +1304,9 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="text-white fw-bold mb-0"><i class="bi bi-calendar3 text-success me-2"></i> Month-by-Month Projection Schedule (36 Months)</h6>
             <div class="d-flex align-items-center gap-2">
-                <span class="text-muted small me-2">Automatic capacity capping applies when max purchased limit is reached.</span>
+                <a href="{{ route('simulator.index', ['client_id' => $client->id, 'scenario_id' => $scenario->id]) }}" class="btn btn-outline-info btn-xs fw-bold me-1" target="_blank">
+                    <i class="bi bi-fullscreen me-1"></i> Open Standalone Simulator Dashboard
+                </a>
                 <button type="submit" form="mssp-costing-form" name="tab" value="simulator" class="btn btn-success btn-xs fw-bold px-3 py-1">
                     <i class="bi bi-arrow-repeat me-1"></i> Update & Recalculate
                 </button>
@@ -1318,6 +1320,9 @@
                         <th>Month</th>
                         <th>Status</th>
                         <th class="text-center">Active Deployed</th>
+                        @if($simSettings['mode'] === 'pack')
+                            <th class="text-center">Equivalent Agents (EDR/MDR/SIEM)</th>
+                        @endif
                         <th>Monthly Cost</th>
                         <th>Partner Revenue</th>
                         <th>Direct Revenue</th>
@@ -1341,7 +1346,21 @@
                                     </span>
                                 @endif
                             </td>
-                            <td class="text-center mono-cell fw-bold text-white">{{ $row['total_deployed'] }}</td>
+                            <td class="text-center mono-cell fw-bold text-white">
+                                @if($simSettings['mode'] === 'pack')
+                                    {{ $row['packs_sold'] ?? $row['total_deployed'] }} Packs
+                                @else
+                                    {{ $row['total_deployed'] }} Agents
+                                @endif
+                            </td>
+                            @if($simSettings['mode'] === 'pack')
+                                <td class="text-center mono-cell text-info small">
+                                    <span class="text-info">{{ $row['edr_agents_sold'] ?? 0 }} EDR</span> /
+                                    <span class="text-success">{{ $row['mdr_agents_sold'] ?? 0 }} MDR</span> /
+                                    <span class="text-primary">{{ $row['siem_agents_sold'] ?? 0 }} SIEM</span>
+                                    (<strong>{{ $row['total_agents_sold'] ?? 0 }} Total</strong>)
+                                </td>
+                            @endif
                             <td class="mono-cell text-muted">{{ \App\Services\CurrencyHelper::format($row['monthly_cost']) }}</td>
                             <td class="mono-cell text-info-light">{{ \App\Services\CurrencyHelper::format($row['partner_revenue']) }}</td>
                             <td class="mono-cell text-white">{{ \App\Services\CurrencyHelper::format($row['direct_revenue']) }}</td>
@@ -1353,6 +1372,7 @@
                 </tbody>
             </table>
         </div>
+
     </div>
 
     </div>
