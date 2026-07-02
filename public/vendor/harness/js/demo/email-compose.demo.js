@@ -1,10 +1,3 @@
-/*
-Template Name: HUD - Responsive Bootstrap 5 Admin Template
-Version: 6.0.0
-Author: Sean Ngu
-Website: http://www.seantheme.com/hud/
-*/
-
 var handleRenderSummernote = function() {
 	var totalHeight = ($(window).width() >= 767) ? $(window).height() - $('.summernote').offset().top - 90 : 400;
 	$('.summernote').summernote({
@@ -14,13 +7,13 @@ var handleRenderSummernote = function() {
 
 var handleEmailTagsInput = function() {
 	$('#email-to').tagit({
-		availableTags: ["admin2@seantheme.com", "admin3@seantheme.com", "admin4@seantheme.com", "admin5@seantheme.com", "admin6@seantheme.com", "admin7@seantheme.com", "admin8@seantheme.com"]
+		availableTags: ["admin2@example.com", "admin3@example.com", "admin4@example.com", "admin5@example.com", "admin6@example.com", "admin7@example.com", "admin8@example.com"]
 	});
 	$('#email-cc').tagit({
-		availableTags: ["admin2@seantheme.com", "admin3@seantheme.com", "admin4@seantheme.com", "admin5@seantheme.com", "admin6@seantheme.com", "admin7@seantheme.com", "admin8@seantheme.com"]
+		availableTags: ["admin2@example.com", "admin3@example.com", "admin4@example.com", "admin5@example.com", "admin6@example.com", "admin7@example.com", "admin8@example.com"]
 	});
 	$('#email-bcc').tagit({
-		availableTags: ["admin2@seantheme.com", "admin3@seantheme.com", "admin4@seantheme.com", "admin5@seantheme.com", "admin6@seantheme.com", "admin7@seantheme.com", "admin8@seantheme.com"]
+		availableTags: ["admin2@example.com", "admin3@example.com", "admin4@example.com", "admin5@example.com", "admin6@example.com", "admin7@example.com", "admin8@example.com"]
 	});
 };
 

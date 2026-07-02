@@ -1,10 +1,3 @@
-/*
-Template Name: HUD - Responsive Bootstrap 5 Admin Template
-Version: 6.0.0
-Author: Sean Ngu
-Website: http://www.seantheme.com/hud/
-*/
-
 var toggleAiGenerateImage = function() {
 	$(document).on('submit', '[data-form-submit="generate-image"]', function(e) {
 		e.preventDefault();

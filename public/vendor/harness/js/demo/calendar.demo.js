@@ -1,10 +1,3 @@
-/*
-Template Name: HUD - Responsive Bootstrap 5 Admin Template
-Version: 6.0.0
-Author: Sean Ngu
-Website: http://www.seantheme.com/hud/
-*/
-
 var handleRenderFullcalendar = function() {
 	// external events
 	var containerEl = document.getElementById('external-events');
@@ -54,7 +47,7 @@ var handleRenderFullcalendar = function() {
 			end: year + '-'+ month +'-05',
 			color: app.color.theme
 		},{
-			title: 'Meet with Sean Ngu',
+			title: 'Team Meeting',
 			start: year + '-'+ month +'-02T06:00:00',
 			color: app.color.blue
 		},{

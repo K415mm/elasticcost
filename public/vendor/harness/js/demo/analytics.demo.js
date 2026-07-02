@@ -1,10 +1,3 @@
-/*
-Template Name: HUD - Responsive Bootstrap 5 Admin Template
-Version: 6.0.0
-Author: Sean Ngu
-Website: http://www.seantheme.com/hud/
-*/
-
 function newDate(days) {
 	return moment().add(days, 'd').format('D MMM');
 }

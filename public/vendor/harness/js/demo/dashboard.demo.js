@@ -1,10 +1,3 @@
-/*
-Template Name: HUD - Responsive Bootstrap 5 Admin Template
-Version: 6.0.0
-Author: Sean Ngu
-Website: http://www.seantheme.com/hud/
-*/
-
 var randomNo = function() {
   return Math.floor(Math.random() * 60) + 30
 };

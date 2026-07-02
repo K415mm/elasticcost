@@ -5,7 +5,7 @@
     <title>phpkaiharness — Telemetry Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="phpkaiharness AI Agent Telemetry Dashboard">
-    <!-- HUD Core CSS -->
+    <!-- Core CSS -->
     <link href="{{ asset('vendor/harness/css/vendor.min.css') }}" rel="stylesheet">
     <link href="{{ asset('vendor/harness/css/app.min.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('vendor/harness/plugins/bootstrap-icons/font/bootstrap-icons.css') }}">
