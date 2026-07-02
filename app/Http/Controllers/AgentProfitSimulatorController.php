@@ -142,7 +142,10 @@ class AgentProfitSimulatorController extends Controller
      */
     public function runAiAnalysis(Client $client, Scenario $scenario)
     {
+        @set_time_limit(180);
+
         try {
+
             $costData = $this->costingEngine->calculate($client, $scenario);
             $msspDetail = $costData['raw_mssp_detail'];
 

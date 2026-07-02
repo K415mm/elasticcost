@@ -378,6 +378,8 @@ class AgentProfitSimulatorService
      */
     public function runMarketBuyingAiSimulation(Client $client, ClientScenarioMsspDetail $msspDetail): array
     {
+        @set_time_limit(180);
+
         $simData = $this->calculate($client, $msspDetail);
         $aiConfig = AiConfigHelper::configure();
 
@@ -441,7 +443,8 @@ class AgentProfitSimulatorService
             $loop->setAgentName('MarketBuyingSimulatorAgent');
 
             $sessionId = 'market_sim_'.session()->getId();
-            $analytics = new LaravelAnalyticsCollector;
+            $monitorDbPath = storage_path('app/phpkaiharness/monitor.db');
+            $analytics = new LaravelAnalyticsCollector($monitorDbPath);
 
             $history = [];
             $responseText = $loop->run(
