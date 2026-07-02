@@ -15,9 +15,10 @@
     <div>
         <h1 class="page-header mb-0 d-flex align-items-center gap-2">
             <i class="bi bi-graph-up-arrow text-success"></i> Universal Profit & Revenue Simulator
+            <span class="badge bg-theme bg-opacity-20 text-theme border border-theme border-opacity-40 px-2 py-1 fs-11px"><i class="bi bi-server me-1"></i> Bound to On-Premise Deployment Offer</span>
         </h1>
         <div class="text-muted small mt-1">
-            Simulate monthly subscription profits over 36 months based on Agent Unit Pricing or Custom Service Packs aligned with platform capacity limits.
+            Simulate monthly subscription profits over 36 months based on Agent Unit Pricing or Custom Service Packs aligned with platform capacity limits and On-Premise Deployment Offer rates.
         </div>
     </div>
     
@@ -65,9 +66,10 @@
                 <div>
                     <h6 class="text-info fw-bold mb-1 d-flex align-items-center gap-2">
                         <i class="bi bi-cpu fs-16px"></i> System Capacity & Agent Inventory Calibration
+                        <span class="badge bg-info bg-opacity-15 text-info border border-info border-opacity-30 px-2 py-0 fs-10px">On-Premise Deployment Offer</span>
                     </h6>
                     <p class="text-muted small mb-0">
-                        Total system capacity calibrated from <strong>Client Asset Inventory</strong>: 
+                        Agent Rate Cards are bound to the <strong>On-Premise Deployment Offer</strong> (Option A). System capacity calibrated from <strong>Client Asset Inventory</strong>: 
                         <span class="text-info fw-bold">{{ $simInitial['edr'] }} EDR</span>, 
                         <span class="text-success fw-bold">{{ $simInitial['mdr'] }} MDR</span>, 
                         <span class="text-primary fw-bold">{{ $simInitial['siem'] }} SIEM</span> = 
@@ -96,27 +98,27 @@
     <div id="ai-market-report-card" class="card mb-4 border-warning border-opacity-40 bg-dark bg-opacity-60" style="display: none;">
         <div class="card-header bg-warning bg-opacity-15 border-bottom border-warning border-opacity-30 py-3 d-flex justify-content-between align-items-center">
             <h5 class="card-title text-warning mb-0 d-flex align-items-center gap-2">
-                <i class="bi bi-robot fs-18px"></i> AI Market Buying & Profit Optimization Analysis
+                <i class="bi bi-robot fs-18px"></i> AI Market Buying & Profit Optimization Analysis (On-Premise Offer Aligned)
             </h5>
-            <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30" id="ai-market-score-badge">Attractiveness: 8/10</span>
+            <button type="button" class="btn-close btn-close-white" onclick="document.getElementById('ai-market-report-card').style.display='none'"></button>
         </div>
-        <div class="card-body">
-            <div id="ai-market-report-content" class="markdown-body text-white text-opacity-90">
-                <div class="text-center py-3 text-muted">
-                    <div class="spinner-border spinner-border-sm text-warning me-2" role="status"></div>
-                    Simulating buyer market personas, channel partner margins, and profit optimizations...
-                </div>
+        <div class="card-body py-4">
+            <div id="ai-market-loading" class="text-center py-4" style="display: none;">
+                <div class="spinner-border text-warning mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+                <h6 class="text-white fw-bold">AI Market Agent is simulating enterprise buyer decisions...</h6>
+                <p class="text-muted small">Evaluating reseller partner vs direct retail buying behavior for On-Premise Deployment Offer...</p>
             </div>
+            <div id="ai-market-content"></div>
         </div>
         <div class="card-arrow">
             <div class="card-arrow-top-left"></div><div class="card-arrow-top-right"></div><div class="card-arrow-bottom-left"></div><div class="card-arrow-bottom-right"></div>
         </div>
     </div>
 
-    <!-- Mode Selector & Hosting Option Switcher -->
-    <div class="card mb-4 bg-dark bg-opacity-40 border-secondary border-opacity-20">
+    <!-- Simulation Controls Panel -->
+    <div class="card mb-4 border-secondary border-opacity-30 bg-dark bg-opacity-40">
         <div class="card-body py-3">
-            <div class="row align-items-center g-3">
+            <div class="row g-3 align-items-center">
                 <div class="col-md-5">
                     <label class="form-label text-theme fw-bold small mb-1">Simulation Engine Mode</label>
                     <select class="form-select form-select-sm" name="agent_profit_simulation[mode]" id="sim_mode_select" onchange="toggleSimMode(this.value)">
@@ -129,13 +131,13 @@
                     </select>
                 </div>
                 <div class="col-md-5">
-                    <label class="form-label text-theme fw-bold small mb-1">Deduct Infrastructure Hosting Cost</label>
+                    <label class="form-label text-theme fw-bold small mb-1">Deduct Infrastructure Hosting Cost (On-Premise Aligned)</label>
                     <select class="form-select form-select-sm" name="agent_profit_simulation[hosting_mode]" id="sim_hosting_mode_select">
                         <option value="none" {{ ($simSettings['hosting_mode'] ?? 'none') === 'none' ? 'selected' : '' }}>
                             🟢 None (Standalone Agent / Pack Gross Profit Margin)
                         </option>
                         <option value="onprem" {{ ($simSettings['hosting_mode'] ?? '') === 'onprem' ? 'selected' : '' }}>
-                            🏢 Option A: On-Premise (Deduct {{ \App\Services\CurrencyHelper::format($costData['total_monthly_service_cost']) }}/mo Hosting)
+                            🏢 Option A: On-Premise Deployment Offer (Deduct {{ \App\Services\CurrencyHelper::format($costData['total_monthly_service_cost']) }}/mo Hosting)
                         </option>
                         <option value="cloud" {{ ($simSettings['hosting_mode'] ?? '') === 'cloud' ? 'selected' : '' }}>
                             ☁️ Option B: Elastic Cloud (Deduct {{ \App\Services\CurrencyHelper::format($costData['cloud_option']['elastic_cloud_subscription_cost']) }}/mo Cloud Subscription)
