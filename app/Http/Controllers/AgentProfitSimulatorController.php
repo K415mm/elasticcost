@@ -29,14 +29,14 @@ class AgentProfitSimulatorController extends Controller
         if ($clientId) {
             $client = Client::find($clientId);
         } else {
-            $client = Client::whereHas('scenarios')->first() ?? Client::first();
+            $client = Client::first();
         }
 
         if (! $client) {
             return redirect()->route('clients.index')->with('error', 'Please create a client and scenario first.');
         }
 
-        $scenarios = $client->scenarios()->orderBy('name')->get();
+        $scenarios = Scenario::orderBy('name')->get();
 
         if ($scenarioId) {
             $scenario = $scenarios->firstWhere('id', $scenarioId);
