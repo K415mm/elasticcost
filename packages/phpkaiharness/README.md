@@ -19,28 +19,221 @@
 
 <h2 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;border-bottom:2px solid #3cd2a5;padding-bottom:8px;margin-top:30px">🏗️ Architecture Overview</h2>
 
+<p style="color:#b1c2d4;line-height:1.6">
+  The system uses a <strong>dual-path architecture</strong> where both the host Laravel application and the phpkaiharness package route all LLM calls through <strong>Qwen Cloud (DashScope API)</strong> as the primary AI provider. Credentials are shared from a single source — the host app's <code>global_settings</code> database table — ensuring both paths use the same API key, URL, and model without duplicate configuration.
+</p>
+
+<h3 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;margin-top:24px">System Architecture — Dual-Path Qwen Cloud Integration</h3>
+
 ```mermaid
-flowchart TD
-    Prompt[1. User Prompt] --> EnvBoot[2. Environment Bootstrap]
-    EnvBoot --> Cache{3. Semantic Cache?}
-    Cache -- Hit --> Return[💾 Return Cached Response]
-    Cache -- Miss --> PII[4. PII Masking]
-    PII --> RateLimit{5. Rate Limit OK?}
-    RateLimit -- Throttled --> Reject[⛔ Rate Limited]
-    RateLimit -- Pass --> Ontology[6. Ontological Injector — RAG Context]
-    Ontology --> Compact[7. Context Compactor]
-    Compact --> LLM[8. LLM Client — Thinking Budget]
-    LLM --> ToolCheck{9. Tool Calls?}
-    ToolCheck -- No --> FinalResp[✅ Agent Final Response]
-    ToolCheck -- Yes --> Guard[10. Guardrails Validation]
-    Guard -- Blocked --> BlockMsg[🚫 Block + Log]
-    Guard -- Allowed --> Exec[11. Execute Tool via Registry]
-    Exec --> GraphMemory[12. Cognitive Graph Memory Update]
-    GraphMemory --> DraftVerify[13. Draft Verification]
-    DraftVerify --> Loop[14. Append Output & Loop Back]
-    BlockMsg --> Loop
-    Loop --> LLM
+flowchart TB
+    subgraph HostApp["🏠 Host Laravel Application"]
+        User[1. User Input] --> Controller[2. AiChatController]
+        Controller --> AiConfig[3. AiConfigHelper::configureMultiModel]
+        AiConfig --> GlobalSettings[("4. global_settings DB\nai_provider = qwen\nqwen_api_key\nqwen_url\nqwen_model\nqwen_light_model")]
+        GlobalSettings --> AiSdkConfig["5. Sets config('ai.providers.qwen.*')\n+ Purges AiManager instance"]
+
+        Controller --> Router["6. SocEngineerRouter\n(Light Model: qwen-turbo)"]
+        Controller --> Executor["7. RgSocEngineerMain\n(Main Model: qwen-plus)"]
+    end
+
+    subgraph HarnessPkg["📦 phpkaiharness Package"]
+        Router -->|"structured output\nJSON schema"| LaravelAiClient1["8a. LaravelAiClient\nresolveProviderAndModel()"]
+        Executor -->|"agent loop\nwith tools"| LaravelAiClient2["8b. LaravelAiClient\nresolveProviderAndModel()"]
+
+        LaravelAiClient1 --> ProviderCheck{"9. provider == qwen?"}
+        LaravelAiClient2 --> ProviderCheck
+
+        ProviderCheck -->|"YES — route to QwenClient"| QwenClient["10. QwenClient\nresolveQwenCredentials()"]
+        ProviderCheck -->|"NO — fallback"| OtherProviders["Other: Ollama / LM Studio\nOpenRouter / laravel-ai"]
+
+        QwenClient --> CredentialChain["11. Hybrid Credential Resolution\n1. Constructor args\n2. global_settings (GlobalSetting::getValue)\n3. ai.providers.qwen.* config\n4. harness.qwen_provider.* config\n5. Environment variables"]
+    end
+
+    subgraph QwenCloud["☁️ Qwen Cloud — DashScope API"]
+        CredentialChain -->|"HTTPS POST\n/chat/completions"| QwenAPI["12. Qwen Cloud API\ndashscope-intl.aliyuncs.com\n/compatible-mode/v1"]
+        QwenAPI -->|"qwen3/qwq: enable_thinking=false\nstructured_output: json_object\nstreaming via SSE"| Response["13. LLM Response"]
+    end
+
+    Response -->|"content + tool_calls"| AgentLoop["14. AgentLoop\nparse response"]
+    AgentLoop --> ToolCheck{"15. Tool calls?"}
+    ToolCheck -->|"No"| QuantumMem["16. Quantum Memory Ingestion\nepisodic nodes + entanglement"]
+    ToolCheck -->|"Yes"| Guardrails["17. Guardrails Validation"]
+    Guardrails -->|"Blocked"| BlockLog["🚫 Block + Log"]
+    Guardrails -->|"Allowed"| ToolExec["18. Execute Tool via Registry"]
+    ToolExec --> CogMemory["19. Cognitive Graph Memory\nextract + store facts"]
+    CogMemory --> DraftVerify["20. Draft Verification\noptional verifier pass"]
+    BlockLog --> LoopBack["21. Append & Loop Back"]
+    DraftVerify --> LoopBack
+    QuantumMem --> FinalResp["✅ Final Response → User"]
+    LoopBack --> QwenClient
+
+    subgraph FeatureGraph["⚙️ Feature Graph Pipeline (pre-LLM)"]
+        EnvBoot["Environment Bootstrap"] --> PII["PII Masking"]
+        PII --> RateLimit["Rate Limiting"]
+        RateLimit --> Cache{"Semantic Cache?"}
+        Cache -->|"Hit"| CacheReturn["💾 Cached Response"]
+        Cache -->|"Miss"| Optimizer["Model Prompt Optimizer\n(Qwen/Gemma profiles)"]
+        Optimizer --> Ontology["Ontological Context Injector\n(RAG embeddings)"]
+        Ontology --> Compactor["Context Compactor\n(sliding window)"]
+        Compactor --> QwenClient
+    end
+
+    style QwenCloud fill:#1a1f2e,stroke:#3cd2a5,stroke-width:2px
+    style QwenAPI fill:#0c1017,stroke:#3cd2a5,stroke-width:2px
+    style GlobalSettings fill:#1a1f2e,stroke:#f59e0b,stroke-width:2px
+    style QwenClient fill:#0c1017,stroke:#3cd2a5,stroke-width:2px
+    style CredentialChain fill:#0c1017,stroke:#f59e0b,stroke-width:1px
 ```
+
+<h3 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;margin-top:24px">How It Works — Step by Step</h3>
+
+<table style="width:100%;border-collapse:collapse;font-family:sans-serif;font-size:0.9em">
+  <thead>
+    <tr style="background-color:rgba(60,210,165,0.1);border-bottom:2px solid #3cd2a5">
+      <th style="padding:10px;text-align:left;color:#3cd2a5;width:5%">#</th>
+      <th style="padding:10px;text-align:left;color:#3cd2a5;width:20%">Component</th>
+      <th style="padding:10px;text-align:left;color:#3cd2a5;width:35%">Role</th>
+      <th style="padding:10px;text-align:left;color:#3cd2a5;width:40%">Qwen Cloud Interaction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="border-bottom:1px solid rgba(60,210,165,0.15)">
+      <td style="padding:8px;color:#3cd2a5;font-weight:bold">1-2</td>
+      <td style="padding:8px;color:#b1c2d4"><code>AiChatController</code></td>
+      <td style="padding:8px;color:#b1c2d4">Receives user prompt, triggers AI config</td>
+      <td style="padding:8px;color:#b1c2d4">Calls <code>AiConfigHelper::configureMultiModel()</code> to resolve provider</td>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(60,210,165,0.15)">
+      <td style="padding:8px;color:#3cd2a5;font-weight:bold">3-5</td>
+      <td style="padding:8px;color:#b1c2d4"><code>AiConfigHelper</code></td>
+      <td style="padding:8px;color:#b1c2d4">Reads <code>global_settings</code> DB table, sets Laravel AI SDK config at runtime</td>
+      <td style="padding:8px;color:#b1c2d4">When <code>ai_provider = 'qwen'</code>: sets <code>ai.providers.qwen.key/url/driver</code> and purges AiManager instance</td>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(60,210,165,0.15)">
+      <td style="padding:8px;color:#3cd2a5;font-weight:bold">6</td>
+      <td style="padding:8px;color:#b1c2d4"><code>SocEngineerRouter</code></td>
+      <td style="padding:8px;color:#b1c2d4">Intent classification — decides if action is needed</td>
+      <td style="padding:8px;color:#b1c2d4">Uses <strong>light model</strong> (<code>qwen-turbo</code>) via Laravel AI SDK structured output</td>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(60,210,165,0.15)">
+      <td style="padding:8px;color:#3cd2a5;font-weight:bold">7</td>
+      <td style="padding:8px;color:#b1c2d4"><code>RgSocEngineerMain</code></td>
+      <td style="padding:8px;color:#b1c2d4">Main agent executor — runs the full agent loop with tools</td>
+      <td style="padding:8px;color:#b1c2d4">Uses <strong>main model</strong> (<code>qwen-plus</code>) via <code>LaravelAiClient</code> → <code>QwenClient</code></td>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(60,210,165,0.15)">
+      <td style="padding:8px;color:#3cd2a5;font-weight:bold">8-9</td>
+      <td style="padding:8px;color:#b1c2d4"><code>LaravelAiClient</code></td>
+      <td style="padding:8px;color:#b1c2d4">Resolves provider/model, routes to the correct LLM client</td>
+      <td style="padding:8px;color:#b1c2d4">Detects <code>provider == 'qwen'</code> → bypasses Laravel AI SDK → routes to <code>QwenClient</code> directly</td>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(60,210,165,0.15)">
+      <td style="padding:8px;color:#3cd2a5;font-weight:bold">10-11</td>
+      <td style="padding:8px;color:#b1c2d4"><code>QwenClient</code></td>
+      <td style="padding:8px;color:#b1c2d4">Dedicated HTTP client for Qwen Cloud (DashScope API)</td>
+      <td style="padding:8px;color:#b1c2d4">Resolves credentials via 5-level hybrid chain → sends <code>/chat/completions</code> with <code>enable_thinking=false</code> for qwen3/qwq</td>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(60,210,165,0.15)">
+      <td style="padding:8px;color:#3cd2a5;font-weight:bold">12-13</td>
+      <td style="padding:8px;color:#b1c2d4"><strong>Qwen Cloud API</strong></td>
+      <td style="padding:8px;color:#b1c2d4">DashScope OpenAI-compatible endpoint</td>
+      <td style="padding:8px;color:#b1c2d4">Returns <code>content</code> + <code>tool_calls</code> + <code>reasoning_content</code>; supports streaming via SSE</td>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(60,210,165,0.15)">
+      <td style="padding:8px;color:#3cd2a5;font-weight:bold">14-21</td>
+      <td style="padding:8px;color:#b1c2d4"><code>AgentLoop</code></td>
+      <td style="padding:8px;color:#b1c2d4">Parses response, executes tools, ingests memory, loops</td>
+      <td style="padding:8px;color:#b1c2d4">Each iteration sends the updated conversation back to <code>QwenClient</code> until no more tool calls or max iterations reached</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;margin-top:24px">Feature Graph Pipeline (Pre-LLM Processing)</h3>
+
+<p style="color:#b1c2d4;line-height:1.6">
+  Before each LLM call, the harness dynamically assembles a pipeline of independently toggleable feature nodes from the <strong>Feature Graph</strong>. Only enabled nodes are executed per request:
+</p>
+
+```mermaid
+flowchart LR
+    Input[Prompt Input] --> EnvBoot[Environment\nBootstrap]
+    EnvBoot --> PII[PII Masking]
+    PII --> RateLimit[Rate Limiting]
+    RateLimit --> CacheCheck{"Semantic\nCache?"}
+    CacheCheck -->|"Hit"| CacheHit["💾 Return Cached"]
+    CacheCheck -->|"Miss"| Optimizer["Model Prompt\nOptimizer\n(Qwen/Gemma)"]
+    Optimizer --> Ontology["Ontological\nContext Injector\n(RAG)"]
+    Ontology --> Compactor["Context\nCompactor"]
+    Compactor --> Budget["Thinking\nBudget Check"]
+    Budget --> QwenClient["QwenClient\n→ Qwen Cloud API"]
+
+    style QwenClient fill:#0c1017,stroke:#3cd2a5,stroke-width:2px
+    style CacheHit fill:#0c1017,stroke:#f59e0b,stroke-width:1px
+```
+
+<h3 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;margin-top:24px">Post-LLM Processing & Memory</h3>
+
+<p style="color:#b1c2d4;line-height:1.6">
+  After the Qwen Cloud response is received, the <code>AgentLoop</code> processes tool calls and ingests memory before looping back:
+</p>
+
+```mermaid
+flowchart LR
+    QwenResp["Qwen Cloud Response"] --> ToolCheck{"Tool Calls?"}
+    ToolCheck -->|"No"| Quantum["Quantum Memory\nIngestion\n(episodic nodes)"]
+    ToolCheck -->|"Yes"| Guard["Guardrails\nValidation"]
+    Guard -->|"Blocked"| Block["🚫 Block + Log"]
+    Guard -->|"Allowed"| Exec["Execute Tool\nvia Registry"]
+    Exec --> CogMem["Cognitive Graph\nMemory\n(fact extraction)"]
+    CogMem --> Draft["Draft Verification\n(optional)"]
+    Block --> Loop["Append & Loop\n→ QwenClient"]
+    Draft --> Loop
+    Quantum --> Final["✅ Final Response"]
+    Loop --> QwenClient["QwenClient\n→ Qwen Cloud API"]
+
+    style QwenClient fill:#0c1017,stroke:#3cd2a5,stroke-width:2px
+    style Quantum fill:#0c1017,stroke:#8b5cf6,stroke-width:1px
+    style CogMem fill:#0c1017,stroke:#3b82f6,stroke-width:1px
+```
+
+<h3 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;margin-top:24px">Shared Credential Architecture</h3>
+
+<p style="color:#b1c2d4;line-height:1.6">
+  Both the host Laravel app and the phpkaiharness package read Qwen Cloud credentials from the same <code>global_settings</code> database table, making <code>AiConfigHelper</code> the single source of truth:
+</p>
+
+```mermaid
+flowchart TB
+    subgraph DB["🗄️ global_settings Table"]
+        Settings["ai_provider = 'qwen'\nqwen_api_key = 'sk-...'\nqwen_url = 'https://dashscope-intl...'\nqwen_model = 'qwen-plus'\nqwen_light_model = 'qwen-turbo'"]
+    end
+
+    subgraph MainAppPath["🏠 Main App Path (Laravel AI SDK)"]
+        AiConfigHelper["AiConfigHelper::configure()"] -->|"reads"| Settings
+        AiConfigHelper -->|"sets config"| AiSdk["config('ai.providers.qwen.*')"]
+        AiSdk --> AiManager["Laravel AiManager\n(qwen-turbo for router)"]
+    end
+
+    subgraph HarnessPath["📦 phpkaiharness Path (QwenClient)"]
+        LaravelAiClient["LaravelAiClient"] -->|"detects qwen"| QwenClient["QwenClient"]
+        QwenClient -->|"GlobalSetting::getValue()"| Settings
+        QwenClient -->|"fallback: ai.providers.qwen.*"| AiSdk
+        QwenClient -->|"fallback: harness.qwen_provider.*"| HarnessConfig["config('harness.qwen_provider')"]
+        QwenClient -->|"fallback: env vars"| EnvVars["PHPKAIHARNESS_QWEN_KEY\nQWEN_API_KEY\nDASHSCOPE_API_KEY"]
+    end
+
+    AiManager -->|"structured output"| QwenCloud["☁️ Qwen Cloud API"]
+    QwenClient -->|"chat/completions"| QwenCloud
+
+    style DB fill:#1a1f2e,stroke:#f59e0b,stroke-width:2px
+    style Settings fill:#0c1017,stroke:#f59e0b,stroke-width:1px
+    style QwenCloud fill:#0c1017,stroke:#3cd2a5,stroke-width:2px
+    style QwenClient fill:#0c1017,stroke:#3cd2a5,stroke-width:2px
+```
+
+> [!IMPORTANT]
+> **Qwen Cloud is the default and primary AI provider for both paths.** The main app uses the Laravel AI SDK with `ai.providers.qwen.*` config (set by `AiConfigHelper`), while phpkaiharness uses `QwenClient` directly (which reads the same credentials from `global_settings`). Both paths converge on the same Qwen Cloud DashScope API endpoint.
 
 ---
 
@@ -55,7 +248,7 @@ flowchart TD
 
   <div style="background:#0c1017;border:1px solid rgba(60,210,165,0.35);border-radius:8px;padding:16px;box-shadow:0 0 10px rgba(60,210,165,0.07)">
     <h3 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;margin-top:0">🔀 LLM Failover</h3>
-    <p style="color:#b1c2d4;font-size:0.9em;margin:0"><code>FailoverLlmClient</code> accepts a prioritized stack of providers (Ollama → LM Studio → OpenRouter → laravel/ai). Automatic retry on HTTP 4xx/5xx with provider-level circuit breaking.</p>
+    <p style="color:#b1c2d4;font-size:0.9em;margin:0"><code>FailoverLlmClient</code> accepts a prioritized stack of providers (Qwen Cloud → Ollama → LM Studio → OpenRouter → laravel/ai). Automatic retry on HTTP 4xx/5xx with provider-level circuit breaking. Qwen Cloud is the default primary provider.</p>
   </div>
 
   <div style="background:#0c1017;border:1px solid rgba(60,210,165,0.35);border-radius:8px;padding:16px;box-shadow:0 0 10px rgba(60,210,165,0.07)">
