@@ -48,18 +48,18 @@ class AgentProfitSimulatorTest extends TestCase
         $this->assertArrayHasKey('timeline', $result);
         $this->assertCount(36, $result['timeline']);
 
-        // Month 1: Initial (0) + (1-1)*growth = 0
+        // Month 1: 1 * monthly_growth (EDR: 20, MDR: 10, SIEM: 15) = 45 total
         $m1 = $result['timeline'][1];
-        $this->assertEquals(0, $m1['total_deployed']);
+        $this->assertEquals(45, $m1['total_deployed']);
         $this->assertFalse($m1['is_fully_sold_out']);
 
-        // Month 6: EDR = min(0 + 5*20, 100) = 100 (SOLD OUT)
-        // MDR = min(0 + 5*10, 50) = 50 (SOLD OUT)
-        // SIEM = min(0 + 5*15, 100) = 75
+        // Month 6: EDR = min(6*20, 100) = 100 (SOLD OUT)
+        // MDR = min(6*10, 50) = 50 (SOLD OUT)
+        // SIEM = min(6*15, 100) = 90
         $m6 = $result['timeline'][6];
         $this->assertEquals(100, $m6['edr_deployed']);
         $this->assertEquals(50, $m6['mdr_deployed']);
-        $this->assertEquals(75, $m6['siem_deployed']);
+        $this->assertEquals(90, $m6['siem_deployed']);
 
         // Month 12: All reached limit (EDR: 100, MDR: 50, SIEM: 100)
         $m12 = $result['timeline'][12];

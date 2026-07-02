@@ -22,26 +22,17 @@ class AgentProfitSimulatorService
         $mdrBase = (float) ($msspDetail->mdr_agent_monthly_cost_per_device ?? 90.0);
         $siemBase = (float) ($msspDetail->siem_agent_monthly_cost_per_device ?? 60.0);
 
-        // Auto-heal legacy settings if stored values contain invalid hardcoded defaults or limits <= baseline
+        // Auto-heal legacy settings if stored values contain invalid hardcoded defaults below base cost
         if (isset($saved['mdr_partner_price']) && (float) $saved['mdr_partner_price'] < $mdrBase) {
-            unset($saved['mdr_partner_price'], $saved['mdr_client_price'], $saved['mdr_purchased_limit']);
+            unset($saved['mdr_partner_price'], $saved['mdr_client_price']);
         }
         if (isset($saved['siem_partner_price']) && (float) $saved['siem_partner_price'] < $siemBase) {
-            unset($saved['siem_partner_price'], $saved['siem_client_price'], $saved['siem_purchased_limit']);
-        }
-        if (isset($saved['edr_purchased_limit']) && (int) $saved['edr_purchased_limit'] <= $inventoryBaseline['edr']) {
-            unset($saved['edr_purchased_limit']);
-        }
-        if (isset($saved['mdr_purchased_limit']) && (int) $saved['mdr_purchased_limit'] <= $inventoryBaseline['mdr']) {
-            unset($saved['mdr_purchased_limit']);
-        }
-        if (isset($saved['siem_purchased_limit']) && (int) $saved['siem_purchased_limit'] <= $inventoryBaseline['siem']) {
-            unset($saved['siem_purchased_limit']);
+            unset($saved['siem_partner_price'], $saved['siem_client_price']);
         }
 
-        $edrLimit = (int) ($saved['edr_purchased_limit'] ?? max(300, $inventoryBaseline['edr'] * 10));
-        $mdrLimit = (int) ($saved['mdr_purchased_limit'] ?? max(40, $inventoryBaseline['mdr'] * 8));
-        $siemLimit = (int) ($saved['siem_purchased_limit'] ?? max(20, $inventoryBaseline['siem'] * 6));
+        $edrLimit = (int) ($saved['edr_purchased_limit'] ?? ($inventoryBaseline['edr'] > 0 ? $inventoryBaseline['edr'] : 300));
+        $mdrLimit = (int) ($saved['mdr_purchased_limit'] ?? ($inventoryBaseline['mdr'] > 0 ? $inventoryBaseline['mdr'] : 40));
+        $siemLimit = (int) ($saved['siem_purchased_limit'] ?? ($inventoryBaseline['siem'] > 0 ? $inventoryBaseline['siem'] : 20));
 
         $settings = array_merge([
             'mode' => $saved['mode'] ?? 'agent', // 'agent' or 'pack'
@@ -129,9 +120,9 @@ class AgentProfitSimulatorService
         $mdrBase = (float) ($msspDetail->mdr_agent_monthly_cost_per_device ?? 90.0);
         $siemBase = (float) ($msspDetail->siem_agent_monthly_cost_per_device ?? 60.0);
 
-        $edrLimit = max(300, $baseline['edr'] * 10);
-        $mdrLimit = max(40, $baseline['mdr'] * 8);
-        $siemLimit = max(20, $baseline['siem'] * 6);
+        $edrLimit = $baseline['edr'] > 0 ? $baseline['edr'] : 300;
+        $mdrLimit = $baseline['mdr'] > 0 ? $baseline['mdr'] : 40;
+        $siemLimit = $baseline['siem'] > 0 ? $baseline['siem'] : 20;
 
         return [
             'mode' => 'agent',
@@ -199,9 +190,9 @@ class AgentProfitSimulatorService
         $cumulPartnerRevenue = 0.0;
 
         for ($month = 1; $month <= 36; $month++) {
-            $edrDeployed = min($baseline['edr'] + ($month - 1) * $settings['edr_monthly_growth'], $settings['edr_purchased_limit']);
-            $mdrDeployed = min($baseline['mdr'] + ($month - 1) * $settings['mdr_monthly_growth'], $settings['mdr_purchased_limit']);
-            $siemDeployed = min($baseline['siem'] + ($month - 1) * $settings['siem_monthly_growth'], $settings['siem_purchased_limit']);
+            $edrDeployed = min($month * $settings['edr_monthly_growth'], $settings['edr_purchased_limit']);
+            $mdrDeployed = min($month * $settings['mdr_monthly_growth'], $settings['mdr_purchased_limit']);
+            $siemDeployed = min($month * $settings['siem_monthly_growth'], $settings['siem_purchased_limit']);
 
             $totalDeployed = $edrDeployed + $mdrDeployed + $siemDeployed;
 
