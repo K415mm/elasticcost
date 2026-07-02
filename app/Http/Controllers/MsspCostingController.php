@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\ClientScenarioAnalystAllocation;
 use App\Models\GlobalSetting;
 use App\Models\Scenario;
+use App\Services\AgentProfitSimulatorService;
 use App\Services\AiConfigHelper;
 use App\Services\CurrencyHelper;
 use App\Services\MsspCostingEngine;
