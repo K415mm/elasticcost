@@ -106,8 +106,27 @@ class MsspCostingController extends Controller
         if ($request->has('agent_profit_simulation')) {
             $simulationInput = $request->input('agent_profit_simulation');
             if (is_array($simulationInput)) {
+                $existing = $msspDetail->agent_profit_simulation_settings ?? [];
+                $customPacks = $simulationInput['custom_packs'] ?? ($existing['custom_packs'] ?? []);
+
+                // Clean up and convert monetary values back to USD
+                if (is_array($customPacks)) {
+                    foreach ($customPacks as &$pack) {
+                        $pack['partner_price'] = CurrencyHelper::convertBack((float) ($pack['partner_price'] ?? 350));
+                        $pack['client_price'] = CurrencyHelper::convertBack((float) ($pack['client_price'] ?? 450));
+                        if (! empty($pack['extra_services']) && is_array($pack['extra_services'])) {
+                            foreach ($pack['extra_services'] as &$svc) {
+                                $svc['price'] = CurrencyHelper::convertBack((float) ($svc['price'] ?? 0));
+                            }
+                        }
+                    }
+                }
+
                 $msspDetail->update([
                     'agent_profit_simulation_settings' => [
+                        'mode' => $simulationInput['mode'] ?? ($existing['mode'] ?? 'agent'),
+                        'hosting_mode' => $simulationInput['hosting_mode'] ?? ($existing['hosting_mode'] ?? 'none'),
+
                         'edr_partner_price' => CurrencyHelper::convertBack((float) ($simulationInput['edr_partner_price'] ?? 20)),
                         'edr_client_price' => CurrencyHelper::convertBack((float) ($simulationInput['edr_client_price'] ?? 25)),
                         'edr_purchased_limit' => (int) ($simulationInput['edr_purchased_limit'] ?? 500),
@@ -122,6 +141,8 @@ class MsspCostingController extends Controller
                         'siem_client_price' => CurrencyHelper::convertBack((float) ($simulationInput['siem_client_price'] ?? 35)),
                         'siem_purchased_limit' => (int) ($simulationInput['siem_purchased_limit'] ?? 500),
                         'siem_monthly_growth' => (int) ($simulationInput['siem_monthly_growth'] ?? 15),
+
+                        'custom_packs' => $customPacks,
                     ],
                 ]);
             }
@@ -1483,5 +1504,22 @@ class MsspCostingController extends Controller
         }
 
         return response()->json($diagnostics);
+    }
+
+    /**
+     * Reset the Agent & Pack Profit Simulation settings to live scenario defaults.
+     */
+    public function resetSimulation(Client $client, Scenario $scenario)
+    {
+        $costData = $this->costingEngine->calculate($client, $scenario);
+        $msspDetail = $costData['raw_mssp_detail'];
+
+        $defaults = app(AgentProfitSimulatorService::class)->getScenarioDefaults($client, $msspDetail);
+        $msspDetail->update([
+            'agent_profit_simulation_settings' => $defaults,
+        ]);
+
+        return redirect()->route('mssp.show', [$client->id, $scenario->id, 'tab' => 'simulator'])
+            ->with('success', 'Simulation settings reset to live scenario inventory baseline & rate cards.');
     }
 }

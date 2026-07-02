@@ -75,4 +75,54 @@ class AgentProfitSimulatorTest extends TestCase
         $this->assertArrayHasKey(12, $result['horizons']);
         $this->assertArrayHasKey(36, $result['horizons']);
     }
+
+    public function test_custom_pack_simulation_with_extra_services(): void
+    {
+        $service = new AgentProfitSimulatorService;
+
+        $client = new Client;
+        $msspDetail = new ClientScenarioMsspDetail([
+            'edr_agent_monthly_cost_per_device' => 10.0,
+            'mdr_agent_monthly_cost_per_device' => 30.0,
+            'siem_agent_monthly_cost_per_device' => 15.0,
+        ]);
+
+        $customPacks = [
+            [
+                'name' => 'Basic EDR + CTI Pack',
+                'edr_count' => 10,
+                'mdr_count' => 0,
+                'siem_count' => 0,
+                'initial_packs' => 1,
+                'partner_price' => 200.0,
+                'client_price' => 250.0,
+                'purchased_limit' => 20,
+                'monthly_growth' => 2,
+                'extra_services' => [
+                    ['name' => 'CTI Feed', 'price' => 50.0],
+                ],
+            ],
+        ];
+
+        $params = [
+            'mode' => 'pack',
+            'custom_packs' => $customPacks,
+        ];
+
+        $result = $service->calculate($client, $msspDetail, $params);
+
+        $this->assertEquals('pack', $result['settings']['mode']);
+        $this->assertArrayHasKey('timeline', $result);
+
+        // Pack base cost = (10 EDR * $10) + $50 CTI = $150/pack
+        // Month 1: 1 pack deployed
+        // Monthly cost = 1 * 150 = 150
+        // Direct revenue = 1 * 250 = 250
+        // Direct profit = 250 - 150 = 100
+        $m1 = $result['timeline'][1];
+        $this->assertEquals(1, $m1['total_deployed']);
+        $this->assertEquals(150.0, $m1['monthly_cost']);
+        $this->assertEquals(250.0, $m1['direct_revenue']);
+        $this->assertEquals(100.0, $m1['direct_profit']);
+    }
 }

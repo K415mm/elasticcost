@@ -71,6 +71,7 @@ Route::get('clients/{client}/scenarios/{scenario}/mssp-cost/export/excel', [Mssp
 Route::get('clients/{client}/scenarios/{scenario}/mssp-cost/export/word', [MsspCostingController::class, 'exportWord'])->name('mssp.export.word');
 Route::get('clients/{client}/scenarios/{scenario}/mssp-cost/export/markdown', [MsspCostingController::class, 'exportMarkdown'])->name('mssp.export.markdown');
 Route::post('clients/{client}/scenarios/{scenario}/mssp-cost/ask-ai', [MsspCostingController::class, 'askAi'])->name('mssp.ask-ai');
+Route::post('clients/{client}/scenarios/{scenario}/mssp-cost/reset-simulation', [MsspCostingController::class, 'resetSimulation'])->name('mssp.reset-simulation');
 
 // Ollama connectivity test endpoint
 Route::get('api/ollama-ping', [MsspCostingController::class, 'ollamaPing'])->name('ollama.ping');

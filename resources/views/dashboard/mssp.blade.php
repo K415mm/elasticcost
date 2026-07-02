@@ -603,7 +603,13 @@
             <i class="bi bi-cloud me-1"></i> Option B: Elastic Cloud Details
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link text-uppercase tracking-wider fw-bold text-success" id="simulator-tab" data-bs-toggle="tab" data-bs-target="#simulator-pane" type="button" role="tab" aria-controls="simulator-pane" aria-selected="false" style="font-size: 11px;">
+            <i class="bi bi-graph-up-arrow me-1"></i> Profit & Revenue Simulator (Universal / Packs)
+        </button>
+    </li>
 </ul>
+
 
 <div class="tab-content" id="proposalTabContent">
     <!-- Option A: On-Premise Details Pane -->
@@ -912,226 +918,390 @@
             </div>
         </div>
 
+    </div>
+    <!-- End Option B: Elastic Cloud Details Pane -->
+
+    <!-- Universal Profit & Revenue Simulator Pane (Option A On-Prem + Option B Cloud + Custom Packs) -->
+    <div class="tab-pane fade" id="simulator-pane" role="tabpanel" aria-labelledby="simulator-tab">
         @php
             $sim = $costData['cloud_option']['agent_profit_simulation'];
             $simSettings = $sim['settings'];
             $simHorizons = $sim['horizons'];
             $simTimeline = $sim['timeline'];
             $simInitial = $sim['initial_inventory'];
+            $packs = $simSettings['custom_packs'] ?? [];
         @endphp
 
-        <!-- Agent Selling Price & Profit Simulation Engine Card -->
-        <div class="card mb-4 border-success border-opacity-30 bg-black bg-opacity-25 shadow-lg">
-            <div class="card-header bg-success bg-opacity-15 border-bottom border-success border-opacity-20 py-3 d-flex justify-content-between align-items-center">
-                <div>
-                    <h5 class="card-title text-success mb-0 d-flex align-items-center gap-2">
-                        <i class="bi bi-graph-up-arrow fs-18px"></i> Agent Selling Price & Profit Margin Simulator
-                    </h5>
-                    <div class="text-muted small mt-1">
-                        Simulate monthly profitability, partner wholesale margins, and direct client revenue over 1M, 3M, 6M, 1YR, and 3YR horizons with capacity capping ("Sold Out" logic).
-                    </div>
-                </div>
-                <span class="badge bg-success bg-opacity-25 text-success-light border border-success border-opacity-40 px-3 py-2">
-                    <i class="bi bi-cpu-fill me-1"></i> Deployed Inventory Baseline: {{ $simInitial['total'] }} Devices
-                </span>
-            </div>
-
+        <!-- Live Scenario Sync Header Banner -->
+        <div class="card mb-4 border-info border-opacity-30 bg-black bg-opacity-25 shadow-sm">
             <div class="card-body">
-                <!-- Configuration Controls Inputs -->
-                <div class="row g-3 mb-4">
-                    <!-- EDR Agent Pricing & Capacity -->
-                    <div class="col-md-4">
-                        <div class="card bg-dark bg-opacity-40 border-secondary border-opacity-20 h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="fw-bold text-info"><i class="bi bi-shield-fill-check me-1"></i> EDR Agent Package</span>
-                                    <span class="badge bg-info bg-opacity-25 text-info-light">Current: {{ $simInitial['edr'] }}</span>
-                                </div>
-                                <div class="small text-muted mb-3">Base Cost Price: <strong>{{ \App\Services\CurrencyHelper::format($simSettings['edr_base_cost']) }}/mo</strong></div>
-
-                                <div class="mb-2">
-                                    <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
-                                    <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_partner_price]" value="{{ $simSettings['edr_partner_price'] }}" id="sim_edr_partner_price">
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
-                                    <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_client_price]" value="{{ $simSettings['edr_client_price'] }}" id="sim_edr_client_price">
-                                </div>
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <label class="form-label small text-muted mb-1">Max Purchased Limit</label>
-                                        <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_purchased_limit]" value="{{ $simSettings['edr_purchased_limit'] }}" id="sim_edr_purchased_limit">
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label small text-muted mb-1">Monthly Growth (+/mo)</label>
-                                        <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_monthly_growth]" value="{{ $simSettings['edr_monthly_growth'] }}" id="sim_edr_monthly_growth">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div>
+                        <h6 class="text-info fw-bold mb-1 d-flex align-items-center gap-2">
+                            <i class="bi bi-arrow-repeat fs-16px"></i> Live Scenario Baseline & Rate Card Integration
+                        </h6>
+                        <p class="text-muted small mb-0">
+                            Initial baseline inventory is synced live from <strong>Client Asset Inventory & Log Calibration</strong> 
+                            (<span class="text-info fw-bold">{{ $simInitial['edr'] }} EDR</span>, 
+                            <span class="text-success fw-bold">{{ $simInitial['mdr'] }} MDR</span>, 
+                            <span class="text-primary fw-bold">{{ $simInitial['siem'] }} SIEM</span> = <strong>{{ $simInitial['total'] }} Devices Total</strong>). 
+                            Base unit costs are synced from the scenario's active Rate Card.
+                        </p>
                     </div>
-
-                    <!-- MDR Agent Pricing & Capacity -->
-                    <div class="col-md-4">
-                        <div class="card bg-dark bg-opacity-40 border-secondary border-opacity-20 h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="fw-bold text-success"><i class="bi bi-shield-lock-fill me-1"></i> MDR Agent Package</span>
-                                    <span class="badge bg-success bg-opacity-25 text-success-light">Current: {{ $simInitial['mdr'] }}</span>
-                                </div>
-                                <div class="small text-muted mb-3">Base Cost Price: <strong>{{ \App\Services\CurrencyHelper::format($simSettings['mdr_base_cost']) }}/mo</strong></div>
-
-                                <div class="mb-2">
-                                    <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
-                                    <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_partner_price]" value="{{ $simSettings['mdr_partner_price'] }}" id="sim_mdr_partner_price">
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
-                                    <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_client_price]" value="{{ $simSettings['mdr_client_price'] }}" id="sim_mdr_client_price">
-                                </div>
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <label class="form-label small text-muted mb-1">Max Purchased Limit</label>
-                                        <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_purchased_limit]" value="{{ $simSettings['mdr_purchased_limit'] }}" id="sim_mdr_purchased_limit">
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label small text-muted mb-1">Monthly Growth (+/mo)</label>
-                                        <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_monthly_growth]" value="{{ $simSettings['mdr_monthly_growth'] }}" id="sim_mdr_monthly_growth">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <form action="{{ route('mssp.reset-simulation', [$client->id, $scenario->id]) }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-info btn-sm">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> Sync / Reset to Scenario Defaults
+                            </button>
+                        </form>
                     </div>
-
-                    <!-- SIEM Agent Pricing & Capacity -->
-                    <div class="col-md-4">
-                        <div class="card bg-dark bg-opacity-40 border-secondary border-opacity-20 h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="fw-bold text-primary"><i class="bi bi-display me-1"></i> SIEM Agent Package</span>
-                                    <span class="badge bg-primary bg-opacity-25 text-primary-light">Current: {{ $simInitial['siem'] }}</span>
-                                </div>
-                                <div class="small text-muted mb-3">Base Cost Price: <strong>{{ \App\Services\CurrencyHelper::format($simSettings['siem_base_cost']) }}/mo</strong></div>
-
-                                <div class="mb-2">
-                                    <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
-                                    <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_partner_price]" value="{{ $simSettings['siem_partner_price'] }}" id="sim_siem_partner_price">
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
-                                    <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_client_price]" value="{{ $simSettings['siem_client_price'] }}" id="sim_siem_client_price">
-                                </div>
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <label class="form-label small text-muted mb-1">Max Purchased Limit</label>
-                                        <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_purchased_limit]" value="{{ $simSettings['siem_purchased_limit'] }}" id="sim_siem_purchased_limit">
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label small text-muted mb-1">Monthly Growth (+/mo)</label>
-                                        <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_monthly_growth]" value="{{ $simSettings['siem_monthly_growth'] }}" id="sim_siem_monthly_growth">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Time Horizons Summary Cards Grid (1M, 3M, 6M, 1YR, 3YR) -->
-                <h6 class="text-white fw-bold mb-3 d-flex align-items-center gap-2">
-                    <i class="bi bi-clock-history text-success"></i> Projected Benefit & Revenue Summary
-                </h6>
-                <div class="row g-3 mb-4">
-                    @foreach($simHorizons as $hMonths => $hz)
-                        <div class="col">
-                            <div class="card bg-black bg-opacity-40 border-secondary border-opacity-20 text-center p-2 h-100">
-                                <div class="text-theme fw-bold small uppercase-tracking mb-1">{{ $hz['label'] }}</div>
-                                <div class="mono-cell text-success fs-16px fw-bold" id="hz_direct_profit_{{ $hMonths }}">
-                                    {{ \App\Services\CurrencyHelper::format($hz['direct_profit']) }}
-                                </div>
-                                <div class="text-muted" style="font-size: 11px;">Direct Net Profit</div>
-                                <hr class="my-2 border-secondary border-opacity-20">
-                                <div class="mono-cell text-info small fw-semibold" id="hz_partner_profit_{{ $hMonths }}">
-                                    {{ \App\Services\CurrencyHelper::format($hz['partner_profit']) }}
-                                </div>
-                                <div class="text-muted" style="font-size: 10px;">Partner Channel Profit</div>
-                                <div class="mt-2" id="hz_status_badge_{{ $hMonths }}">
-                                    @if($hz['is_sold_out'])
-                                        <span class="badge bg-danger bg-opacity-25 text-danger-light border border-danger border-opacity-40 py-1 px-2" style="font-size: 9px;">
-                                            <i class="bi bi-exclamation-octagon-fill me-1"></i> SOLD OUT
-                                        </span>
-                                    @else
-                                        <span class="badge bg-success bg-opacity-25 text-success-light border border-success border-opacity-40 py-1 px-2" style="font-size: 9px;">
-                                            {{ $hz['deployed_at_end'] }} Agents Deployed
-                                        </span>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-
-                <!-- Month-by-Month Cumulative Table (1 to 36 Months) -->
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="text-white fw-bold mb-0"><i class="bi bi-calendar3 text-success me-2"></i> Month-by-Month Projection Schedule (36 Months)</h6>
-                    <span class="text-muted small">Automatic capacity capping applies when max purchased limit is reached.</span>
-                </div>
-                <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
-                    <table class="table table-borderless table-hover align-middle mb-0" id="sim_schedule_table">
-                        <thead class="sticky-top bg-dark border-bottom border-secondary border-opacity-30">
-                            <tr class="text-muted small uppercase-tracking">
-                                <th>Month</th>
-                                <th>Status</th>
-                                <th class="text-center">EDR / MDR / SIEM</th>
-                                <th class="text-center">Total Active</th>
-                                <th>Monthly Cost</th>
-                                <th>Partner Revenue</th>
-                                <th>Direct Revenue</th>
-                                <th>Partner Margin</th>
-                                <th class="text-end">Direct Net Profit</th>
-                                <th class="text-end">Cumul. Direct Profit</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($simTimeline as $m => $row)
-                                <tr class="border-bottom border-secondary border-opacity-10 {{ $row['is_fully_sold_out'] ? 'table-danger bg-opacity-10' : '' }}">
-                                    <td class="fw-bold text-theme">Month {{ $row['month'] }}</td>
-                                    <td>
-                                        @if($row['is_fully_sold_out'])
-                                            <span class="badge bg-danger text-white border border-danger">
-                                                <i class="bi bi-slash-circle me-1"></i> ALL SOLD OUT
-                                            </span>
-                                        @elseif($row['edr_sold_out'] || $row['mdr_sold_out'] || $row['siem_sold_out'])
-                                            <span class="badge bg-warning text-dark border border-warning">
-                                                PARTIAL CAP
-                                            </span>
-                                        @else
-                                            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-30">
-                                                ACTIVE GROWTH
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center mono-cell small">
-                                        <span class="text-info">{{ $row['edr_deployed'] }}</span> /
-                                        <span class="text-success">{{ $row['mdr_deployed'] }}</span> /
-                                        <span class="text-primary">{{ $row['siem_deployed'] }}</span>
-                                    </td>
-                                    <td class="text-center mono-cell fw-bold text-white">{{ $row['total_deployed'] }}</td>
-                                    <td class="mono-cell text-muted">{{ \App\Services\CurrencyHelper::format($row['monthly_cost']) }}</td>
-                                    <td class="mono-cell text-info-light">{{ \App\Services\CurrencyHelper::format($row['partner_revenue']) }}</td>
-                                    <td class="mono-cell text-white">{{ \App\Services\CurrencyHelper::format($row['direct_revenue']) }}</td>
-                                    <td class="mono-cell text-warning">{{ \App\Services\CurrencyHelper::format($row['partner_margin']) }}</td>
-                                    <td class="mono-cell text-end text-success fw-bold">{{ \App\Services\CurrencyHelper::format($row['direct_profit']) }}</td>
-                                    <td class="mono-cell text-end text-success fw-bold">{{ \App\Services\CurrencyHelper::format($row['cumul_direct_profit']) }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
                 </div>
             </div>
             <div class="card-arrow">
                 <div class="card-arrow-top-left"></div><div class="card-arrow-top-right"></div><div class="card-arrow-bottom-left"></div><div class="card-arrow-bottom-right"></div>
             </div>
         </div>
+
+        <!-- Simulation Mode Selector & Hosting Option Switcher -->
+        <div class="card mb-4 bg-dark bg-opacity-40 border-secondary border-opacity-20">
+            <div class="card-body py-3">
+                <div class="row align-items-center g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-theme fw-bold small mb-1">Simulation Engine Mode</label>
+                        <select class="form-select form-select-sm" name="agent_profit_simulation[mode]" id="sim_mode_select" onchange="toggleSimMode(this.value)">
+                            <option value="agent" {{ $simSettings['mode'] === 'agent' ? 'selected' : '' }}>
+                                📊 Mode 1: Per-Agent Unit Pricing (EDR / MDR / SIEM Individual Pricing)
+                            </option>
+                            <option value="pack" {{ $simSettings['mode'] === 'pack' ? 'selected' : '' }}>
+                                📦 Mode 2: Custom Pack Builder & Extra Services (Bundled Packs + CTI / SLA)
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-theme fw-bold small mb-1">Deduct Infrastructure Hosting Cost</label>
+                        <select class="form-select form-select-sm" name="agent_profit_simulation[hosting_mode]" id="sim_hosting_mode_select">
+                            <option value="none" {{ ($simSettings['hosting_mode'] ?? 'none') === 'none' ? 'selected' : '' }}>
+                                🟢 None (Standalone Agent / Pack Gross Profit Margin)
+                            </option>
+                            <option value="onprem" {{ ($simSettings['hosting_mode'] ?? '') === 'onprem' ? 'selected' : '' }}>
+                                🏢 Option A: On-Premise (Deduct {{ \App\Services\CurrencyHelper::format($costData['total_monthly_service_cost']) }}/mo Hosting)
+                            </option>
+                            <option value="cloud" {{ ($simSettings['hosting_mode'] ?? '') === 'cloud' ? 'selected' : '' }}>
+                                ☁️ Option B: Elastic Cloud (Deduct {{ \App\Services\CurrencyHelper::format($costData['cloud_option']['elastic_cloud_subscription_cost']) }}/mo Cloud Subscription)
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="card-arrow">
+                <div class="card-arrow-top-left"></div><div class="card-arrow-top-right"></div><div class="card-arrow-bottom-left"></div><div class="card-arrow-bottom-right"></div>
+            </div>
+        </div>
+
+        <!-- MODE 1: Per-Agent Simulation Inputs -->
+        <div id="sim_mode_agent_container" class="{{ $simSettings['mode'] === 'pack' ? 'd-none' : '' }}">
+            <div class="card mb-4 border-success border-opacity-30 bg-black bg-opacity-25 shadow-lg">
+                <div class="card-header bg-success bg-opacity-15 border-bottom border-success border-opacity-20 py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title text-success mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-graph-up-arrow fs-18px"></i> Per-Agent Selling Price & Profit Margin Simulator
+                        </h5>
+                        <div class="text-muted small mt-1">
+                            Simulate monthly profitability, partner wholesale margins, and direct client revenue over 1M, 3M, 6M, 1YR, and 3YR horizons.
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 mb-4">
+                        <!-- EDR Agent Pricing & Capacity -->
+                        <div class="col-md-4">
+                            <div class="card bg-dark bg-opacity-40 border-secondary border-opacity-20 h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="fw-bold text-info"><i class="bi bi-shield-fill-check me-1"></i> EDR Agent Package</span>
+                                        <span class="badge bg-info bg-opacity-25 text-info-light">Current: {{ $simInitial['edr'] }}</span>
+                                    </div>
+                                    <div class="small text-muted mb-3">Base Cost Price: <strong>{{ \App\Services\CurrencyHelper::format($simSettings['edr_base_cost']) }}/mo</strong></div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
+                                        <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_partner_price]" value="{{ $simSettings['edr_partner_price'] }}">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
+                                        <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_client_price]" value="{{ $simSettings['edr_client_price'] }}">
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label small text-muted mb-1">Max Purchased Limit</label>
+                                            <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_purchased_limit]" value="{{ $simSettings['edr_purchased_limit'] }}">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small text-muted mb-1">Monthly Growth (+/mo)</label>
+                                            <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_monthly_growth]" value="{{ $simSettings['edr_monthly_growth'] }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MDR Agent Pricing & Capacity -->
+                        <div class="col-md-4">
+                            <div class="card bg-dark bg-opacity-40 border-secondary border-opacity-20 h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="fw-bold text-success"><i class="bi bi-shield-lock-fill me-1"></i> MDR Agent Package</span>
+                                        <span class="badge bg-success bg-opacity-25 text-success-light">Current: {{ $simInitial['mdr'] }}</span>
+                                    </div>
+                                    <div class="small text-muted mb-3">Base Cost Price: <strong>{{ \App\Services\CurrencyHelper::format($simSettings['mdr_base_cost']) }}/mo</strong></div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
+                                        <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_partner_price]" value="{{ $simSettings['mdr_partner_price'] }}">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
+                                        <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_client_price]" value="{{ $simSettings['mdr_client_price'] }}">
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label small text-muted mb-1">Max Purchased Limit</label>
+                                            <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_purchased_limit]" value="{{ $simSettings['mdr_purchased_limit'] }}">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small text-muted mb-1">Monthly Growth (+/mo)</label>
+                                            <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_monthly_growth]" value="{{ $simSettings['mdr_monthly_growth'] }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SIEM Agent Pricing & Capacity -->
+                        <div class="col-md-4">
+                            <div class="card bg-dark bg-opacity-40 border-secondary border-opacity-20 h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="fw-bold text-primary"><i class="bi bi-display me-1"></i> SIEM Agent Package</span>
+                                        <span class="badge bg-primary bg-opacity-25 text-primary-light">Current: {{ $simInitial['siem'] }}</span>
+                                    </div>
+                                    <div class="small text-muted mb-3">Base Cost Price: <strong>{{ \App\Services\CurrencyHelper::format($simSettings['siem_base_cost']) }}/mo</strong></div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
+                                        <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_partner_price]" value="{{ $simSettings['siem_partner_price'] }}">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
+                                        <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_client_price]" value="{{ $simSettings['siem_client_price'] }}">
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label small text-muted mb-1">Max Purchased Limit</label>
+                                            <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_purchased_limit]" value="{{ $simSettings['siem_purchased_limit'] }}">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small text-muted mb-1">Monthly Growth (+/mo)</label>
+                                            <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_monthly_growth]" value="{{ $simSettings['siem_monthly_growth'] }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-arrow">
+                    <div class="card-arrow-top-left"></div><div class="card-arrow-top-right"></div><div class="card-arrow-bottom-left"></div><div class="card-arrow-bottom-right"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODE 2: Custom Pack Builder & Extra Services -->
+        <div id="sim_mode_pack_container" class="{{ $simSettings['mode'] === 'agent' ? 'd-none' : '' }}">
+            <div class="card mb-4 border-theme border-opacity-30 bg-black bg-opacity-25 shadow-lg">
+                <div class="card-header bg-theme bg-opacity-15 border-bottom border-theme border-opacity-20 py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title text-theme mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-box-seam fs-18px"></i> Custom Service Pack & Add-On Service Builder
+                        </h5>
+                        <div class="text-muted small mt-1">
+                            Bundle agents (EDR, MDR, SIEM) with extra services (e.g. CTI, 24/7 VIP SLA) and simulate subscription profit margins over 36 months.
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-theme btn-sm" onclick="addCustomPack()">
+                        <i class="bi bi-plus-circle me-1"></i> Add New Custom Pack
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="custom_packs_list">
+                        @foreach($packs as $idx => $p)
+                            <div class="card bg-dark bg-opacity-40 border-secondary border-opacity-20 mb-3 pack-card" id="pack_card_{{ $idx }}">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <input type="text" class="form-control form-control-sm fw-bold text-theme w-50" name="agent_profit_simulation[custom_packs][{{ $idx }}][name]" value="{{ $p['name'] }}" placeholder="Pack Name (e.g. Basic EDR + CTI Pack)">
+                                        <button type="button" class="btn btn-outline-danger btn-xs" onclick="removeCustomPack('{{ $idx }}')">
+                                            <i class="bi bi-trash me-1"></i> Remove Pack
+                                        </button>
+                                    </div>
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">Included EDR Agents</label>
+                                            <input type="number" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][{{ $idx }}][edr_count]" value="{{ $p['edr_count'] ?? 10 }}">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">Included MDR Agents</label>
+                                            <input type="number" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][{{ $idx }}][mdr_count]" value="{{ $p['mdr_count'] ?? 0 }}">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">Included SIEM Agents</label>
+                                            <input type="number" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][{{ $idx }}][siem_count]" value="{{ $p['siem_count'] ?? 0 }}">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">Initial Packs Deployed</label>
+                                            <input type="number" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][{{ $idx }}][initial_packs]" value="{{ $p['initial_packs'] ?? 1 }}">
+                                        </div>
+                                    </div>
+
+                                    <!-- Extra Services Section inside Pack -->
+                                    <div class="border-top border-secondary border-opacity-20 pt-3 mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="small text-warning fw-bold"><i class="bi bi-stars me-1"></i> Extra Add-On Services (CTI, SLAs, Scans)</span>
+                                            <button type="button" class="btn btn-outline-warning btn-xs" onclick="addExtraService('{{ $idx }}')">
+                                                <i class="bi bi-plus me-1"></i> Add Service
+                                            </button>
+                                        </div>
+                                        <div id="extra_services_list_{{ $idx }}">
+                                            @if(!empty($p['extra_services']))
+                                                @foreach($p['extra_services'] as $sIdx => $svc)
+                                                    <div class="row g-2 mb-2 align-items-center" id="svc_row_{{ $idx }}_{{ $sIdx }}">
+                                                        <div class="col-7">
+                                                            <input type="text" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][{{ $idx }}][extra_services][{{ $sIdx }}][name]" value="{{ $svc['name'] }}" placeholder="Service Name (e.g. Cyber Threat Intelligence)">
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <input type="number" step="0.5" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][{{ $idx }}][extra_services][{{ $sIdx }}][price]" value="{{ $svc['price'] }}" placeholder="Monthly Price ($)">
+                                                        </div>
+                                                        <div class="col-1 text-end">
+                                                            <button type="button" class="btn btn-link text-danger btn-xs p-0" onclick="removeExtraService('{{ $idx }}', '{{ $sIdx }}')"><i class="bi bi-x-circle"></i></button>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/pack)</label>
+                                            <input type="number" step="0.5" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][{{ $idx }}][partner_price]" value="{{ $p['partner_price'] ?? 350 }}">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">Final Client Retail Price ($/pack)</label>
+                                            <input type="number" step="0.5" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][{{ $idx }}][client_price]" value="{{ $p['client_price'] ?? 450 }}">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">Max Purchased Pack Limit</label>
+                                            <input type="number" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][{{ $idx }}][purchased_limit]" value="{{ $p['purchased_limit'] ?? 50 }}">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small text-muted mb-1">Monthly Pack Growth (+/mo)</label>
+                                            <input type="number" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][{{ $idx }}][monthly_growth]" value="{{ $p['monthly_growth'] ?? 5 }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="card-arrow">
+                    <div class="card-arrow-top-left"></div><div class="card-arrow-top-right"></div><div class="card-arrow-bottom-left"></div><div class="card-arrow-bottom-right"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Mode Benefit & Revenue Summary Cards (1M, 3M, 6M, 1YR, 3YR) -->
+        <h6 class="text-white fw-bold mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-clock-history text-success"></i> Projected Benefit & Revenue Summary
+        </h6>
+        <div class="row g-3 mb-4">
+            @foreach($simHorizons as $hMonths => $hz)
+                <div class="col">
+                    <div class="card bg-black bg-opacity-40 border-secondary border-opacity-20 text-center p-2 h-100">
+                        <div class="text-theme fw-bold small uppercase-tracking mb-1">{{ $hz['label'] }}</div>
+                        <div class="mono-cell text-success fs-16px fw-bold" id="hz_direct_profit_{{ $hMonths }}">
+                            {{ \App\Services\CurrencyHelper::format($hz['direct_profit']) }}
+                        </div>
+                        <div class="text-muted" style="font-size: 11px;">Direct Net Profit</div>
+                        <hr class="my-2 border-secondary border-opacity-20">
+                        <div class="mono-cell text-info small fw-semibold" id="hz_partner_profit_{{ $hMonths }}">
+                            {{ \App\Services\CurrencyHelper::format($hz['partner_profit']) }}
+                        </div>
+                        <div class="text-muted" style="font-size: 10px;">Partner Channel Profit</div>
+                        <div class="mt-2" id="hz_status_badge_{{ $hMonths }}">
+                            @if($hz['is_sold_out'])
+                                <span class="badge bg-danger bg-opacity-25 text-danger-light border border-danger border-opacity-40 py-1 px-2" style="font-size: 9px;">
+                                    <i class="bi bi-exclamation-octagon-fill me-1"></i> SOLD OUT
+                                </span>
+                            @else
+                                <span class="badge bg-success bg-opacity-25 text-success-light border border-success border-opacity-40 py-1 px-2" style="font-size: 9px;">
+                                    {{ $hz['deployed_at_end'] }} Active Deployed
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        <!-- Month-by-Month Cumulative Table (1 to 36 Months) -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="text-white fw-bold mb-0"><i class="bi bi-calendar3 text-success me-2"></i> Month-by-Month Projection Schedule (36 Months)</h6>
+            <span class="text-muted small">Automatic capacity capping applies when max purchased limit is reached.</span>
+        </div>
+        <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+            <table class="table table-borderless table-hover align-middle mb-0" id="sim_schedule_table">
+                <thead class="sticky-top bg-dark border-bottom border-secondary border-opacity-30">
+                    <tr class="text-muted small uppercase-tracking">
+                        <th>Month</th>
+                        <th>Status</th>
+                        <th class="text-center">Active Deployed</th>
+                        <th>Monthly Cost</th>
+                        <th>Partner Revenue</th>
+                        <th>Direct Revenue</th>
+                        <th>Partner Margin</th>
+                        <th class="text-end">Direct Net Profit</th>
+                        <th class="text-end">Cumul. Direct Profit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($simTimeline as $m => $row)
+                        <tr class="border-bottom border-secondary border-opacity-10 {{ $row['is_fully_sold_out'] ? 'table-danger bg-opacity-10' : '' }}">
+                            <td class="fw-bold text-theme">Month {{ $row['month'] }}</td>
+                            <td>
+                                @if($row['is_fully_sold_out'])
+                                    <span class="badge bg-danger text-white border border-danger">
+                                        <i class="bi bi-slash-circle me-1"></i> ALL SOLD OUT
+                                    </span>
+                                @else
+                                    <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-30">
+                                        ACTIVE GROWTH
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="text-center mono-cell fw-bold text-white">{{ $row['total_deployed'] }}</td>
+                            <td class="mono-cell text-muted">{{ \App\Services\CurrencyHelper::format($row['monthly_cost']) }}</td>
+                            <td class="mono-cell text-info-light">{{ \App\Services\CurrencyHelper::format($row['partner_revenue']) }}</td>
+                            <td class="mono-cell text-white">{{ \App\Services\CurrencyHelper::format($row['direct_revenue']) }}</td>
+                            <td class="mono-cell text-warning">{{ \App\Services\CurrencyHelper::format($row['partner_margin']) }}</td>
+                            <td class="mono-cell text-end text-success fw-bold">{{ \App\Services\CurrencyHelper::format($row['direct_profit']) }}</td>
+                            <td class="mono-cell text-end text-success fw-bold">{{ \App\Services\CurrencyHelper::format($row['cumul_direct_profit']) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     </div>
 </div>
 
@@ -1352,6 +1522,121 @@
                 });
             });
         }
+
+        // Auto activate tab from URL query tab=simulator
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('tab') === 'simulator') {
+            const simTabBtn = document.getElementById('simulator-tab');
+            if (simTabBtn) {
+                const tab = new bootstrap.Tab(simTabBtn);
+                tab.show();
+            }
+        }
     });
+
+    function toggleSimMode(mode) {
+        const agentContainer = document.getElementById('sim_mode_agent_container');
+        const packContainer = document.getElementById('sim_mode_pack_container');
+        if (mode === 'pack') {
+            agentContainer.classList.add('d-none');
+            packContainer.classList.remove('d-none');
+        } else {
+            agentContainer.classList.remove('d-none');
+            packContainer.classList.add('d-none');
+        }
+    }
+
+    let packCounter = {{ count($packs ?? []) > 0 ? count($packs ?? []) : 0 }};
+
+    function addCustomPack() {
+        const container = document.getElementById('custom_packs_list');
+        const idx = packCounter++;
+        const html = `
+            <div class="card bg-dark bg-opacity-40 border-secondary border-opacity-20 mb-3 pack-card" id="pack_card_${idx}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <input type="text" class="form-control form-control-sm fw-bold text-theme w-50" name="agent_profit_simulation[custom_packs][${idx}][name]" value="Custom Pack ${idx + 1}" placeholder="Pack Name (e.g. Basic EDR + CTI Pack)">
+                        <button type="button" class="btn btn-outline-danger btn-xs" onclick="removeCustomPack('${idx}')">
+                            <i class="bi bi-trash me-1"></i> Remove Pack
+                        </button>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted mb-1">Included EDR Agents</label>
+                            <input type="number" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][${idx}][edr_count]" value="10">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted mb-1">Included MDR Agents</label>
+                            <input type="number" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][${idx}][mdr_count]" value="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted mb-1">Included SIEM Agents</label>
+                            <input type="number" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][${idx}][siem_count]" value="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted mb-1">Initial Packs Deployed</label>
+                            <input type="number" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][${idx}][initial_packs]" value="1">
+                        </div>
+                    </div>
+                    <div class="border-top border-secondary border-opacity-20 pt-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small text-warning fw-bold"><i class="bi bi-stars me-1"></i> Extra Add-On Services (CTI, SLAs, Scans)</span>
+                            <button type="button" class="btn btn-outline-warning btn-xs" onclick="addExtraService('${idx}')">
+                                <i class="bi bi-plus me-1"></i> Add Service
+                            </button>
+                        </div>
+                        <div id="extra_services_list_${idx}"></div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/pack)</label>
+                            <input type="number" step="0.5" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][${idx}][partner_price]" value="350">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted mb-1">Final Client Retail Price ($/pack)</label>
+                            <input type="number" step="0.5" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][${idx}][client_price]" value="450">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted mb-1">Max Purchased Pack Limit</label>
+                            <input type="number" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][${idx}][purchased_limit]" value="50">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted mb-1">Monthly Pack Growth (+/mo)</label>
+                            <input type="number" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][${idx}][monthly_growth]" value="5">
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        container.insertAdjacentHTML('beforeend', html);
+    }
+
+    function removeCustomPack(idx) {
+        const el = document.getElementById(`pack_card_${idx}`);
+        if (el) el.remove();
+    }
+
+    function addExtraService(packIdx) {
+        const list = document.getElementById(`extra_services_list_${packIdx}`);
+        const sIdx = Date.now();
+        const html = `
+            <div class="row g-2 mb-2 align-items-center" id="svc_row_${packIdx}_${sIdx}">
+                <div class="col-7">
+                    <input type="text" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][${packIdx}][extra_services][${sIdx}][name]" value="Cyber Threat Intelligence" placeholder="Service Name (e.g. CTI)">
+                </div>
+                <div class="col-4">
+                    <input type="number" step="0.5" class="form-control form-control-sm" name="agent_profit_simulation[custom_packs][${packIdx}][extra_services][${sIdx}][price]" value="50" placeholder="Monthly Price ($)">
+                </div>
+                <div class="col-1 text-end">
+                    <button type="button" class="btn btn-link text-danger btn-xs p-0" onclick="removeExtraService('${packIdx}', '${sIdx}')"><i class="bi bi-x-circle"></i></button>
+                </div>
+            </div>`;
+        list.insertAdjacentHTML('beforeend', html);
+    }
+
+    function removeExtraService(packIdx, sIdx) {
+        const el = document.getElementById(`svc_row_${packIdx}_${sIdx}`);
+        if (el) el.remove();
+    }
 </script>
 @endsection
+
