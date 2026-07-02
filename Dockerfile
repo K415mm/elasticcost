@@ -2,9 +2,10 @@
 FROM node:22-alpine AS frontend
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 COPY . .
 RUN npm run build
+
 
 # Stage 2: PHP Application
 FROM php:8.4-fpm-alpine
