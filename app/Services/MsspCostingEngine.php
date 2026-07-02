@@ -295,7 +295,7 @@ class MsspCostingEngine
         $totalCloudProfitAmount = 0.0;
         $clientOfferedCloudMrc = $totalAgentsMonthlyCost;
 
-        return [
+        $res = [
             'client' => $sizingData['client'],
             'scenario' => $sizingData['scenario'],
             'sizing_summary' => [
@@ -368,8 +368,12 @@ class MsspCostingEngine
                 'fixed_profit_amount' => round($cloudFixedAmount, 2),
                 'total_profit_amount' => round($totalCloudProfitAmount, 2),
                 'client_offered_price_mrc' => round($clientOfferedCloudMrc, 2),
-                'agent_profit_simulation' => $this->profitSimulator->calculate($client, $msspDetail),
             ],
         ];
+
+        $res['cloud_option']['agent_profit_simulation'] = $this->profitSimulator->calculate($client, $msspDetail, [], $res);
+
+        return $res;
+
     }
 }

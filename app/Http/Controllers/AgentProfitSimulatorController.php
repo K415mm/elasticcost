@@ -53,7 +53,7 @@ class AgentProfitSimulatorController extends Controller
 
         $costData = $this->costingEngine->calculate($client, $scenario);
         $msspDetail = $costData['raw_mssp_detail'];
-        $simResult = $this->simulatorService->calculate($client, $msspDetail);
+        $simResult = $this->simulatorService->calculate($client, $msspDetail, [], $costData);
 
         return view('simulator.index', [
             'clients' => $clients,

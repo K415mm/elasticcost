@@ -16,7 +16,7 @@ class AgentProfitSimulatorService
     /**
      * Calculate the full 36-month Agent & Pack Profit & Revenue Simulation.
      */
-    public function calculate(Client $client, ClientScenarioMsspDetail $msspDetail, array $customParams = []): array
+    public function calculate(Client $client, ClientScenarioMsspDetail $msspDetail, array $customParams = [], array $costData = []): array
     {
         // 1. Get initial baseline from real Client Asset Inventory & Log Calibration
         $inventoryBaseline = $this->getClientInventoryBaseline($client);
@@ -66,10 +66,10 @@ class AgentProfitSimulatorService
         ], $customParams);
 
         // 3. Perform Per-Agent Simulation
-        $agentSimulation = $this->calculateAgentSimulation($inventoryBaseline, $settings);
+        $agentSimulation = $this->calculateAgentSimulation($inventoryBaseline, $settings, $costData);
 
         // 4. Perform Custom Pack Simulation
-        $packSimulation = $this->calculatePackSimulation($settings);
+        $packSimulation = $this->calculatePackSimulation($settings, $costData);
 
         return [
             'mode' => $settings['mode'],
@@ -187,13 +187,23 @@ class AgentProfitSimulatorService
     /**
      * Compute Per-Agent Simulation logic.
      */
-    protected function calculateAgentSimulation(array $baseline, array $settings): array
+    protected function calculateAgentSimulation(array $baseline, array $settings, array $costData = []): array
     {
         $timeline = [];
         $cumulDirectProfit = 0.0;
         $cumulPartnerProfit = 0.0;
         $cumulDirectRevenue = 0.0;
         $cumulPartnerRevenue = 0.0;
+
+        $onPremMrc = (float) ($costData['client_offered_price_mrc'] ?? $costData['total_monthly_service_cost'] ?? 0.0);
+        $cloudMrc = (float) ($costData['cloud_option']['client_offered_price_mrc'] ?? $costData['cloud_option']['elastic_cloud_subscription_cost'] ?? 0.0);
+
+        $hostingDeduction = 0.0;
+        if (($settings['hosting_mode'] ?? 'none') === 'onprem') {
+            $hostingDeduction = $onPremMrc;
+        } elseif (($settings['hosting_mode'] ?? 'none') === 'cloud') {
+            $hostingDeduction = $cloudMrc;
+        }
 
         for ($month = 1; $month <= 36; $month++) {
             $edrDeployed = min($month * $settings['edr_monthly_growth'], $settings['edr_purchased_limit']);
@@ -209,7 +219,8 @@ class AgentProfitSimulatorService
 
             $monthlyCost = ($edrDeployed * $settings['edr_base_cost'])
                 + ($mdrDeployed * $settings['mdr_base_cost'])
-                + ($siemDeployed * $settings['siem_base_cost']);
+                + ($siemDeployed * $settings['siem_base_cost'])
+                + $hostingDeduction;
 
             $directRevenue = ($edrDeployed * $settings['edr_client_price'])
                 + ($mdrDeployed * $settings['mdr_client_price'])
@@ -261,7 +272,7 @@ class AgentProfitSimulatorService
     /**
      * Compute Custom Pack Builder Simulation logic with agent capacity alignment.
      */
-    protected function calculatePackSimulation(array $settings): array
+    protected function calculatePackSimulation(array $settings, array $costData = []): array
     {
         $packs = $settings['custom_packs'] ?? [];
         $timeline = [];
@@ -269,6 +280,16 @@ class AgentProfitSimulatorService
         $cumulPartnerProfit = 0.0;
         $cumulDirectRevenue = 0.0;
         $cumulPartnerRevenue = 0.0;
+
+        $onPremMrc = (float) ($costData['client_offered_price_mrc'] ?? $costData['total_monthly_service_cost'] ?? 0.0);
+        $cloudMrc = (float) ($costData['cloud_option']['client_offered_price_mrc'] ?? $costData['cloud_option']['elastic_cloud_subscription_cost'] ?? 0.0);
+
+        $hostingDeduction = 0.0;
+        if (($settings['hosting_mode'] ?? 'none') === 'onprem') {
+            $hostingDeduction = $onPremMrc;
+        } elseif (($settings['hosting_mode'] ?? 'none') === 'cloud') {
+            $hostingDeduction = $cloudMrc;
+        }
 
         $edrMaxLimit = (int) ($settings['edr_purchased_limit'] ?? 300);
         $mdrMaxLimit = (int) ($settings['mdr_purchased_limit'] ?? 40);
@@ -279,7 +300,7 @@ class AgentProfitSimulatorService
             $edrAgentsSold = 0;
             $mdrAgentsSold = 0;
             $siemAgentsSold = 0;
-            $monthlyCost = 0.0;
+            $monthlyCost = $hostingDeduction;
             $directRevenue = 0.0;
             $partnerRevenue = 0.0;
             $allPacksSoldOut = count($packs) > 0;
