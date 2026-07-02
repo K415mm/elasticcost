@@ -103,6 +103,30 @@ class MsspCostingController extends Controller
             'fixed_profit_percentage' => (float) $request->input('fixed_profit_percentage', 0.00),
         ]);
 
+        if ($request->has('agent_profit_simulation')) {
+            $simulationInput = $request->input('agent_profit_simulation');
+            if (is_array($simulationInput)) {
+                $msspDetail->update([
+                    'agent_profit_simulation_settings' => [
+                        'edr_partner_price' => CurrencyHelper::convertBack((float) ($simulationInput['edr_partner_price'] ?? 20)),
+                        'edr_client_price' => CurrencyHelper::convertBack((float) ($simulationInput['edr_client_price'] ?? 25)),
+                        'edr_purchased_limit' => (int) ($simulationInput['edr_purchased_limit'] ?? 500),
+                        'edr_monthly_growth' => (int) ($simulationInput['edr_monthly_growth'] ?? 20),
+
+                        'mdr_partner_price' => CurrencyHelper::convertBack((float) ($simulationInput['mdr_partner_price'] ?? 45)),
+                        'mdr_client_price' => CurrencyHelper::convertBack((float) ($simulationInput['mdr_client_price'] ?? 60)),
+                        'mdr_purchased_limit' => (int) ($simulationInput['mdr_purchased_limit'] ?? 300),
+                        'mdr_monthly_growth' => (int) ($simulationInput['mdr_monthly_growth'] ?? 10),
+
+                        'siem_partner_price' => CurrencyHelper::convertBack((float) ($simulationInput['siem_partner_price'] ?? 25)),
+                        'siem_client_price' => CurrencyHelper::convertBack((float) ($simulationInput['siem_client_price'] ?? 35)),
+                        'siem_purchased_limit' => (int) ($simulationInput['siem_purchased_limit'] ?? 500),
+                        'siem_monthly_growth' => (int) ($simulationInput['siem_monthly_growth'] ?? 15),
+                    ],
+                ]);
+            }
+        }
+
         // Update allocations
         foreach ($request->input('allocations') as $roleId => $data) {
             $customSalaryUsd = $data['custom_salary'] ? CurrencyHelper::convertBack((float) $data['custom_salary']) : null;

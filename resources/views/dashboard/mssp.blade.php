@@ -911,8 +911,230 @@
                 <div class="card-arrow-top-left"></div><div class="card-arrow-top-right"></div><div class="card-arrow-bottom-left"></div><div class="card-arrow-bottom-right"></div>
             </div>
         </div>
+
+        @php
+            $sim = $costData['cloud_option']['agent_profit_simulation'];
+            $simSettings = $sim['settings'];
+            $simHorizons = $sim['horizons'];
+            $simTimeline = $sim['timeline'];
+            $simInitial = $sim['initial_inventory'];
+        @endphp
+
+        <!-- Agent Selling Price & Profit Simulation Engine Card -->
+        <div class="card mb-4 border-success border-opacity-30 bg-black bg-opacity-25 shadow-lg">
+            <div class="card-header bg-success bg-opacity-15 border-bottom border-success border-opacity-20 py-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="card-title text-success mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-graph-up-arrow fs-18px"></i> Agent Selling Price & Profit Margin Simulator
+                    </h5>
+                    <div class="text-muted small mt-1">
+                        Simulate monthly profitability, partner wholesale margins, and direct client revenue over 1M, 3M, 6M, 1YR, and 3YR horizons with capacity capping ("Sold Out" logic).
+                    </div>
+                </div>
+                <span class="badge bg-success bg-opacity-25 text-success-light border border-success border-opacity-40 px-3 py-2">
+                    <i class="bi bi-cpu-fill me-1"></i> Deployed Inventory Baseline: {{ $simInitial['total'] }} Devices
+                </span>
+            </div>
+
+            <div class="card-body">
+                <!-- Configuration Controls Inputs -->
+                <div class="row g-3 mb-4">
+                    <!-- EDR Agent Pricing & Capacity -->
+                    <div class="col-md-4">
+                        <div class="card bg-dark bg-opacity-40 border-secondary border-opacity-20 h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold text-info"><i class="bi bi-shield-fill-check me-1"></i> EDR Agent Package</span>
+                                    <span class="badge bg-info bg-opacity-25 text-info-light">Current: {{ $simInitial['edr'] }}</span>
+                                </div>
+                                <div class="small text-muted mb-3">Base Cost Price: <strong>{{ \App\Services\CurrencyHelper::format($simSettings['edr_base_cost']) }}/mo</strong></div>
+
+                                <div class="mb-2">
+                                    <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
+                                    <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_partner_price]" value="{{ $simSettings['edr_partner_price'] }}" id="sim_edr_partner_price">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
+                                    <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_client_price]" value="{{ $simSettings['edr_client_price'] }}" id="sim_edr_client_price">
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label small text-muted mb-1">Max Purchased Limit</label>
+                                        <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_purchased_limit]" value="{{ $simSettings['edr_purchased_limit'] }}" id="sim_edr_purchased_limit">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small text-muted mb-1">Monthly Growth (+/mo)</label>
+                                        <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[edr_monthly_growth]" value="{{ $simSettings['edr_monthly_growth'] }}" id="sim_edr_monthly_growth">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MDR Agent Pricing & Capacity -->
+                    <div class="col-md-4">
+                        <div class="card bg-dark bg-opacity-40 border-secondary border-opacity-20 h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold text-success"><i class="bi bi-shield-lock-fill me-1"></i> MDR Agent Package</span>
+                                    <span class="badge bg-success bg-opacity-25 text-success-light">Current: {{ $simInitial['mdr'] }}</span>
+                                </div>
+                                <div class="small text-muted mb-3">Base Cost Price: <strong>{{ \App\Services\CurrencyHelper::format($simSettings['mdr_base_cost']) }}/mo</strong></div>
+
+                                <div class="mb-2">
+                                    <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
+                                    <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_partner_price]" value="{{ $simSettings['mdr_partner_price'] }}" id="sim_mdr_partner_price">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
+                                    <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_client_price]" value="{{ $simSettings['mdr_client_price'] }}" id="sim_mdr_client_price">
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label small text-muted mb-1">Max Purchased Limit</label>
+                                        <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_purchased_limit]" value="{{ $simSettings['mdr_purchased_limit'] }}" id="sim_mdr_purchased_limit">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small text-muted mb-1">Monthly Growth (+/mo)</label>
+                                        <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[mdr_monthly_growth]" value="{{ $simSettings['mdr_monthly_growth'] }}" id="sim_mdr_monthly_growth">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SIEM Agent Pricing & Capacity -->
+                    <div class="col-md-4">
+                        <div class="card bg-dark bg-opacity-40 border-secondary border-opacity-20 h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold text-primary"><i class="bi bi-display me-1"></i> SIEM Agent Package</span>
+                                    <span class="badge bg-primary bg-opacity-25 text-primary-light">Current: {{ $simInitial['siem'] }}</span>
+                                </div>
+                                <div class="small text-muted mb-3">Base Cost Price: <strong>{{ \App\Services\CurrencyHelper::format($simSettings['siem_base_cost']) }}/mo</strong></div>
+
+                                <div class="mb-2">
+                                    <label class="form-label small text-muted mb-1">Partner Wholesale Price ($/mo)</label>
+                                    <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_partner_price]" value="{{ $simSettings['siem_partner_price'] }}" id="sim_siem_partner_price">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small text-muted mb-1">Final Client Retail Price ($/mo)</label>
+                                    <input type="number" step="0.5" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_client_price]" value="{{ $simSettings['siem_client_price'] }}" id="sim_siem_client_price">
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label small text-muted mb-1">Max Purchased Limit</label>
+                                        <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_purchased_limit]" value="{{ $simSettings['siem_purchased_limit'] }}" id="sim_siem_purchased_limit">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small text-muted mb-1">Monthly Growth (+/mo)</label>
+                                        <input type="number" class="form-control form-control-sm sim-input" name="agent_profit_simulation[siem_monthly_growth]" value="{{ $simSettings['siem_monthly_growth'] }}" id="sim_siem_monthly_growth">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time Horizons Summary Cards Grid (1M, 3M, 6M, 1YR, 3YR) -->
+                <h6 class="text-white fw-bold mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-clock-history text-success"></i> Projected Benefit & Revenue Summary
+                </h6>
+                <div class="row g-3 mb-4">
+                    @foreach($simHorizons as $hMonths => $hz)
+                        <div class="col">
+                            <div class="card bg-black bg-opacity-40 border-secondary border-opacity-20 text-center p-2 h-100">
+                                <div class="text-theme fw-bold small uppercase-tracking mb-1">{{ $hz['label'] }}</div>
+                                <div class="mono-cell text-success fs-16px fw-bold" id="hz_direct_profit_{{ $hMonths }}">
+                                    {{ \App\Services\CurrencyHelper::format($hz['direct_profit']) }}
+                                </div>
+                                <div class="text-muted" style="font-size: 11px;">Direct Net Profit</div>
+                                <hr class="my-2 border-secondary border-opacity-20">
+                                <div class="mono-cell text-info small fw-semibold" id="hz_partner_profit_{{ $hMonths }}">
+                                    {{ \App\Services\CurrencyHelper::format($hz['partner_profit']) }}
+                                </div>
+                                <div class="text-muted" style="font-size: 10px;">Partner Channel Profit</div>
+                                <div class="mt-2" id="hz_status_badge_{{ $hMonths }}">
+                                    @if($hz['is_sold_out'])
+                                        <span class="badge bg-danger bg-opacity-25 text-danger-light border border-danger border-opacity-40 py-1 px-2" style="font-size: 9px;">
+                                            <i class="bi bi-exclamation-octagon-fill me-1"></i> SOLD OUT
+                                        </span>
+                                    @else
+                                        <span class="badge bg-success bg-opacity-25 text-success-light border border-success border-opacity-40 py-1 px-2" style="font-size: 9px;">
+                                            {{ $hz['deployed_at_end'] }} Agents Deployed
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <!-- Month-by-Month Cumulative Table (1 to 36 Months) -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="text-white fw-bold mb-0"><i class="bi bi-calendar3 text-success me-2"></i> Month-by-Month Projection Schedule (36 Months)</h6>
+                    <span class="text-muted small">Automatic capacity capping applies when max purchased limit is reached.</span>
+                </div>
+                <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+                    <table class="table table-borderless table-hover align-middle mb-0" id="sim_schedule_table">
+                        <thead class="sticky-top bg-dark border-bottom border-secondary border-opacity-30">
+                            <tr class="text-muted small uppercase-tracking">
+                                <th>Month</th>
+                                <th>Status</th>
+                                <th class="text-center">EDR / MDR / SIEM</th>
+                                <th class="text-center">Total Active</th>
+                                <th>Monthly Cost</th>
+                                <th>Partner Revenue</th>
+                                <th>Direct Revenue</th>
+                                <th>Partner Margin</th>
+                                <th class="text-end">Direct Net Profit</th>
+                                <th class="text-end">Cumul. Direct Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($simTimeline as $m => $row)
+                                <tr class="border-bottom border-secondary border-opacity-10 {{ $row['is_fully_sold_out'] ? 'table-danger bg-opacity-10' : '' }}">
+                                    <td class="fw-bold text-theme">Month {{ $row['month'] }}</td>
+                                    <td>
+                                        @if($row['is_fully_sold_out'])
+                                            <span class="badge bg-danger text-white border border-danger">
+                                                <i class="bi bi-slash-circle me-1"></i> ALL SOLD OUT
+                                            </span>
+                                        @elseif($row['edr_sold_out'] || $row['mdr_sold_out'] || $row['siem_sold_out'])
+                                            <span class="badge bg-warning text-dark border border-warning">
+                                                PARTIAL CAP
+                                            </span>
+                                        @else
+                                            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-30">
+                                                ACTIVE GROWTH
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center mono-cell small">
+                                        <span class="text-info">{{ $row['edr_deployed'] }}</span> /
+                                        <span class="text-success">{{ $row['mdr_deployed'] }}</span> /
+                                        <span class="text-primary">{{ $row['siem_deployed'] }}</span>
+                                    </td>
+                                    <td class="text-center mono-cell fw-bold text-white">{{ $row['total_deployed'] }}</td>
+                                    <td class="mono-cell text-muted">{{ \App\Services\CurrencyHelper::format($row['monthly_cost']) }}</td>
+                                    <td class="mono-cell text-info-light">{{ \App\Services\CurrencyHelper::format($row['partner_revenue']) }}</td>
+                                    <td class="mono-cell text-white">{{ \App\Services\CurrencyHelper::format($row['direct_revenue']) }}</td>
+                                    <td class="mono-cell text-warning">{{ \App\Services\CurrencyHelper::format($row['partner_margin']) }}</td>
+                                    <td class="mono-cell text-end text-success fw-bold">{{ \App\Services\CurrencyHelper::format($row['direct_profit']) }}</td>
+                                    <td class="mono-cell text-end text-success fw-bold">{{ \App\Services\CurrencyHelper::format($row['cumul_direct_profit']) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-arrow">
+                <div class="card-arrow-top-left"></div><div class="card-arrow-top-right"></div><div class="card-arrow-bottom-left"></div><div class="card-arrow-bottom-right"></div>
+            </div>
+        </div>
     </div>
 </div>
+
 @endsection
 
 @section('scripts')

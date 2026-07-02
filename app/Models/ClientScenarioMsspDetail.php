@@ -35,6 +35,7 @@ class ClientScenarioMsspDetail extends Model
         'ai_analysis',
         'ai_sizing_analysis',
         'custom_nodes',
+        'agent_profit_simulation_settings',
     ];
 
     protected $casts = [
@@ -56,6 +57,7 @@ class ClientScenarioMsspDetail extends Model
         'ceo_benefit_percentage' => 'decimal:2',
         'fixed_profit_percentage' => 'decimal:2',
         'custom_nodes' => 'array',
+        'agent_profit_simulation_settings' => 'array',
     ];
 
     public function client(): BelongsTo

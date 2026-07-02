@@ -13,7 +13,8 @@ class MsspCostingEngine
 {
     public function __construct(
         protected SizingEngine $sizingEngine,
-        protected CloudProviderPricingService $pricingService
+        protected CloudProviderPricingService $pricingService,
+        protected AgentProfitSimulatorService $profitSimulator
     ) {}
 
     /**
@@ -367,6 +368,7 @@ class MsspCostingEngine
                 'fixed_profit_amount' => round($cloudFixedAmount, 2),
                 'total_profit_amount' => round($totalCloudProfitAmount, 2),
                 'client_offered_price_mrc' => round($clientOfferedCloudMrc, 2),
+                'agent_profit_simulation' => $this->profitSimulator->calculate($client, $msspDetail),
             ],
         ];
     }
