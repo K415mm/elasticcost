@@ -9,6 +9,7 @@ use App\Models\ClientScenarioMsspDetail;
 use Illuminate\Support\Facades\Log;
 use Phpkaiharness\Core\AgentLoop;
 use Phpkaiharness\Llm\LaravelAiClient;
+use Phpkaiharness\Session\SessionManager;
 
 class AgentProfitSimulatorService
 {
@@ -402,8 +403,17 @@ class AgentProfitSimulatorService
         $model = $aiConfig['model'];
 
         try {
-            if (! file_exists(storage_path('app/phpkaiharness/sessions'))) {
-                @mkdir(storage_path('app/phpkaiharness/sessions'), 0777, true);
+            $sessionId = 'phpsess_'.session()->getId();
+
+            try {
+                $sessionManager = app(SessionManager::class);
+                $sessionManager->ensureSession($sessionId);
+                $monitorDbPath = $sessionManager->getMonitorDbPath($sessionId);
+            } catch (\Throwable $e) {
+                $monitorDbPath = storage_path('app/phpkaiharness/sessions/'.$sessionId.'/monitor.db');
+                if (! file_exists(dirname($monitorDbPath))) {
+                    @mkdir(dirname($monitorDbPath), 0777, true);
+                }
             }
 
             $agent = new MarketBuyingSimulatorAgent;
@@ -442,8 +452,6 @@ class AgentProfitSimulatorService
             );
             $loop->setAgentName('MarketBuyingSimulatorAgent');
 
-            $sessionId = 'market_sim_'.session()->getId();
-            $monitorDbPath = storage_path('app/phpkaiharness/monitor.db');
             $analytics = new LaravelAnalyticsCollector($monitorDbPath);
 
             $history = [];
