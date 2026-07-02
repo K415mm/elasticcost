@@ -60,8 +60,9 @@ class SqliteMonitorStore implements AnalyticsCollectorInterface
     {
         $dir = dirname($this->dbPath);
         if (! is_dir($dir)) {
-            mkdir($dir, 0755, true);
+            @mkdir($dir, 0777, true);
         }
+
 
         if (! extension_loaded('pdo_sqlite') && ! extension_loaded('sqlite3')) {
             throw new \RuntimeException(

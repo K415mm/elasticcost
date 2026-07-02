@@ -63,8 +63,9 @@ class CompressContextMiddleware
                     // Save compressed representation to a temp file
                     $tempDir = function_exists('storage_path') ? storage_path('app/phpkaiharness/temp_compress') : sys_get_temp_dir().DIRECTORY_SEPARATOR.'phpkaiharness'.DIRECTORY_SEPARATOR.'temp_compress';
                     if (! is_dir($tempDir)) {
-                        mkdir($tempDir, 0755, true);
+                        @mkdir($tempDir, 0777, true);
                     }
+
                     $tempPath = $tempDir.'/comp_'.uniqid().'.'.$ext;
                     file_put_contents($tempPath, $compressedContent);
 

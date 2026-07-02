@@ -114,7 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($overridePath) {
             $directory = dirname($overridePath);
             if (! is_dir($directory)) {
-                mkdir($directory, 0755, true);
+                @mkdir($directory, 0777, true);
+
             }
             if (file_put_contents($overridePath, json_encode($updated, JSON_PRETTY_PRINT)) !== false) {
                 $successMessage = 'Configuration saved successfully.';

@@ -65,8 +65,9 @@ class QuantumInferenceEngine
 
         $dir = dirname($this->dbPath);
         if (! is_dir($dir)) {
-            mkdir($dir, 0755, true);
+            @mkdir($dir, 0777, true);
         }
+
 
         $this->pdo = new PDO('sqlite:'.$this->dbPath);
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
