@@ -156,6 +156,10 @@ class HarnessConfigController extends Controller
             ],
             'qwen_provider' => [
                 'enabled' => $request->boolean('qwen_provider_enabled'),
+                'api_key' => $request->input('qwen_provider_api_key', config('harness.qwen_provider.api_key', '')),
+                'url' => $request->input('qwen_provider_url', config('harness.qwen_provider.url', 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1')),
+                'model' => $request->input('qwen_provider_model', config('harness.qwen_provider.model', 'qwen-plus')),
+                'light_model' => $request->input('qwen_provider_light_model', config('harness.qwen_provider.light_model', 'qwen-turbo')),
                 'structured_output' => $request->input('qwen_provider_structured_output', config('harness.qwen_provider.structured_output', 'json_object')),
                 'max_tokens' => (int) $request->input('qwen_provider_max_tokens', config('harness.qwen_provider.max_tokens', 4096)),
             ],

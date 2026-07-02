@@ -2,6 +2,7 @@
 
 namespace Phpkaiharness\Llm;
 
+use App\Models\GlobalSetting;
 use Exception;
 use GuzzleHttp\Client;
 use Phpkaiharness\Contracts\AnalyticsCollectorInterface;
@@ -19,20 +20,18 @@ class QwenClient implements LlmClientInterface
 
     public function __construct(?string $apiKey = null, ?string $baseUrl = null, string $defaultModel = 'qwen-plus')
     {
-        $envKey = env('PHPKAIHARNESS_QWEN_KEY') ?: (env('QWEN_API_KEY') ?: env('DASHSCOPE_API_KEY'));
-        $configKey = function_exists('config') && app()->bound('config')
-            ? (config('ai.providers.qwen.key') ?: config('ai.providers.dashscope.key'))
-            : null;
-        $this->apiKey = $apiKey ?: ($envKey ?: ($configKey ?: ''));
+        // Resolution priority (hybrid mode):
+        // 1. Explicit constructor arguments (highest)
+        // 2. Host app global_settings via AiConfigHelper / GlobalSetting
+        // 3. Laravel AI SDK config (ai.providers.qwen.*)
+        // 4. Harness config (harness.qwen_provider.*)
+        // 5. Environment variables (lowest)
 
-        $envUrl = env('PHPKAIHARNESS_QWEN_URL') ?: (env('QWEN_URL') ?: env('DASHSCOPE_URL'));
-        $configUrl = function_exists('config') && app()->bound('config')
-            ? (config('ai.providers.qwen.url') ?: config('ai.providers.dashscope.url'))
-            : null;
-        $resolvedUrl = $baseUrl ?: ($envUrl ?: ($configUrl ?: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1'));
+        [$resolvedKey, $resolvedUrl, $resolvedModel] = $this->resolveQwenCredentials($apiKey, $baseUrl, $defaultModel);
+
+        $this->apiKey = $resolvedKey;
         $this->baseUrl = rtrim($resolvedUrl, '/');
-
-        $this->defaultModel = $defaultModel;
+        $this->defaultModel = $resolvedModel;
 
         $this->httpClient = new Client([
             'base_uri' => $this->baseUrl,
@@ -44,6 +43,103 @@ class QwenClient implements LlmClientInterface
                 'Content-Type' => 'application/json',
             ],
         ]);
+    }
+
+    /**
+     * Resolve Qwen Cloud credentials using hybrid priority:
+     * constructor args > host app global_settings > AI SDK config > harness config > env vars.
+     *
+     * @return array{0: string, 1: string, 2: string}
+     */
+    protected function resolveQwenCredentials(?string $apiKey, ?string $baseUrl, string $model): array
+    {
+        // --- API Key resolution ---
+        if (! empty($apiKey)) {
+            $resolvedKey = $apiKey;
+        } else {
+            $resolvedKey = $this->resolveFromHostApp('qwen_api_key')
+                ?: $this->resolveFromAiSdkConfig('key')
+                ?: $this->resolveFromHarnessConfig('api_key')
+                ?: (env('PHPKAIHARNESS_QWEN_KEY') ?: (env('QWEN_API_KEY') ?: env('DASHSCOPE_API_KEY', '')));
+        }
+
+        // --- URL resolution ---
+        if (! empty($baseUrl)) {
+            $resolvedUrl = $baseUrl;
+        } else {
+            $resolvedUrl = $this->resolveFromHostApp('qwen_url')
+                ?: $this->resolveFromAiSdkConfig('url')
+                ?: $this->resolveFromHarnessConfig('url')
+                ?: (env('PHPKAIHARNESS_QWEN_URL') ?: (env('QWEN_URL') ?: env('DASHSCOPE_URL', 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1')));
+        }
+
+        // --- Model resolution ---
+        if (! empty($model) && $model !== 'qwen-plus') {
+            $resolvedModel = $model;
+        } else {
+            $resolvedModel = $this->resolveFromHostApp('qwen_model')
+                ?: $this->resolveFromHarnessConfig('model')
+                ?: (env('PHPKAIHARNESS_QWEN_MODEL') ?: 'qwen-plus');
+        }
+
+        return [$resolvedKey, $resolvedUrl, $resolvedModel];
+    }
+
+    /**
+     * Read a setting from the host app's global_settings table (via GlobalSetting model).
+     */
+    protected function resolveFromHostApp(string $key): ?string
+    {
+        if (! function_exists('app') || ! app()->bound('config')) {
+            return null;
+        }
+
+        try {
+            if (class_exists('App\Models\GlobalSetting') && method_exists('App\Models\GlobalSetting', 'getValue')) {
+                $value = GlobalSetting::getValue($key);
+                if (! empty($value)) {
+                    return (string) $value;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Table might not exist during migrations or tests
+        }
+
+        return null;
+    }
+
+    /**
+     * Read a setting from the Laravel AI SDK config (ai.providers.qwen.*).
+     */
+    protected function resolveFromAiSdkConfig(string $key): ?string
+    {
+        if (! function_exists('config') || ! app()->bound('config')) {
+            return null;
+        }
+
+        $value = config("ai.providers.qwen.{$key}") ?: config("ai.providers.dashscope.{$key}");
+        if (! empty($value)) {
+            return (string) $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * Read a setting from the harness config (harness.qwen_provider.*).
+     */
+    protected function resolveFromHarnessConfig(string $key): ?string
+    {
+        if (! function_exists('config') || ! app()->bound('config')) {
+            return null;
+        }
+
+        $value = config("harness.qwen_provider.{$key}");
+        if (! empty($value)) {
+            return (string) $value;
+        }
+
+        return null;
     }
 
     public function getResolvedModel(): string

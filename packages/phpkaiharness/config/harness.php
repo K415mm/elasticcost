@@ -11,8 +11,8 @@ return [
     |
     */
     'default' => [
-        'provider' => env('PHPKAIHARNESS_PROVIDER', 'ollama'),
-        'model' => env('PHPKAIHARNESS_MODEL', 'llama3.2'),
+        'provider' => env('PHPKAIHARNESS_PROVIDER', 'qwen'),
+        'model' => env('PHPKAIHARNESS_MODEL', 'qwen-plus'),
         'max_iterations' => env('PHPKAIHARNESS_MAX_ITERATIONS', 10),
     ],
 
@@ -262,8 +262,16 @@ return [
     | Activates a layer of custom harness specifically for Qwen Cloud.
     |
     */
-    // Qwen provider configuration (not a feature toggle — provider-specific settings).
+    // Qwen Cloud provider configuration — hybrid mode:
+    // At runtime, QwenClient prioritizes the host app's global_settings
+    // (qwen_api_key, qwen_url, qwen_model via AiConfigHelper) and falls
+    // back to these env-driven values when the host app is unavailable.
     'qwen_provider' => [
+        'enabled' => env('PHPKAIHARNESS_QWEN_ENABLED', true),
+        'api_key' => env('PHPKAIHARNESS_QWEN_KEY') ?: (env('QWEN_API_KEY') ?: env('DASHSCOPE_API_KEY', '')),
+        'url' => env('PHPKAIHARNESS_QWEN_URL') ?: (env('QWEN_URL') ?: env('DASHSCOPE_URL', 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1')),
+        'model' => env('PHPKAIHARNESS_QWEN_MODEL', 'qwen-plus'),
+        'light_model' => env('PHPKAIHARNESS_QWEN_LIGHT_MODEL', 'qwen-turbo'),
         'structured_output' => env('PHPKAIHARNESS_QWEN_STRUCTURED', 'json_object'),
         'max_tokens' => env('PHPKAIHARNESS_QWEN_MAX_TOKENS', 4096),
     ],

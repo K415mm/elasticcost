@@ -118,8 +118,8 @@ class LaravelAiClient implements LlmClientInterface
                     'deepseek' => 'deepseek-chat',
                     'openrouter' => 'meta-llama/llama-3-8b-instruct:free',
                     'lmstudio' => 'qwen2.5-coder-7b-instruct',
-                    'qwen' => 'qwen-plus',
-                    'qwen_cloud' => 'qwen-plus',
+                    'qwen' => function_exists('config') ? (config('harness.qwen_provider.model') ?: 'qwen-plus') : 'qwen-plus',
+                    'qwen_cloud' => function_exists('config') ? (config('harness.qwen_provider.model') ?: 'qwen-plus') : 'qwen-plus',
                     default => 'llama3.2',
                 };
             }
@@ -200,8 +200,10 @@ class LaravelAiClient implements LlmClientInterface
         $apiKey = 'lm-studio';
 
         if ($this->provider === 'qwen' || $this->provider === 'qwen_cloud') {
-            $baseUrl = env('PHPKAIHARNESS_QWEN_URL') ?: (env('QWEN_URL') ?: env('DASHSCOPE_URL') ?: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1');
-            $apiKey = env('PHPKAIHARNESS_QWEN_KEY') ?: (env('QWEN_API_KEY') ?: env('DASHSCOPE_API_KEY') ?: '');
+            $baseUrl = config('harness.qwen_provider.url')
+                ?: (env('PHPKAIHARNESS_QWEN_URL') ?: (env('QWEN_URL') ?: env('DASHSCOPE_URL', 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1')));
+            $apiKey = config('harness.qwen_provider.api_key')
+                ?: (env('PHPKAIHARNESS_QWEN_KEY') ?: (env('QWEN_API_KEY') ?: env('DASHSCOPE_API_KEY', '')));
         }
 
         if (function_exists('config') && app()->bound('config')) {

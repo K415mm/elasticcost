@@ -768,9 +768,26 @@
                             <input class="form-check-input" type="checkbox" role="switch" name="qwen_provider_enabled" value="1" {{ $qwenOn ? 'checked' : '' }}>
                         </div>
                     </div>
-                    <div class="qcfg-node-desc">Custom Qwen Cloud layer for structured output mode and response token limiting.</div>
+                    <div class="qcfg-node-desc">Custom Qwen Cloud layer for structured output mode and response token limiting. Credentials are read from the host app's System Settings (AI Provider = Qwen) first, then from harness config, then env vars.</div>
                     <div class="qcfg-node-body">
                         <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label small text-inverse text-opacity-50">API Key (fallback — main app takes priority)</label>
+                                <input type="password" class="form-control form-control-sm" name="qwen_provider_api_key" value="{{ $config['qwen_provider']['api_key'] ?? '' }}" placeholder="sk-...">
+                                <div class="form-text text-inverse text-opacity-25">Set in System Settings &rarr; AI Provider for production.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-inverse text-opacity-50">Base URL</label>
+                                <input type="text" class="form-control form-control-sm" name="qwen_provider_url" value="{{ $config['qwen_provider']['url'] ?? 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1' }}" placeholder="https://dashscope-intl.aliyuncs.com/compatible-mode/v1">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-inverse text-opacity-50">Default Model</label>
+                                <input type="text" class="form-control form-control-sm" name="qwen_provider_model" value="{{ $config['qwen_provider']['model'] ?? 'qwen-plus' }}" placeholder="qwen-plus">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-inverse text-opacity-50">Light Model (multi-agent)</label>
+                                <input type="text" class="form-control form-control-sm" name="qwen_provider_light_model" value="{{ $config['qwen_provider']['light_model'] ?? 'qwen-turbo' }}" placeholder="qwen-turbo">
+                            </div>
                             <div class="col-md-6">
                                 <label class="form-label small text-inverse text-opacity-50">Structured Output Mode</label>
                                 <select class="form-select form-select-sm" name="qwen_provider_structured_output">

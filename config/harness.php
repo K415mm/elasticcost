@@ -2,8 +2,8 @@
 
 return [
     'default' => [
-        'provider' => 'ollama',
-        'model' => '',
+        'provider' => env('PHPKAIHARNESS_PROVIDER', 'qwen'),
+        'model' => env('PHPKAIHARNESS_MODEL', 'qwen-plus'),
         'max_iterations' => 50,
     ],
     'failover' => [
@@ -119,6 +119,11 @@ return [
         'max_anchors' => env('PHPKAIHARNESS_QUANTUM_LIMIT', 3),
     ],
     'qwen_provider' => [
+        'enabled' => env('PHPKAIHARNESS_QWEN_ENABLED', true),
+        'api_key' => env('PHPKAIHARNESS_QWEN_KEY') ?: (env('QWEN_API_KEY') ?: env('DASHSCOPE_API_KEY', '')),
+        'url' => env('PHPKAIHARNESS_QWEN_URL') ?: (env('QWEN_URL') ?: env('DASHSCOPE_URL', 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1')),
+        'model' => env('PHPKAIHARNESS_QWEN_MODEL', 'qwen-plus'),
+        'light_model' => env('PHPKAIHARNESS_QWEN_LIGHT_MODEL', 'qwen-turbo'),
         'structured_output' => env('PHPKAIHARNESS_QWEN_STRUCTURED', 'json_object'),
         'max_tokens' => env('PHPKAIHARNESS_QWEN_MAX_TOKENS', 4096),
     ],
