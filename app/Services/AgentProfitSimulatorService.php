@@ -400,6 +400,10 @@ class AgentProfitSimulatorService
         $model = $aiConfig['model'];
 
         try {
+            if (! file_exists(storage_path('app/phpkaiharness/sessions'))) {
+                @mkdir(storage_path('app/phpkaiharness/sessions'), 0777, true);
+            }
+
             $agent = new MarketBuyingSimulatorAgent;
 
             if ($agent::isFaked()) {
