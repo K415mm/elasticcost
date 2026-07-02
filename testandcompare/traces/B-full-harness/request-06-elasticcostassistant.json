@@ -1,0 +1,49 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 5,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-replicas",
+    "description": "Replica impact calculation",
+    "model": "qwen3.5-omni-flash-2026-03-15",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 57717,
+        "start_time": "2026-06-29T16:50:02+00:00",
+        "end_time": "2026-06-29T16:50:59+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 332,
+        "completion_tokens": 291,
+        "total_tokens": 623
+    },
+    "prompts": {
+        "raw_user_prompt": "What is the impact of replica shards on storage requirements? If I have 500GB of primary data with 1 replica, what is my total storage need?",
+        "effective_user_prompt": "What is the impact of replica shards on storage requirements? If I have 500GB of primary data with 1 replica, what is my total storage need?",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "Having replica shards significantly impacts your storage footprint because Elasticsearch creates a full copy of every primary shard on separate nodes for high availability and fault tolerance.\n\n### Impact Analysis\n*   **Storage Multiplier**: With **1 replica**, you effectively double your storage requirement ($Primary + Replica = 2\\times$).\n*   **Cluster Health**: While this increases cost, it ensures that if a node fails, your data remains accessible without downtime.\n*   **Best Practice**: Avoid over-replicating (e.g., using more than 1 replica) unless strictly required by compliance, as storage costs scale linearly with replication factors.\n\n### Calculation Example\nFor your specific scenario:\n*   **Primary Data**: $500\\,\\text{GB}$\n*   **Replication Factor**: $1$ (One primary + One replica)\n*   **Formula**: $\\text{Total Storage} = \\text{Primary Size} \\times (1 + \\text{Number of Replicas})$\n\n$$ \\text{Total Storage Need} = 500\\,\\text{GB} \\times 2 = \\mathbf{1,000\\,\\text{GB}} \\quad (\\text{or } \\mathbf{1\\,\\text{TB}}) $$\n\nWould you like me to help you calculate the optimal number of shards or estimate the RAM requirements based on this dataset size?",
+    "response_length": 1163,
+    "success": true,
+    "errors": []
+}

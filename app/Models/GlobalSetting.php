@@ -7,8 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class GlobalSetting extends Model
 {
     protected $table = 'global_settings';
+
     protected $primaryKey = 'key';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = ['key', 'value', 'description'];
@@ -19,6 +22,7 @@ class GlobalSetting extends Model
     public static function getValue(string $key, mixed $default = null): mixed
     {
         $setting = self::find($key);
+
         return $setting ? $setting->value : $default;
     }
 }

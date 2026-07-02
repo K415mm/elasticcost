@@ -85,6 +85,22 @@
                                 <input type="text" name="description" class="form-control" value="{{ $type->description }}">
                             </div>
 
+                            <div class="mb-3 border-top border-secondary border-opacity-20 pt-2">
+                                <label class="form-label text-muted small mb-2 d-block">MDR Agent Package Coverage</label>
+                                <div class="form-check form-check-inline me-3">
+                                    <input class="form-check-input" type="checkbox" name="runs_siem_agent" id="siem_{{ $type->id }}" value="1" {{ $type->runs_siem_agent ? 'checked' : '' }}>
+                                    <label class="form-check-label text-white small" for="siem_{{ $type->id }}">SIEM Agent</label>
+                                </div>
+                                <div class="form-check form-check-inline me-3">
+                                    <input class="form-check-input" type="checkbox" name="runs_mdr_agent" id="mdr_{{ $type->id }}" value="1" {{ $type->runs_mdr_agent ? 'checked' : '' }}>
+                                    <label class="form-check-label text-white small" for="mdr_{{ $type->id }}">MDR Agent</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" name="runs_edr_agent" id="edr_{{ $type->id }}" value="1" {{ $type->runs_edr_agent ? 'checked' : '' }}>
+                                    <label class="form-check-label text-white small" for="edr_{{ $type->id }}">EDR Agent</label>
+                                </div>
+                            </div>
+
                             <div class="text-end">
                                 <button type="submit" class="btn btn-outline-theme btn-sm px-4">
                                     {{ __('messages.save_changes') }}
@@ -158,9 +174,25 @@
                         </div>
                     </div>
 
-                    <div class="mb-4">
+                    <div class="mb-3">
                         <label for="new_description" class="form-label text-muted small">{{ __('messages.description') }}</label>
                         <input type="text" id="new_description" name="description" class="form-control" placeholder="e.g. Core network boundary events">
+                    </div>
+
+                    <div class="mb-4 border-top border-secondary border-opacity-20 pt-2">
+                        <label class="form-label text-muted small mb-2 d-block">MDR Agent Package Coverage</label>
+                        <div class="form-check form-check-inline me-3">
+                            <input class="form-check-input" type="checkbox" name="runs_siem_agent" id="new_runs_siem" value="1">
+                            <label class="form-check-label text-white small" for="new_runs_siem">SIEM Agent</label>
+                        </div>
+                        <div class="form-check form-check-inline me-3">
+                            <input class="form-check-input" type="checkbox" name="runs_mdr_agent" id="new_runs_mdr" value="1">
+                            <label class="form-check-label text-white small" for="new_runs_mdr">MDR Agent</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="runs_edr_agent" id="new_runs_edr" value="1">
+                            <label class="form-check-label text-white small" for="new_runs_edr">EDR Agent</label>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-outline-theme d-block w-100 py-2">

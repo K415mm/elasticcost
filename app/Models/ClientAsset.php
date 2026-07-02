@@ -15,7 +15,10 @@ class ClientAsset extends Model
         'custom_min_eps',
         'custom_avg_eps',
         'custom_max_eps',
-        'custom_max_monthly_gb'
+        'custom_max_monthly_gb',
+        'runs_siem_agent',
+        'runs_mdr_agent',
+        'runs_edr_agent',
     ];
 
     protected $casts = [
@@ -25,7 +28,29 @@ class ClientAsset extends Model
         'custom_avg_eps' => 'float',
         'custom_max_eps' => 'float',
         'custom_max_monthly_gb' => 'float',
+        'runs_siem_agent' => 'boolean',
+        'runs_mdr_agent' => 'boolean',
+        'runs_edr_agent' => 'boolean',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($clientAsset) {
+            if ($clientAsset->assetType) {
+                if ($clientAsset->runs_siem_agent === null) {
+                    $clientAsset->runs_siem_agent = (bool) $clientAsset->assetType->runs_siem_agent;
+                }
+                if ($clientAsset->runs_mdr_agent === null) {
+                    $clientAsset->runs_mdr_agent = (bool) $clientAsset->assetType->runs_mdr_agent;
+                }
+                if ($clientAsset->runs_edr_agent === null) {
+                    $clientAsset->runs_edr_agent = (bool) $clientAsset->assetType->runs_edr_agent;
+                }
+            }
+        });
+    }
 
     public function client(): BelongsTo
     {

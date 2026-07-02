@@ -11,6 +11,26 @@
     "sail": false,
     "skills": [
         "ai-sdk-development",
-        "laravel-best-practices"
+        "laravel-best-practices",
+        "configuring-horizon",
+        "pest-testing",
+        "eloquent-best-practices",
+        "laravel-brainstorming",
+        "laravel-database-optimization",
+        "laravel-expert",
+        "laravel-owasp-security",
+        "laravel-patterns",
+        "laravel-security",
+        "laravel-security-audit",
+        "laravel-specialist",
+        "laravel-tdd",
+        "laravel-testing",
+        "laravel-verification",
+        "php-best-practices",
+        "php-expert",
+        "php-pro",
+        "phpunit",
+        "sentry-php-sdk",
+        "spatie-laravel-php"
     ]
 }

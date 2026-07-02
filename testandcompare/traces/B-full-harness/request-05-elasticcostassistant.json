@@ -1,0 +1,58 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 4,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-tunisian",
+    "description": "Tunisian Arabic dialect — sizing 1TB\/day 90-day retention",
+    "model": "qwen3.5-omni-flash-2026-03-15",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 76313,
+        "start_time": "2026-06-29T16:48:45+00:00",
+        "end_time": "2026-06-29T16:50:02+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 323,
+        "completion_tokens": 979,
+        "total_tokens": 1302
+    },
+    "prompts": {
+        "raw_user_prompt": "3andi cluster ES ken n7eb 1TB log nhar w 90 jour retention, chnou lazem men hardware? hot w warm tiers",
+        "effective_user_prompt": "3andi cluster ES ken n7eb 1TB log nhar w 90 jour retention, chnou lazem men hardware? hot w warm tiers",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 1,
+        "calls": [
+            {
+                "name": "query_graph_memory",
+                "arguments": {
+                    "query": "Elasticsearch sizing RAM-to-disk ratio JVM Heap constraints shard sizes"
+                },
+                "result_length": 152,
+                "result_preview": "{\"success\":true,\"message\":\"No facts found matching search query: 'Elasticsearch sizing RAM-to-disk ratio JVM Heap constraints shard sizes'.\",\"facts\":[]}"
+            }
+        ]
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 4,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "Based on your requirement of **1 TB\/day** ingestion with **90 days retention**, here is the recommended hardware architecture separating **Hot** (recent data) and **Warm** (older data) tiers.\n\n### 📊 Key Calculations & Assumptions\n*   **Raw Ingestion:** 1 TB\/day ≈ 1.15 TB\/day (including indexing overhead\/compression estimates).\n*   **Total Storage Needed:** To maintain a rolling window of 90 days with safety headroom for merges\/translogs, you need approximately **140–150 TB** of net usable storage.\n*   **Write Velocity:** ~14 GB\/s sustained average (requires high-performance NVMe drives).\n*   **Strategy:** Hot tier handles recent data (<7-14 days) with fast SSDs; Warm tier holds older data (>14 days) on bulk storage or upgraded capacity nodes. Given the volume, we recommend a scalable setup starting with all-NVMe to avoid bottlenecks during rollovers.\n\n---\n\n### 💻 Recommended Hardware Architecture\n\n#### **Option A: Unified High-Performance Stack (Recommended for Stability)**\n*Best if you prioritize consistent performance over initial cost savings.*\n\n| Component | Specification | Qty | Total Capacity | Purpose |\n| :--- | :--- | :--- | :--- | :--- |\n| **Nodes** | Dual Socket (AMD EPYC\/Xeon Gold), 256GB RAM | **6 Nodes** | - | Cluster backbone |\n| **CPU** | 64 Cores \/ 128 Threads per node | 6x | - | Handling parallel ingest\/search |\n| **JVM Heap** | 128GB - 192GB per node | - | - | Optimized for shard management |\n| **Storage Type** | Enterprise NVMe (PCIe 4.0) | 4 Drives\/Node | **-** | Low latency writes |\n| **Drive Size** | 12TB or 16TB per drive | 4x | **24 TB Usable\/node** | RAID 10 Mirroring |\n| **Net Usable Cap**| | **6 Nodes** | **~144 TB** | Fits 90-day retention comfortably |\n| **Network** | 25 Gbps or 100 Gbps NICs | Per Node | - | Inter-node sync |\n\n**Why this works:**\n*   **RAID 10** ensures redundancy while maintaining write speeds critical for 1TB\/day.\n*   **No Replicas initially:** Set `number_of_replicas: 0` on Hot indices to maximize storage density and reduce network I\/O. Move replicas to Warm tier later if needed.\n*   **Filesystem:** Use **XFS** mounted with `noatime`.\n\n---\n\n#### **Option B: Cost-Optimized Hybrid (Split Tiers Later)**\n*Start with fewer powerful nodes, expand Warm layer later.*\n\n| Tier | Role | Specs | Qty | Est. Capacity |\n| :--- | :--- | :--- | :--- | :--- |\n| **Hot Tier** | Ingest & Search (<14 days) | 4x NVMe (12TB), 256GB RAM | **3 Nodes** | ~72 TB |\n| **Warm Tier** | Bulk Storage (>14 days) | 4x HDD\/NL-SAS (18TB+) or additional NVMe | **3 Nodes** | ~80+ TB |\n| **Total** | | | **6 Nodes** | **~150 TB** |\n\n*Note: Transition logic requires an Index Lifecycle Management (ILM) policy to move indices from Hot to Warm automatically after X days.*\n\n---\n\n### ⚙️ Critical Configuration Tips\nTo ensure optimal sizing for this load:\n\n1.  **Shard Sizing:** Keep individual shards between **30GB – 50GB**. With 1TB\/day, creating tiny shards prevents \"hotspotting\" but avoids excessive metadata overhead.\n2.  **Heap vs. Disk:** Do not exceed **50% of physical RAM** for JVM Heap. With 256GB RAM, set Heap to ~128GB. The rest goes to OS page cache (crucial for read performance).\n3.  **Replication Strategy:**\n    *   **Hot Indices:** `number_of_replicas: 0` (Save space\/bandwidth).\n    *   **Warm Indices:** `number_of_replicas: 1` (Ensure durability for long-term storage).\n4.  **Rollover Policy:** Implement a Time-Based Rollover every **24 hours** triggered when the index hits ~30GB or reaches age limits.\n\n### 🛡️ Next Steps\nBefore final procurement, please confirm:\n1.  Are these logs coming from a single source or multiple distributed agents?\n2.  What is your budget preference: Maximum Performance (NVMe only) or Balanced Cost (Hybrid)?\n3.  Do you require immediate disaster recovery snapshots to external cloud storage (AWS S3\/Azure Blob)?\n\nLet me know, and I can refine the node count or generate a costing estimate!",
+    "response_length": 3916,
+    "success": true,
+    "errors": []
+}

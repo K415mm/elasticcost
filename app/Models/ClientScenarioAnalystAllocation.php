@@ -14,7 +14,7 @@ class ClientScenarioAnalystAllocation extends Model
         'soc_role_id',
         'allocation_percentage',
         'custom_monthly_salary',
-        'staff_count'
+        'staff_count',
     ];
 
     protected $casts = [

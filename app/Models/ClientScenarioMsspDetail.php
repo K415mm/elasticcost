@@ -13,12 +13,18 @@ class ClientScenarioMsspDetail extends Model
     protected $fillable = [
         'client_id',
         'scenario_id',
+        'cloud_datacenter',
         'one_time_setup_cost',
         'monthly_maintenance_cost',
         'ram_monthly_cost_per_gb',
         'nvme_ssd_monthly_cost_per_gb',
         'sata_ssd_monthly_cost_per_gb',
         'local_ssd_monthly_cost_per_gb',
+        'elastic_cloud_monthly_cost_per_gb_ram',
+        'elastic_cloud_subscription_tier',
+        'siem_agent_monthly_cost_per_device',
+        'mdr_agent_monthly_cost_per_device',
+        'edr_agent_monthly_cost_per_device',
         'is_license_shared',
         'license_share_percentage',
         'assurance_benefit_percentage',
@@ -26,7 +32,9 @@ class ClientScenarioMsspDetail extends Model
         'soc_manager_benefit_percentage',
         'ceo_benefit_percentage',
         'fixed_profit_percentage',
-        'ai_analysis'
+        'ai_analysis',
+        'ai_sizing_analysis',
+        'custom_nodes',
     ];
 
     protected $casts = [
@@ -36,6 +44,10 @@ class ClientScenarioMsspDetail extends Model
         'nvme_ssd_monthly_cost_per_gb' => 'decimal:4',
         'sata_ssd_monthly_cost_per_gb' => 'decimal:4',
         'local_ssd_monthly_cost_per_gb' => 'decimal:4',
+        'elastic_cloud_monthly_cost_per_gb_ram' => 'decimal:4',
+        'siem_agent_monthly_cost_per_device' => 'decimal:4',
+        'mdr_agent_monthly_cost_per_device' => 'decimal:4',
+        'edr_agent_monthly_cost_per_device' => 'decimal:4',
         'is_license_shared' => 'boolean',
         'license_share_percentage' => 'decimal:2',
         'assurance_benefit_percentage' => 'decimal:2',
@@ -43,6 +55,7 @@ class ClientScenarioMsspDetail extends Model
         'soc_manager_benefit_percentage' => 'decimal:2',
         'ceo_benefit_percentage' => 'decimal:2',
         'fixed_profit_percentage' => 'decimal:2',
+        'custom_nodes' => 'array',
     ];
 
     public function client(): BelongsTo

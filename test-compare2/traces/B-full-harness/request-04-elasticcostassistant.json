@@ -1,0 +1,49 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 3,
+    "agent": "ElasticCostAssistant",
+    "category": "costing-calculation",
+    "description": "SOC costing calculation with staffing tiers",
+    "model": "qwen3.5-27b",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 42026,
+        "start_time": "2026-06-27T23:13:29+00:00",
+        "end_time": "2026-06-27T23:14:11+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 331,
+        "completion_tokens": 1218,
+        "total_tokens": 1549
+    },
+    "prompts": {
+        "raw_user_prompt": "How do I calculate the MSSP SOC staffing cost for a client with 200 devices across 3 asset types? Explain the L1, L2, L3 pricing model.",
+        "effective_user_prompt": "How do I calculate the MSSP SOC staffing cost for a client with 200 devices across 3 asset types? Explain the L1, L2, L3 pricing model.",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 4,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "To calculate the MSSP SOC staffing cost for a client with **200 devices**, you must determine the operational load these assets generate and map that load to the appropriate analyst tiers (L1, L2, L3). There is no single \"per-device\" price; instead, costing is derived from **coverage requirements** and **incident handling capacity**.\n\nHere is the breakdown of the pricing model and the calculation methodology.\n\n### 1. The Tiered Pricing Model (L1 vs. L2 vs. L3)\n\nSOC operations utilize a pyramid structure where higher levels command significantly higher rates due to specialized skills and lower availability.\n\n| Level | Role Definition | Primary Responsibility | Billing Trigger | Typical Cost Driver |\n| :--- | :--- | :--- | :--- | :--- |\n| **L1** | **Triage & Monitoring** | \"The Eyes.\"<br>- Monitor dashboards.<br>- Acknowledge alerts.<br>- Filter false positives\/noise.<br>- Execute basic playbooks. | **Volume-Based.**<br>Billed via a monthly retainer covering continuous monitoring hours. | Log ingestion volume & alert frequency. |\n| **L2** | **Investigation & Containment** | \"The Hands.\"<br>- Deep-dive forensic analysis.<br>- Correlate events across assets.<br>- Isolate compromised hosts.<br>- Manage containment workflows. | **Incident-Based.**<br>Billed per validated incident or allocated hourly blocks. | Number of confirmed security incidents. |\n| **L3** | **Threat Hunting & Remediation** | \"The Brain.\"<br>- Advanced malware reverse engineering.<br>- Proactive threat hunting.<br>- Architecture reviews.<br>- Post-incident forensics. | **Premium Engagement.**<br>Billed strictly on Time & Materials (T&M) or high-tier retainers. | Complexity of threats bypassing L1\/L2 controls. |\n\n---\n\n### 2. Calculation Methodology for 200 Devices\n\nFor a small environment like **200 devices**, you typically do not require full-time dedicated staff. Instead, you calculate **fractional Full-Time Equivalents (FTEs)** or purchase **hourly blocks**.\n\n#### Step A: Assess Asset Types & Load\nDifferent asset types generate different log volumes.\n*   **Endpoints (Workstations\/Mobile):** High volume, mostly routine activity.\n*   **Servers:** Moderate volume, critical business impact.\n*   **Network\/Firewalls:** Low-to-moderate volume, high signal-to-noise ratio for intrusion attempts.\n\n*Action:* Categorize your 200 devices into these buckets to estimate total daily event generation.\n\n#### Step B: Determine L1 Coverage (Base Retainer)\nL1 analysts handle the bulk of the noise. Industry benchmarks often suggest one L1 can effectively monitor roughly **500–800 endpoints** during standard shifts, depending on automation maturity.\n\n*   **Logic:** With 200 devices, you fall well under the threshold for a full-time L1.\n*   **Calculation:** You likely need ~0.25 to 0.5 FTE equivalent of L1 coverage (or shared resources across multiple clients).\n*   **Cost Formula:** `Fractional_FTE × Monthly_Hours × L1_Hourly_Rate + Platform_Licensing_Fee`.\n\n#### Step C: Estimate L2\/L3 Allocation (Variable Costs)\nNot every day has major incidents. These are calculated based on risk profile and SLA.\n*   **Low Risk:** Expect minimal escalations. Purchase a small block of L2 hours (e.g., 5–10 hours\/month).\n*   **Medium\/High Risk:** Increase L2 buffer. Include occasional L3 support for complex investigations.\n*   **Cost Formula:** `(Estimated_Incidents_Monthly × Avg_Resolution_Time) × L2_Rate`.\n\n---\n\n### 3. Illustrative Example (Hypothetical Rates)\n\n*Note: Actual rates vary by region and vendor contract. Use this as a structural template.*\n\nLet’s assume a standard US-based MSSP rate card:\n*   **L1 Rate:** $45\/hour\n*   **L2 Rate:** $75\/hour\n*   **Platform Fee:** $2,500\/month (covers SIEM license, EDR agents, etc.)\n\n**Scenario Breakdown:**\n1.  **L1 Base:** 200 devices requires approx. 40 hours of active monitoring\/triage per month (shared resource).\n    *   $45\/hr × 40 hrs = **$1,800**\n2.  **Platform Overhead:** Fixed fee = **$2,500**\n3.  **L2 Buffer:** Anticipated 2 minor incidents requiring 4 hours each.\n    *   $75\/hr × 8 hrs = **$600**\n4.  **L3 Reserve:** No anticipated deep hunts included in base, billed ad-hoc if needed ($110+\/hr).\n\n**Total Estimated MRC (Monthly Recurring Charge):**\n$$ \\$1,800 (\\text{L1}) + \\$2,500 (\\text{Platform}) + \\$600 (\\text{L2 Buffer}) = \\mathbf{\\$4,900\/\\text{month}} $$\n\n### Recommendation for Your Quote\nWhen presenting this to the client:\n1.  **Bundle L1:** Present the L1 cost and Platform fees as a **\"Monitoring Retainer\"** (Fixed Price).\n2.  **Block L2:** Offer a package including X number of L2 investigation hours (e.g., \"Includes 10 L2 hours\/month\").\n3.  **Define Overage:** Clearly state that additional L2\/L3 time outside the block is billed at the premium T&M rate.\n\nWould you like me to help you refine this calculation based on specific **log volumes** or **retention policies** for your client?",
+    "response_length": 4869,
+    "success": true,
+    "errors": []
+}

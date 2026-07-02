@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AssetType;
 use App\Models\Client;
 use App\Models\Scenario;
-use App\Models\AssetType;
 use App\Services\SizingEngine;
 use Illuminate\Http\Request;
 
@@ -23,6 +23,7 @@ class ClientController extends Controller
     public function index()
     {
         $clients = Client::withCount('clientAssets')->get();
+
         return view('clients.index', compact('clients'));
     }
 
@@ -58,7 +59,7 @@ class ClientController extends Controller
     {
         // Load client assets with types
         $inventory = $client->clientAssets()->with('assetType')->get();
-        
+
         // Find asset types that are NOT currently in the client's inventory (if any)
         $existingAssetTypeIds = $inventory->pluck('asset_type_id')->toArray();
         $availableAssetTypes = AssetType::whereNotIn('id', $existingAssetTypeIds)->get();
@@ -72,7 +73,7 @@ class ClientController extends Controller
             $scenarioComparisons[] = [
                 'scenario' => $scenario,
                 'totals' => $result['totals'],
-                'licensing' => $result['licensing']
+                'licensing' => $result['licensing'],
             ];
         }
 
@@ -85,6 +86,7 @@ class ClientController extends Controller
     public function destroy(Client $client)
     {
         $client->delete();
+
         return redirect()->route('clients.index')
             ->with('success', 'Client deleted successfully.');
     }

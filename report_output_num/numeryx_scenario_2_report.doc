@@ -1,0 +1,297 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+    <meta charset="utf-8">
+    <title>ElasticCost Sizing & Cost Report</title>
+    <!--[if gte mso 9]>
+    <xml>
+        <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+            <w:DoNotOptimizeForBrowser/>
+        </w:WordDocument>
+    </xml>
+    <![endif]-->
+    <style>
+        @page {
+            size: A4;
+            margin: 1in;
+        }
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            color: #1e293b;
+            line-height: 1.5;
+            font-size: 11pt;
+        }
+        .title-banner {
+            background-color: #0f172a;
+            color: #ffffff;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-left: 6px solid #0d9488;
+        }
+        .title-banner h1 {
+            font-size: 22pt;
+            font-weight: bold;
+            margin: 0;
+            color: #ffffff;
+            border: none;
+            padding: 0;
+        }
+        .title-banner p {
+            margin: 5px 0 0 0;
+            color: #94a3b8;
+            font-size: 11pt;
+        }
+        h2 {
+            font-size: 14pt;
+            color: #0f766e;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 4px;
+        }
+        h3 {
+            font-size: 12pt;
+            color: #1e293b;
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 10pt;
+        }
+        th {
+            background-color: #1e293b;
+            color: #ffffff;
+            font-weight: bold;
+            text-align: left;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+        }
+        td {
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            font-weight: bold;
+            font-size: 8pt;
+            color: #ffffff;
+            border-radius: 3px;
+        }
+        .badge-hot { background-color: #ef4444; }
+        .badge-warm { background-color: #f97316; }
+        .badge-cold { background-color: #3b82f6; }
+        .badge-frozen { background-color: #6366f1; }
+        
+        .alert {
+            background-color: #f0fdfa;
+            border-left: 4px solid #0f766e;
+            padding: 12px;
+            margin: 15px 0;
+            font-style: italic;
+        }
+        .mono {
+            font-family: Consolas, Monaco, monospace;
+            background-color: #f1f5f9;
+            padding: 1px 4px;
+            font-size: 9.5pt;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="title-banner">
+        <h1>ElasticSearch Sizing & Cost Report</h1>
+        <p>Client: Numeryx &bull; Scenario: Scenario 2 &bull; Profile: Min</p>
+    </div>
+
+    <h2>1. Workload & Ingest Parameters</h2>
+    <p>This report details the architectural footprint and licensing cost for <strong>Client "Numeryx"</strong> under the <strong>Scenario 2</strong> sizing scenario.</p>
+    <ul>
+        <li><strong>Ingestion Profile:</strong> Min Workload</li>
+        <li><strong>Daily Raw Log Volume:</strong> <span class="mono">49.14 GB/day</span></li>
+        <li><strong>Daily Indexed Volume (+25% Expansion):</strong> <span class="mono">61.43 GB/day</span></li>
+        <li><strong>Retention Period:</strong> <span class="mono">365 Days</span></li>
+    </ul>
+
+    <h3>ILM Data Lifecycle Tiers</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Data Lifecycle Tier</th>
+                <th class="text-center">Retention Period</th>
+                <th class="text-center">Replicas</th>
+                <th>Daily Indexed Volume</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="badge badge-hot">HOT</span> primary ingest, high search rate</td>
+                <td class="text-center">30 Days</td>
+                <td class="text-center">1</td>
+                <td>122.86 GB/day (incl. replicas)</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-frozen">FROZEN</span> archive search, searchable snapshots only</td>
+                <td class="text-center">335 Days</td>
+                <td class="text-center">0 (0% replica overhead)</td>
+                <td>61.43 GB/day</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>2. Storage Sizing Calculations</h2>
+    <ul>
+        <li><strong>Total Raw Data Stored:</strong> 49.14 GB/day * 365 days = <strong>17,937.36 GB</strong></li>
+        <li><strong>Total Indexed Data (Active):</strong> 61.43 GB/day * 365 days = <strong>22,421.70 GB</strong></li>
+        <li><strong>Total Cluster Storage Required:</strong> <strong>44,843.40 GB</strong> physical footprint</li>
+    </ul>
+
+    <h3>Tier Storage Breakdown</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Tier</th>
+                <th>Storage Type</th>
+                <th class="text-right">Physical Space Required</th>
+            </tr>
+        </thead>
+        <tbody><tr><td><span class="badge badge-hot">HOT</span></td><td>NVMe SSD (Primary + Replica)</td><td class="text-right"><strong>3,685.76 GB</strong></td></tr><tr><td><span class="badge badge-frozen">FROZEN</span></td><td>Object Store Cache</td><td class="text-right"><strong>41,157.64 GB</strong></td></tr>
+            <tr style="background-color: #f1f5f9; font-weight: bold;">
+                <td colspan="2">Total Physical Storage Footprint</td>
+                <td class="text-right">44,843.40 GB</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>3. Recommended Cluster Architecture (On-Premises VMs)</h2>
+    <p>The following deployment cluster topology is recommended to satisfy the storage and RAM-to-disk ratio requirements:</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Node Name</th>
+                <th>Node Role</th>
+                <th class="text-center">Count</th>
+                <th class="text-right">RAM / Node</th>
+                <th class="text-right">JVM Heap</th>
+                <th class="text-right">Storage / Node</th>
+                <th>Storage Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>hot-node-01</strong></td>
+                <td>Master / Data (Hot)</td>
+                <td class="text-center">1</td>
+                <td class="text-right">32 GB</td>
+                <td class="text-right">16 GB</td>
+                <td class="text-right">1.5 TB</td>
+                <td>Local NVMe SSD</td>
+            </tr>
+            <tr>
+                <td><strong>hot-node-02</strong></td>
+                <td>Master / Data (Hot)</td>
+                <td class="text-center">1</td>
+                <td class="text-right">32 GB</td>
+                <td class="text-right">16 GB</td>
+                <td class="text-right">1.5 TB</td>
+                <td>Local NVMe SSD</td>
+            </tr>
+            <tr>
+                <td><strong>hot-node-03</strong></td>
+                <td>Master / Data (Hot)</td>
+                <td class="text-center">1</td>
+                <td class="text-right">32 GB</td>
+                <td class="text-right">16 GB</td>
+                <td class="text-right">1.5 TB</td>
+                <td>Local NVMe SSD</td>
+            </tr>
+            <tr>
+                <td><strong>master-tiebreaker</strong></td>
+                <td>Dedicated Master (Quorum)</td>
+                <td class="text-center">1</td>
+                <td class="text-right">4 GB</td>
+                <td class="text-right">2 GB</td>
+                <td class="text-right">20 GB</td>
+                <td>Local SSD</td>
+            </tr>
+            <tr>
+                <td><strong>frozen-node-01</strong></td>
+                <td>Data (Frozen)</td>
+                <td class="text-center">1</td>
+                <td class="text-right">16 GB</td>
+                <td class="text-right">8 GB</td>
+                <td class="text-right">17 TB</td>
+                <td>SATA SSD (Snapshot Cache)</td>
+            </tr>
+            <tr>
+                <td><strong>frozen-node-02</strong></td>
+                <td>Data (Frozen)</td>
+                <td class="text-center">1</td>
+                <td class="text-right">16 GB</td>
+                <td class="text-right">8 GB</td>
+                <td class="text-right">17 TB</td>
+                <td>SATA SSD (Snapshot Cache)</td>
+            </tr>
+            <tr>
+                <td><strong>kibana-fleet-01</strong></td>
+                <td>Kibana / Fleet Server</td>
+                <td class="text-center">1</td>
+                <td class="text-right">16 GB</td>
+                <td class="text-right">8 GB</td>
+                <td class="text-right">50 GB</td>
+                <td>Local SSD</td>
+            </tr>
+            <tr>
+                <td><strong>kibana-fleet-02</strong></td>
+                <td>Kibana / Fleet Server (HA)</td>
+                <td class="text-center">1</td>
+                <td class="text-right">16 GB</td>
+                <td class="text-right">8 GB</td>
+                <td class="text-right">50 GB</td>
+                <td>Local SSD</td>
+            </tr>
+            <tr>
+                <td><strong>ml-node</strong></td>
+                <td>Dedicated Machine Learning</td>
+                <td class="text-center">1</td>
+                <td class="text-right">16 GB</td>
+                <td class="text-right">8 GB</td>
+                <td class="text-right">50 GB</td>
+                <td>Local SSD</td>
+            </tr>
+            <tr style="background-color: #f1f5f9; font-weight: bold;">
+                <td colspan="3">Total Cluster Memory Footprint</td>
+                <td class="text-right" colspan="4">180 GB RAM</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>4. Elastic Resource Unit (ERU) Licensing Cost</h2>
+    <p>Required ERUs are calculated using the total memory footprint divided by the standard ERU size:</p>
+    <div style="text-align: center; margin: 15px 0; font-size: 12pt; font-weight: bold; color: #0f766e;">
+        Required ERUs = Ceiling( 180 GB RAM / 64 GB ) = 3 ERUs
+    </div>
+
+    <div class="alert">
+        <strong>Licensing Verdict:</strong> This configuration requires <strong>3 ERU</strong> subscription licenses. 
+        Annual projected license cost is <strong>€38,640.00</strong> based on an assumed €12,880.00/ERU commercial list price.
+    </div>
+
+</body>
+</html>

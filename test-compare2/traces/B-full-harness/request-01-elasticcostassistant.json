@@ -1,0 +1,49 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 0,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-basic",
+    "description": "Simple factual question about ES sizing ratios",
+    "model": "qwen3.5-27b",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 20243,
+        "start_time": "2026-06-27T23:11:51+00:00",
+        "end_time": "2026-06-27T23:12:12+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 312,
+        "completion_tokens": 259,
+        "total_tokens": 571
+    },
+    "prompts": {
+        "raw_user_prompt": "What is the RAM-to-disk ratio for Hot tier in Elasticsearch?",
+        "effective_user_prompt": "What is the RAM-to-disk ratio for Hot tier in Elasticsearch?",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "For the **Hot tier** in Elasticsearch, the recommended RAM-to-disk ratio is typically **1:30**.\n\n### Key Details:\n- **Ratio Meaning**: For every 30 GB of disk storage allocated to hot data, you should provision approximately **1 GB of system RAM**.\n- **Purpose**: This ensures sufficient memory for:\n  - JVM Heap (capped at ~31–32 GB per node)\n  - Operating System file system caches (PageCache)\n  - Efficient indexing and low-latency search operations typical of hot nodes.\n\n### Example:\nIf a Hot node stores **900 GB** of active index data:\n$$ \\text{Required RAM} = \\frac{900}{30} = 30 \\text{ GB} $$\n- Allocate ~31 GB total RAM.\n- Set JVM Heap to ~30 GB (leaving minimal room for OS overhead).\n\n> ⚠️ Note: While some legacy guidelines suggest ratios like 1:4 or 1:5, modern Elasticsearch deployments with optimized ILM policies and larger disks rely on the **1:30** rule for cost-effective scaling while maintaining performance.\n\nLet me know if you'd like help sizing a full cluster based on your log volume or retention needs!",
+    "response_length": 1035,
+    "success": true,
+    "errors": []
+}

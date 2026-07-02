@@ -99,6 +99,222 @@
     </div>
 </div>
 
+<!-- 2.5 AI Provider Settings Card -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title text-theme mb-3">
+            <i class="bi bi-cpu-fill me-2"></i> AI Provider Configuration
+        </h5>
+        <p class="text-muted small mb-4">
+            Select and configure the AI provider and model utilized across sizing audits, cost proposal feedback, and the chat analyst assistant.
+        </p>
+
+        <form action="{{ route('settings.system.ai.update') }}" method="POST">
+            @csrf
+            <div class="row">
+                <div class="col-md-3 mb-4">
+                    <label class="form-label text-white small">AI Provider Backend</label>
+                    <select name="ai_provider" id="aiProviderSelect" class="form-select">
+                        <option value="ollama" {{ $aiProvider === 'ollama' ? 'selected' : '' }}>Ollama (Local / On-Premise)</option>
+                        <option value="lmstudio" {{ $aiProvider === 'lmstudio' ? 'selected' : '' }}>LM Studio (Local OpenAI API Compatible)</option>
+                        <option value="gemini" {{ $aiProvider === 'gemini' ? 'selected' : '' }}>Gemini Studio (Cloud REST API)</option>
+                        <option value="openrouter" {{ $aiProvider === 'openrouter' ? 'selected' : '' }}>OpenRouter (Cloud Hub API)</option>
+                        <option value="qwen" {{ $aiProvider === 'qwen' ? 'selected' : '' }}>Qwen Cloud (Alibaba / DashScope API)</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3 mb-4 d-flex flex-column justify-content-end pb-1">
+                    <div class="form-check form-switch mb-2">
+                        <input type="checkbox" name="ai_multi_agent_enabled" id="aiMultiAgentEnabled" value="1" class="form-check-input" {{ $aiMultiAgentEnabled ? 'checked' : '' }}>
+                        <label class="form-check-label text-white small" for="aiMultiAgentEnabled">Multi-Agent Architecture</label>
+                    </div>
+                </div>
+
+                <!-- Ollama Settings Section -->
+                <div class="col-md-12 ai-provider-settings-group" id="settings-ollama">
+                    <div class="row">
+                        <div class="col-md-4 mb-4">
+                            <label class="form-label text-white small">Ollama API URL</label>
+                            <div class="input-group">
+                                <input type="url" id="ollama_url" name="ollama_url" class="form-control mono-cell" value="{{ $ollamaUrl }}" placeholder="http://localhost:11434">
+                                <button type="button" class="btn btn-outline-theme btn-scan-models" data-provider="ollama">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Scan
+                                </button>
+                            </div>
+                            <div class="small text-muted mt-1" style="font-size: 10px;">Default local port is 11434. Ensure Ollama service is running.</div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <label class="form-label text-white small">Target Main Model Name</label>
+                            <select id="ollama_model" name="ollama_model" class="form-select mono-cell">
+                                <option value="{{ $ollamaModel }}" selected>{{ $ollamaModel }}</option>
+                            </select>
+                            <div class="small text-muted mt-1" style="font-size: 10px;">Main execution model for complex tasks (e.g. gemma4:e2b).</div>
+                            <div id="ollama-scan-status" class="mt-1 small"></div>
+                        </div>
+                        <div class="col-md-4 mb-4 ollama-light-model-container" style="display: {{ $aiMultiAgentEnabled ? 'block' : 'none' }};">
+                            <label class="form-label text-white small">Target Light Model Name (Router)</label>
+                            <select id="ollama_light_model" name="ollama_light_model" class="form-select mono-cell">
+                                <option value="{{ $ollamaLightModel }}" selected>{{ $ollamaLightModel }}</option>
+                            </select>
+                            <div class="small text-muted mt-1" style="font-size: 10px;">Lightweight model for quick classification (e.g. gemma-3-1b).</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LM Studio Settings Section -->
+                <div class="col-md-12 ai-provider-settings-group" id="settings-lmstudio" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-4 mb-4">
+                            <label class="form-label text-white small">LM Studio Server Endpoint</label>
+                            <div class="input-group">
+                                <input type="url" id="lmstudio_url" name="lmstudio_url" class="form-control mono-cell" value="{{ $lmstudioUrl }}" placeholder="http://localhost:1234/v1">
+                                <button type="button" class="btn btn-outline-theme btn-scan-models" data-provider="lmstudio">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Scan
+                                </button>
+                            </div>
+                            <div class="small text-muted mt-1" style="font-size: 10px;">Default LM Studio port is 1234. Include /v1 suffix.</div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <label class="form-label text-white small">LM Studio Model Key</label>
+                            <select id="lmstudio_model" name="lmstudio_model" class="form-select mono-cell">
+                                <option value="{{ $lmstudioModel }}" selected>{{ $lmstudioModel }}</option>
+                            </select>
+                            <div class="small text-muted mt-1" style="font-size: 10px;">Main execution model loaded in LM Studio.</div>
+                            <div id="lmstudio-scan-status" class="mt-1 small"></div>
+                        </div>
+                        <div class="col-md-4 mb-4 lmstudio-light-model-container" style="display: {{ $aiMultiAgentEnabled ? 'block' : 'none' }};">
+                            <label class="form-label text-white small">LM Studio Light Model Key (Router)</label>
+                            <select id="lmstudio_light_model" name="lmstudio_light_model" class="form-select mono-cell">
+                                <option value="{{ $lmstudioLightModel }}" selected>{{ $lmstudioLightModel }}</option>
+                            </select>
+                            <div class="small text-muted mt-1" style="font-size: 10px;">Lightweight model for quick classification.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gemini Settings Section -->
+                <div class="col-md-12 ai-provider-settings-group" id="settings-gemini" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-4 mb-4">
+                            <label class="form-label text-white small">Gemini Model Identifier</label>
+                            <select id="gemini_model" name="gemini_model" class="form-select mono-cell">
+                                <option value="{{ $geminiModel }}" selected>{{ $geminiModel }}</option>
+                            </select>
+                            <div class="small text-muted mt-1" style="font-size: 10px;">Supported models include gemini-1.5-pro, gemini-2.5-flash, etc.</div>
+                            <div id="gemini-scan-status" class="mt-1 small"></div>
+                        </div>
+                        <div class="col-md-4 mb-4 gemini-light-model-container" style="display: {{ $aiMultiAgentEnabled ? 'block' : 'none' }};">
+                            <label class="form-label text-white small">Gemini Light Model Identifier (Router)</label>
+                            <select id="gemini_light_model" name="gemini_light_model" class="form-select mono-cell">
+                                <option value="{{ $geminiLightModel }}" selected>{{ $geminiLightModel }}</option>
+                            </select>
+                            <div class="small text-muted mt-1" style="font-size: 10px;">Lightweight model for quick classification (e.g. gemini-1.5-flash).</div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <label class="form-label text-white small">Gemini Studio API Key</label>
+                            <div class="input-group">
+                                <input type="password" id="gemini_api_key" name="gemini_api_key" class="form-control mono-cell" value="{{ $geminiApiKey }}" placeholder="AIzaSy...">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('gemini_api_key')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-theme btn-scan-models" data-provider="gemini">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Scan
+                                </button>
+                            </div>
+                            <div class="small text-muted mt-1" style="font-size: 10px;">Your private developer API key from Google AI Studio. Stored securely.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OpenRouter Settings Section -->
+                <div class="col-md-12 ai-provider-settings-group" id="settings-openrouter" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-4 mb-4">
+                            <label class="form-label text-white small">OpenRouter Model Identifier</label>
+                            <select id="openrouter_model" name="openrouter_model" class="form-select mono-cell">
+                                <option value="{{ $openrouterModel }}" selected>{{ $openrouterModel }}</option>
+                            </select>
+                            <div class="small text-muted mt-1" style="font-size: 10px;">E.g. meta-llama/llama-3-8b-instruct:free, google/gemini-2.5-flash, etc.</div>
+                            <div id="openrouter-scan-status" class="mt-1 small"></div>
+                        </div>
+                        <div class="col-md-4 mb-4 openrouter-light-model-container" style="display: {{ $aiMultiAgentEnabled ? 'block' : 'none' }};">
+                            <label class="form-label text-white small">OpenRouter Light Model Identifier (Router)</label>
+                            <select id="openrouter_light_model" name="openrouter_light_model" class="form-select mono-cell">
+                                <option value="{{ $openrouterLightModel }}" selected>{{ $openrouterLightModel }}</option>
+                            </select>
+                            <div class="small text-muted mt-1" style="font-size: 10px;">Lightweight model for quick classification.</div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <label class="form-label text-white small">OpenRouter API Key</label>
+                            <div class="input-group">
+                                <input type="password" id="openrouter_api_key" name="openrouter_api_key" class="form-control mono-cell" value="{{ $openrouterApiKey }}" placeholder="sk-or-v1-...">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('openrouter_api_key')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-theme btn-scan-models" data-provider="openrouter">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Scan
+                                </button>
+                            </div>
+                            <div class="small text-muted mt-1" style="font-size: 10px;">Your OpenRouter API Key. Stored securely.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Qwen Settings Section -->
+                <div class="col-md-12 ai-provider-settings-group" id="settings-qwen" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-3 mb-4">
+                            <label class="form-label text-white small">Qwen API Endpoint</label>
+                            <input type="url" id="qwen_url" name="qwen_url" class="form-control mono-cell" value="{{ $qwenUrl }}" placeholder="https://dashscope-intl.aliyuncs.com/compatible-mode/v1">
+                            <div class="small text-muted mt-1" style="font-size: 10px;">Qwen Cloud compatible base URL.</div>
+                        </div>
+                        <div class="col-md-3 mb-4">
+                            <label class="form-label text-white small">Qwen Model Key</label>
+                            <select id="qwen_model" name="qwen_model" class="form-select mono-cell">
+                                <option value="{{ $qwenModel }}" selected>{{ $qwenModel }}</option>
+                            </select>
+                            <div class="small text-muted mt-1" style="font-size: 10px;">Main Qwen model (e.g. qwen-plus).</div>
+                            <div id="qwen-scan-status" class="mt-1 small"></div>
+                        </div>
+                        <div class="col-md-3 mb-4 qwen-light-model-container" style="display: {{ $aiMultiAgentEnabled ? 'block' : 'none' }};">
+                            <label class="form-label text-white small">Qwen Light Model Key (Router)</label>
+                            <select id="qwen_light_model" name="qwen_light_model" class="form-select mono-cell">
+                                <option value="{{ $qwenLightModel }}" selected>{{ $qwenLightModel }}</option>
+                            </select>
+                            <div class="small text-muted mt-1" style="font-size: 10px;">Router model (e.g. qwen-turbo).</div>
+                        </div>
+                        <div class="col-md-3 mb-4">
+                            <label class="form-label text-white small">Qwen API Key</label>
+                            <div class="input-group">
+                                <input type="password" id="qwen_api_key" name="qwen_api_key" class="form-control mono-cell" value="{{ $qwenApiKey }}" placeholder="sk-...">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('qwen_api_key')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-theme btn-scan-models" data-provider="qwen">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Scan
+                                </button>
+                            </div>
+                            <div class="small text-muted mt-1" style="font-size: 10px;">Alibaba DashScope / Qwen API key.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-top border-secondary border-opacity-30 pt-3 mt-2 d-flex justify-content-end">
+                <button type="submit" class="btn btn-outline-theme px-5 py-2">
+                    <i class="bi bi-save me-2"></i> Save AI Settings
+                </button>
+            </div>
+        </form>
+    </div>
+    <div class="card-arrow">
+        <div class="card-arrow-top-left"></div>
+        <div class="card-arrow-top-right"></div>
+        <div class="card-arrow-bottom-left"></div>
+        <div class="card-arrow-bottom-right"></div>
+    </div>
+</div>
+
 <!-- 3. Translation Override Editor -->
 <div class="card mb-4">
     <div class="card-body">
@@ -183,7 +399,149 @@
 @section('scripts')
 <script src="/assets/plugins/apexcharts/dist/apexcharts.min.js"></script>
 <script>
+    function togglePasswordVisibility(id) {
+        var input = document.getElementById(id);
+        if (input) {
+            if (input.type === "password") {
+                input.type = "text";
+            } else {
+                input.type = "password";
+            }
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
+        // AI Settings visibility toggler
+        var aiProviderSelect = document.getElementById("aiProviderSelect");
+        var settingsGroups = document.querySelectorAll(".ai-provider-settings-group");
+        var multiAgentCheckbox = document.getElementById("aiMultiAgentEnabled");
+
+        function toggleAiSettings() {
+            if (!aiProviderSelect) return;
+            var selected = aiProviderSelect.value;
+            settingsGroups.forEach(function(group) {
+                if (group.id === "settings-" + selected) {
+                    group.style.setProperty("display", "block", "important");
+                } else {
+                    group.style.setProperty("display", "none", "important");
+                }
+            });
+        }
+
+        function toggleMultiAgentFields() {
+            var isChecked = multiAgentCheckbox ? multiAgentCheckbox.checked : false;
+            document.querySelectorAll(".ollama-light-model-container, .lmstudio-light-model-container, .gemini-light-model-container, .openrouter-light-model-container, .qwen-light-model-container").forEach(function(el) {
+                el.style.setProperty("display", isChecked ? "block" : "none", "important");
+            });
+        }
+
+        if (multiAgentCheckbox) {
+            multiAgentCheckbox.addEventListener("change", toggleMultiAgentFields);
+        }
+
+        function scanModels(provider) {
+            var urlInput = document.getElementById(provider + "_url");
+            var keyInput = document.getElementById("gemini_api_key");
+            var selectElement = document.getElementById(provider + "_model");
+            var lightSelectElement = document.getElementById(provider + "_light_model");
+            var statusDiv = document.getElementById(provider + "-scan-status");
+            var button = document.querySelector(`.btn-scan-models[data-provider="${provider}"]`);
+
+            if (!statusDiv) return;
+
+            var params = new URLSearchParams();
+            params.append('provider', provider);
+            
+            if (urlInput) {
+                params.append('url', urlInput.value.trim());
+            }
+            if (provider === 'gemini' && keyInput) {
+                params.append('api_key', keyInput.value.trim());
+            }
+            if (provider === 'openrouter') {
+                var openrouterKey = document.getElementById("openrouter_api_key");
+                if (openrouterKey) {
+                    params.append('api_key', openrouterKey.value.trim());
+                }
+            }
+            if (provider === 'qwen') {
+                var qwenKey = document.getElementById("qwen_api_key");
+                if (qwenKey) {
+                    params.append('api_key', qwenKey.value.trim());
+                }
+            }
+            if (selectElement) {
+                params.append('target_model', selectElement.value);
+            }
+
+            statusDiv.innerHTML = '<span class="text-warning small"><i class="spinner-border spinner-border-sm me-1"></i> Testing connection and scanning models...</span>';
+            if (button) {
+                button.disabled = true;
+                var origText = button.innerHTML;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            }
+
+            fetch("{{ route('ollama.ping') }}?" + params.toString())
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.status === 'ok') {
+                        statusDiv.innerHTML = `<span class="text-success small"><i class="bi bi-check-circle-fill me-1"></i> Connected! Found ${data.available_models.length} models.</span>`;
+                        
+                        [selectElement, lightSelectElement].forEach(function(selectEl) {
+                            if (!selectEl) return;
+                            var currentValue = selectEl.value;
+                            selectEl.innerHTML = '';
+                            
+                            data.available_models.forEach(function(model) {
+                                var opt = document.createElement('option');
+                                opt.value = model;
+                                opt.textContent = model;
+                                if (model === currentValue) {
+                                    opt.selected = true;
+                                }
+                                selectEl.appendChild(opt);
+                            });
+                            
+                            if (currentValue && !data.available_models.includes(currentValue)) {
+                                var customOpt = document.createElement('option');
+                                customOpt.value = currentValue;
+                                customOpt.textContent = currentValue + " (saved)";
+                                customOpt.selected = true;
+                                selectEl.insertBefore(customOpt, selectEl.firstChild);
+                            }
+                        });
+                    } else {
+                        statusDiv.innerHTML = `<span class="text-danger small"><i class="bi bi-exclamation-triangle-fill me-1"></i> ${data.message || 'Connection failed'}</span>`;
+                    }
+                })
+                .catch(function(err) {
+                    statusDiv.innerHTML = `<span class="text-danger small"><i class="bi bi-x-circle-fill me-1"></i> Error: ${err.message || err}</span>`;
+                })
+                .finally(function() {
+                    if (button) {
+                        button.disabled = false;
+                        button.innerHTML = origText;
+                    }
+                });
+        }
+
+        document.querySelectorAll('.btn-scan-models').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var provider = btn.getAttribute('data-provider');
+                scanModels(provider);
+            });
+        });
+
+        if (aiProviderSelect) {
+            aiProviderSelect.addEventListener("change", function() {
+                toggleAiSettings();
+                scanModels(aiProviderSelect.value);
+            });
+            toggleAiSettings(); // Run initial state toggle
+            toggleMultiAgentFields(); // Run initial multi-agent check
+            scanModels(aiProviderSelect.value);
+        }
+
         // Live table filter
         var searchInput = document.getElementById("translationSearch");
         var rows = document.querySelectorAll(".translation-row");

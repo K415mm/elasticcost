@@ -13,6 +13,7 @@ class ScenarioController extends Controller
     public function index()
     {
         $scenarios = Scenario::all();
+
         return view('scenarios.index', compact('scenarios'));
     }
 

@@ -1,0 +1,49 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 4,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-tunisian",
+    "description": "Tunisian Arabic dialect — sizing 1TB\/day 90-day retention",
+    "model": "qwen3.5-27b",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 24419,
+        "start_time": "2026-06-27T23:14:11+00:00",
+        "end_time": "2026-06-27T23:14:35+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 323,
+        "completion_tokens": 88,
+        "total_tokens": 411
+    },
+    "prompts": {
+        "raw_user_prompt": "3andi cluster ES ken n7eb 1TB log nhar w 90 jour retention, chnou lazem men hardware? hot w warm tiers",
+        "effective_user_prompt": "3andi cluster ES ken n7eb 1TB log nhar w 90 jour retention, chnou lazem men hardware? hot w warm tiers",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 1,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "⚠️ LLM execution error: FailoverLlmClient: all 2 client(s) failed. Last error: LM Studio connection failed: Client error: `POST http:\/\/localhost:1234\/v1\/chat\/completions` resulted in a `400 Bad Request` response:\n{\n    \"error\": {\n        \"message\": \"No models loaded. Please load a model in the developer page or use the 'lms load' c (truncated...)",
+    "response_length": 352,
+    "success": true,
+    "errors": []
+}

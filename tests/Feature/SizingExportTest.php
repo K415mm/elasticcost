@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Models\Client;
-use App\Models\Scenario;
-use App\Models\AssetType;
 use App\Models\ClientAsset;
+use App\Models\Scenario;
+use Database\Seeders\SizingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class SizingExportTest extends TestCase
 {
@@ -16,13 +16,13 @@ class SizingExportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(\Database\Seeders\SizingSeeder::class);
+        $this->seed(SizingSeeder::class);
     }
 
     public function test_sizing_export_excel_returns_success_headers(): void
     {
         $client = Client::create(['name' => 'Acme Corp']);
-        
+
         // Add basic assets
         ClientAsset::create([
             'client_id' => $client->id,
@@ -42,7 +42,7 @@ class SizingExportTest extends TestCase
     public function test_sizing_export_markdown_returns_success_headers(): void
     {
         $client = Client::create(['name' => 'Acme Corp']);
-        
+
         ClientAsset::create([
             'client_id' => $client->id,
             'asset_type_id' => 1,
@@ -61,7 +61,7 @@ class SizingExportTest extends TestCase
     public function test_sizing_export_word_returns_success_headers(): void
     {
         $client = Client::create(['name' => 'Acme Corp']);
-        
+
         ClientAsset::create([
             'client_id' => $client->id,
             'asset_type_id' => 1,
@@ -98,11 +98,11 @@ class SizingExportTest extends TestCase
             ->get(route('sizing.export.markdown', [$client->id, $scenario->id]));
 
         $response->assertStatus(200);
-        
+
         ob_start();
         $response->sendContent();
         $content = ob_get_clean();
-        
+
         $this->assertStringContainsString('TND', $content);
     }
 }

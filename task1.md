@@ -1,0 +1,6 @@
+- [x] Implement filtered session query helper methods in `MonitorReport.php`
+- [x] Update `sessions()` and `api()` endpoints in `HarnessTelemetryController.php` to handle DataTables server-side parameters
+- [x] Add DataTables CSS/JS links in `dashboard.blade.php`
+- [x] Update `sessionTable` HTML structure and add server-side DataTable initialization script in `dashboard.blade.php`
+- [x] Update `sessionsTable` population and client-side DataTable initialization in `dashboard.blade.php`
+- [x] Run automated tests to verify stability

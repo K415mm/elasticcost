@@ -21,4 +21,3 @@ class ExampleTest extends TestCase
         $this->assertStringContainsString('xmlns:o="urn:schemas-microsoft-com:office:office"', $html);
     }
 }
-

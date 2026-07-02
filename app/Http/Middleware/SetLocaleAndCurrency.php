@@ -20,7 +20,7 @@ class SetLocaleAndCurrency
                 session(['locale' => $locale]);
             }
         }
-        
+
         $activeLocale = session('locale', 'en');
         app()->setLocale($activeLocale);
 

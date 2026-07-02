@@ -1,0 +1,49 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 2,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-french",
+    "description": "French language question about ES tier differences",
+    "model": "qwen3.5-omni-flash-2026-03-15",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 60796,
+        "start_time": "2026-06-29T16:46:36+00:00",
+        "end_time": "2026-06-29T16:47:36+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 322,
+        "completion_tokens": 311,
+        "total_tokens": 633
+    },
+    "prompts": {
+        "raw_user_prompt": "Quelle est la différence entre les tiers Hot, Warm, Cold et Frozen en termes de ratio RAM-disque?",
+        "effective_user_prompt": "Quelle est la différence entre les tiers Hot, Warm, Cold et Frozen en termes de ratio RAM-disque?",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "Dans Elasticsearch, les niveaux **Hot**, **Warm**, **Cold** et **Frozen** correspondent à des stratégies d'optimisation du coût et de la performance basées sur l'accès aux données. Voici les ratios recommandés **RAM : Disque** pour chaque tier :\n\n### 📊 Ratios RAM \/ Disque dans Elasticsearch\n\n| Tier   | Ratio Recommandé (RAM : Disque) | Utilisation Principale                              |\n|--------|----------------------------------|-----------------------------------------------------|\n| **Hot**     | **1:30**                         | Données fréquemment consultées, indexation active.  |\n| **Warm**    | **1:80**                         | Données moins fréquentes, accès occasionnel.        |\n| **Cold**    | **1:100**                        | Archives froides, peu accédées.                     |\n| **Frozen**  | **1:160**                        | Données gelées, rarement ou jamais consultées.      |\n\n> 💡 Ces rapports incluent déjà une marge pour les métadonnées et la compression native.  \n> 🔒 Chaque nœud doit être configuré selon son rôle dans le cluster (hot node, warm node, etc.).\n\nSouhaitez-vous que je vous aide à dimensionner un cluster basé sur vos volumes journalisés quotidiens ?",
+    "response_length": 1242,
+    "success": true,
+    "errors": []
+}

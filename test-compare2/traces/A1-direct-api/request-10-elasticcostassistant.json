@@ -1,0 +1,49 @@
+{
+    "test_mode": "A1-direct-api",
+    "request_index": 9,
+    "agent": "ElasticCostAssistant",
+    "category": "costing-tunisian",
+    "description": "Tunisian Arabic — SOC cost calculation for a new client",
+    "model": "qwen3.5-27b",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 33436,
+        "start_time": "2026-06-27T23:28:01+00:00",
+        "end_time": "2026-06-27T23:28:34+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 330,
+        "completion_tokens": 415,
+        "total_tokens": 745
+    },
+    "prompts": {
+        "raw_user_prompt": "knwa 3andi client jdid w n7eb na7seb el SOC cost mt3ou. 3andou 150 device Active Directory w 50 FortiGate. chnou el cout mensuel?",
+        "effective_user_prompt": "knwa 3andi client jdid w n7eb na7seb el SOC cost mt3ou. 3andou 150 device Active Directory w 50 FortiGate. chnou el cout mensuel?",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 1,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "Ahlan bik! Mchallah l'client jdid. 🎉\n\nLi tkhrej b **SOC Cost Proposal** daqq wa profitionnel, 3adad l'appareils (150 AD + 50 FortiGate) huwa marjouba, walakin ma ykfi ch. El cost mensuel y3tmd 3la chi parametres ahem:\n\n### 🔍 Ma3loumat nchiyounha (Missing Details)\nBi tdira taqribia, khassna n3refu:\n1.  **Retention Policy:** Kem mdaqa nkhazn les logs? (Mthalan: 30 jours Hot \/ 60 jours Warm \/ 1 année Cold).\n2.  **Log Volume (EPS\/GB):** Chnou el moyenne des logs par jour? (AD w FortiGate kayvario selon l'activité).\n3.  **SLA & Staffing:** Khassou Monitoring 24\/7? W chnou niveau l'analystes (L1, L2, L3)?\n4.  **Currency:** T7eb el offre f USD, EUR, wala TND?\n\n---\n\n### 💰 Taqdeer Moutawar (Sample Estimate)\nFerra 3la **hypothèse moyenne** (Retention 90 Jours, Activity Moyenne):\n\n| Component | Description | Est. Monthly Cost |\n| :--- | :--- | :--- |\n| **Infrastructure** | Elasticsearch Cluster (Hot\/Warm Nodes) | $800 - $1,200 |\n| **MSSP Staffing** | L1 Analyst (Shift) + L2 Support | $2,500 - $3,500 |\n| **Licenses & Tools** | SIEM License + Integration | $400 - $600 |\n| **Management Fee** | Assurance Markup (15-20%) | ~$600 |\n| **Total MRC** | **Client Monthly Recurring Charge** | **~$4,300 - $5,900** |\n\n> ⚠️ **Note:** Hadhoum prix approximatifs. Li tkhrej b chiffre daqq, khassna ndakhlo l'**Sizing Dashboard**.\n\n### ✅ Chiya nqder n3melk:\n1.  Nkhrejlek **Excel Proposal** mta3 el coût détaillé.\n2.  Nhadrou **Currency Conversion** (USD\/EUR\/TND).\n3.  N3arfo **JVM Heap & RAM** requirements 3la base dyal el logs.\n\n**Chou t7eb nbaddou biha?** Hani n3tik le **Exact Quote** men ba3d ma t3tiya l'retention period w l'activity level.",
+    "response_length": 1659,
+    "success": true,
+    "errors": []
+}

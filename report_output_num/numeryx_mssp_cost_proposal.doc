@@ -1,0 +1,427 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+    <meta charset="utf-8">
+    <title>MSSP Cost Proposal Report</title>
+    <!--[if gte mso 9]>
+    <xml>
+        <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+            <w:DoNotOptimizeForBrowser/>
+        </w:WordDocument>
+    </xml>
+    <![endif]-->
+    <style>
+        @page {
+            size: A4;
+            margin: 1in;
+        }
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            color: #1e293b;
+            line-height: 1.5;
+            font-size: 11pt;
+        }
+        .title-banner {
+            background-color: #0f172a;
+            color: #ffffff;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-left: 6px solid #0d9488;
+        }
+        .title-banner h1 {
+            font-size: 22pt;
+            font-weight: bold;
+            margin: 0;
+            color: #ffffff;
+        }
+        .title-banner p {
+            margin: 5px 0 0 0;
+            color: #94a3b8;
+            font-size: 11pt;
+        }
+        h2 {
+            font-size: 14pt;
+            color: #0f766e;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 10pt;
+        }
+        th {
+            background-color: #1e293b;
+            color: #ffffff;
+            font-weight: bold;
+            text-align: left;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+        }
+        td {
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            font-weight: bold;
+            font-size: 8pt;
+            color: #ffffff;
+            border-radius: 3px;
+        }
+        .highlight-box {
+            background-color: #f0fdfa;
+            border-left: 4px solid #0d9488;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .highlight-box-cloud {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body dir="ltr">
+    <div class="title-banner">
+        <h1>MSSP & SOC Cost Proposal</h1>
+        <p>Client: Numeryx | Scenario: Scenario 2 | Date: 2026-07-01 (EUR)</p>
+    </div>
+
+    <h2>1. SOC Analyst Staffing Allocations</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Operational Role</th>
+                <th class="text-center">Dedication (%)</th>
+                <th class="text-center">Staff Count</th>
+                <th class="text-right">Monthly Salary</th>
+                <th class="text-right">Calculated Client Cost</th>
+            </tr>
+        </thead>
+        <tbody><tr>
+                <td><strong>Analyst Level 1 (L1)</strong></td>
+                <td class="text-center">10%</td>
+                <td class="text-center">3</td>
+                <td class="text-right">€2,500.00</td>
+                <td class="text-right">€750.00</td>
+            </tr><tr>
+                <td><strong>Analyst Level 2 (L2)</strong></td>
+                <td class="text-center">5%</td>
+                <td class="text-center">2</td>
+                <td class="text-right">€4,000.00</td>
+                <td class="text-right">€400.00</td>
+            </tr><tr>
+                <td><strong>Analyst Level 3 (L3)</strong></td>
+                <td class="text-center">2%</td>
+                <td class="text-center">1</td>
+                <td class="text-right">€5,500.00</td>
+                <td class="text-right">€110.00</td>
+            </tr><tr>
+                <td><strong>SOC Engineer</strong></td>
+                <td class="text-center">5%</td>
+                <td class="text-center">1</td>
+                <td class="text-right">€5,500.00</td>
+                <td class="text-right">€275.00</td>
+            </tr><tr>
+                <td><strong>SOC Manager</strong></td>
+                <td class="text-center">10%</td>
+                <td class="text-center">1</td>
+                <td class="text-right">€6,500.00</td>
+                <td class="text-right">€650.00</td>
+            </tr><tr style="font-weight:bold; background-color:#e2e8f0;">
+                <td colspan="4">Total Monthly Staffing Cost</td>
+                <td class="text-right">€2,185.00</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>2. Option A: On-Premise Deployment Offer</h2>
+
+    <h3>VM Hosting Infrastructure</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Node Type / Role</th>
+                <th class="text-center">Instance Count</th>
+                <th class="text-center">RAM / Node</th>
+                <th class="text-center">Storage / Node</th>
+                <th class="text-right">Total Monthly Cost</th>
+            </tr>
+        </thead>
+        <tbody><tr>
+                <td><strong>hot-node-01</strong> (Master / Data (Hot))</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">32 GB</td>
+                <td class="text-center">1.5 TB (Local NVMe SSD)</td>
+                <td class="text-right">€233.02</td>
+            </tr><tr>
+                <td><strong>hot-node-02</strong> (Master / Data (Hot))</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">32 GB</td>
+                <td class="text-center">1.5 TB (Local NVMe SSD)</td>
+                <td class="text-right">€233.02</td>
+            </tr><tr>
+                <td><strong>hot-node-03</strong> (Master / Data (Hot))</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">32 GB</td>
+                <td class="text-center">1.5 TB (Local NVMe SSD)</td>
+                <td class="text-right">€233.02</td>
+            </tr><tr>
+                <td><strong>master-tiebreaker</strong> (Dedicated Master (Quorum))</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">4 GB</td>
+                <td class="text-center">20 GB (Local SSD)</td>
+                <td class="text-right">€17.40</td>
+            </tr><tr>
+                <td><strong>frozen-node-01</strong> (Data (Frozen))</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">16 GB</td>
+                <td class="text-center">17 TB (SATA SSD (Snapshot Cache))</td>
+                <td class="text-right">€403.38</td>
+            </tr><tr>
+                <td><strong>frozen-node-02</strong> (Data (Frozen))</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">16 GB</td>
+                <td class="text-center">17 TB (SATA SSD (Snapshot Cache))</td>
+                <td class="text-right">€403.38</td>
+            </tr><tr>
+                <td><strong>kibana-fleet-01</strong> (Kibana / Fleet Server)</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">16 GB</td>
+                <td class="text-center">50 GB (Local SSD)</td>
+                <td class="text-right">€67.50</td>
+            </tr><tr>
+                <td><strong>kibana-fleet-02</strong> (Kibana / Fleet Server (HA))</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">16 GB</td>
+                <td class="text-center">50 GB (Local SSD)</td>
+                <td class="text-right">€67.50</td>
+            </tr><tr>
+                <td><strong>ml-node</strong> (Dedicated Machine Learning)</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">16 GB</td>
+                <td class="text-center">50 GB (Local SSD)</td>
+                <td class="text-right">€67.50</td>
+            </tr><tr style="font-weight:bold; background-color:#e2e8f0;">
+                <td colspan="4">Total Monthly Hosting Cost</td>
+                <td class="text-right">€1,725.73</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Software Licensing & Maintenance</h3>
+    <ul>
+        <li><strong>Elastic Search License Status:</strong> Dedicated</li>
+        <li><strong>Monthly License Cost Equivalent:</strong> €3,220.00</li>
+        <li><strong>Monthly Operational Maintenance:</strong> €1,000.00</li>
+    </ul>
+
+    <h3>Profit Markup & Commercial Benefits</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Profit/Benefit Factor</th>
+                <th class="text-center">Percentage (%)</th>
+                <th class="text-right">Monthly Profit Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Assurance Benefit</td>
+                <td class="text-center">0%</td>
+                <td class="text-right">€0.00</td>
+            </tr>
+            <tr>
+                <td>Marketing Benefit</td>
+                <td class="text-center">0%</td>
+                <td class="text-right">€0.00</td>
+            </tr>
+            <tr>
+                <td>SOC Manager Profit</td>
+                <td class="text-center">0%</td>
+                <td class="text-right">€0.00</td>
+            </tr>
+            <tr>
+                <td>CEO Profit</td>
+                <td class="text-center">0%</td>
+                <td class="text-right">€0.00</td>
+            </tr>
+            <tr>
+                <td>Fixed Profit</td>
+                <td class="text-center">0%</td>
+                <td class="text-right">€0.00</td>
+            </tr>
+            <tr style="font-weight:bold; background-color:#e2e8f0;">
+                <td>Total Profit Margin Markup</td>
+                <td class="text-center">0%</td>
+                <td class="text-right">€0.00</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="highlight-box">
+        <h3 style="margin-top:0; color:#0f766e;">Commercial Proposal Summary (On-Premise)</h3>
+        <p style="margin:5px 0;"><strong>Estimated Base Cost (MRC):</strong> €8,130.73</p>
+        <p style="margin:5px 0;"><strong>Total Commercial Markup:</strong> +€0.00 (+0%)</p>
+        <p style="margin:5px 0; font-size:12pt; color:#111;"><strong>Final Client Offered MRC (Price):</strong> <span style="font-weight:bold; color:#0d9488;">€8,130.73 / month</span></p>
+        <p style="margin:10px 0 0 0; font-size:10pt; border-top:1px solid #ddd; padding-top:5px;"><strong>Upfront Setup Cost (One-Time):</strong> €10,000.00</p>
+    </div>
+
+    <h2>3. Option B: Elastic Cloud Deployment Offer</h2>
+
+    <h3>Elastic Cloud Node Sizing & Reference Pricing (Azure East US 2)</h3>
+    <p><strong>Subscription Tier:</strong> Platinum</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Node Sizing Item</th>
+                <th>Role</th>
+                <th class="text-center">Count</th>
+                <th class="text-center">RAM / Node</th>
+                <th>Matched Instance SKU</th>
+                <th class="text-right">Hourly Rate</th>
+                <th class="text-right">Total Monthly Cost</th>
+            </tr>
+        </thead>
+        <tbody><tr>
+                <td><strong>hot-node-01</strong></td>
+                <td>Master / Data (Hot)</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">32 GB</td>
+                <td><code>azure.es.master.fsv2</code></td>
+                <td class="text-right">$0.0462 /GB-hr</td>
+                <td class="text-right">€992.89</td>
+            </tr><tr>
+                <td><strong>hot-node-02</strong></td>
+                <td>Master / Data (Hot)</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">32 GB</td>
+                <td><code>azure.es.master.fsv2</code></td>
+                <td class="text-right">$0.0462 /GB-hr</td>
+                <td class="text-right">€992.89</td>
+            </tr><tr>
+                <td><strong>hot-node-03</strong></td>
+                <td>Master / Data (Hot)</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">32 GB</td>
+                <td><code>azure.es.master.fsv2</code></td>
+                <td class="text-right">$0.0462 /GB-hr</td>
+                <td class="text-right">€992.89</td>
+            </tr><tr>
+                <td><strong>master-tiebreaker</strong></td>
+                <td>Dedicated Master (Quorum)</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">4 GB</td>
+                <td><code>azure.es.master.fsv2</code></td>
+                <td class="text-right">$0.0462 /GB-hr</td>
+                <td class="text-right">€124.11</td>
+            </tr><tr>
+                <td><strong>frozen-node-01</strong></td>
+                <td>Data (Frozen)</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">16 GB</td>
+                <td><code>azure.es.datafrozen.edsv4</code></td>
+                <td class="text-right">$0.0625 /GB-hr</td>
+                <td class="text-right">€671.60</td>
+            </tr><tr>
+                <td><strong>frozen-node-02</strong></td>
+                <td>Data (Frozen)</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">16 GB</td>
+                <td><code>azure.es.datafrozen.edsv4</code></td>
+                <td class="text-right">$0.0625 /GB-hr</td>
+                <td class="text-right">€671.60</td>
+            </tr><tr>
+                <td><strong>kibana-fleet-01</strong></td>
+                <td>Kibana / Fleet Server</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">16 GB</td>
+                <td><code>azure.apm.e32sv3</code></td>
+                <td class="text-right">$0.0328 /GB-hr</td>
+                <td class="text-right">€352.45</td>
+            </tr><tr>
+                <td><strong>kibana-fleet-02</strong></td>
+                <td>Kibana / Fleet Server (HA)</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">16 GB</td>
+                <td><code>azure.apm.e32sv3</code></td>
+                <td class="text-right">$0.0328 /GB-hr</td>
+                <td class="text-right">€352.45</td>
+            </tr><tr>
+                <td><strong>ml-node</strong></td>
+                <td>Dedicated Machine Learning</td>
+                <td class="text-center">x1</td>
+                <td class="text-center">16 GB</td>
+                <td><code>azure.es.ml.fsv2</code></td>
+                <td class="text-right">$0.0462 /GB-hr</td>
+                <td class="text-right">€496.45</td>
+            </tr><tr style="font-weight:bold; background-color:#e2e8f0;">
+                <td colspan="6">Total Monthly Elastic Cloud Subscription Cost (Reference)</td>
+                <td class="text-right">€5,647.35</td>
+            </tr>
+        </tbody>
+    </table>
+    <p style="font-size:9pt; color:#64748b;"><em>(Note: This cost is for estimation reference only and is NOT billed separately. All cloud subscription, hosting, staffing, and benefits are fully covered in the agent rates below.)</em></p>
+
+    <h3>MDR Agent Package Coverage</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Agent Type</th>
+                <th class="text-center">Mapped Devices</th>
+                <th class="text-right">Monthly Unit Price</th>
+                <th class="text-right">Total Monthly Cost</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Unified Security Monitoring & Correlation (SIEM)</strong></td>
+                <td class="text-center">210</td>
+                <td class="text-right">€23.00</td>
+                <td class="text-right">€4,830.00</td>
+            </tr>
+            <tr>
+                <td><strong>Expert-Led 24/7 Monitoring & Response (MDR)</strong></td>
+                <td class="text-center">80</td>
+                <td class="text-right">€27.60</td>
+                <td class="text-right">€2,208.00</td>
+            </tr>
+            <tr>
+                <td><strong>Advanced Endpoint Protection (EDR)</strong></td>
+                <td class="text-center">600</td>
+                <td class="text-right">€9.20</td>
+                <td class="text-right">€5,520.00</td>
+            </tr>
+            <tr style="font-weight:bold; background-color:#e2e8f0;">
+                <td colspan="3">Total MDR Agent Package Cost</td>
+                <td class="text-right">€12,558.00</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="highlight-box-cloud">
+        <h3 style="margin-top:0; color:#1d4ed8;">Commercial Proposal Summary (Elastic Cloud)</h3>
+        <p style="margin:5px 0;"><strong>Monthly Agent Package Cost:</strong> €12,558.00</p>
+        <p style="margin:5px 0;"><strong>Commercial Markup:</strong> $0.00 (Agent rates include everything)</p>
+        <p style="margin:5px 0; font-size:12pt; color:#111;"><strong>Final Client Offered MRC (Price):</strong> <span style="font-weight:bold; color:#2563eb;">€12,558.00 / month</span></p>
+        <p style="margin:10px 0 0 0; font-size:10pt; border-top:1px solid #ddd; padding-top:5px;"><strong>Upfront Setup Cost (One-Time):</strong> €10,000.00</p>
+    </div></body>
+</html>

@@ -93,7 +93,7 @@ class SizingEngineTest extends TestCase
         $this->assertEqualsWithDelta(2878.49, $res4['totals']['cold_storage_gb'], 2.0);
         $this->assertEqualsWithDelta(13193.10, $res4['totals']['frozen_storage_gb'], 5.0);
         $this->assertEqualsWithDelta(17510.84, $res4['totals']['total_storage_footprint_gb'], 5.0);
-        $this->assertEquals(116, $res4['licensing']['total_ram_gb']);
+        $this->assertEquals(124, $res4['licensing']['total_ram_gb']);
         $this->assertEquals(2, $res4['licensing']['required_erus']);
 
         // SCENARIO 5: Maximum Ingest, Hot + Warm (Medium Retention)
@@ -104,20 +104,20 @@ class SizingEngineTest extends TestCase
         $this->assertEqualsWithDelta(2316.72, $res5['totals']['hot_storage_gb'], 5.0);
         $this->assertEqualsWithDelta(12576.48, $res5['totals']['warm_storage_gb'], 10.0);
         $this->assertEqualsWithDelta(14893.20, $res5['totals']['total_storage_footprint_gb'], 10.0);
-        $this->assertEquals(392, $res5['licensing']['total_ram_gb']);
+        $this->assertEquals(408, $res5['licensing']['total_ram_gb']);
         $this->assertEquals(7, $res5['licensing']['required_erus']);
 
         // SCENARIO 6: Maximum Ingest, Multi-Tier (Long Retention)
         $scenario6 = Scenario::find(6);
         $res6 = $engine->calculate($client, $scenario6);
         $this->assertEqualsWithDelta(66.19, $res6['totals']['daily_raw_gb'], 0.2);
-        $this->assertEqualsWithDelta(2316.72, $res6['totals']['hot_storage_gb'], 5.0);
-        $this->assertEqualsWithDelta(2647.68, $res6['totals']['warm_storage_gb'], 5.0);
+        $this->assertEqualsWithDelta(1158.36, $res6['totals']['hot_storage_gb'], 5.0);
+        $this->assertEqualsWithDelta(3806.04, $res6['totals']['warm_storage_gb'], 5.0);
         $this->assertEqualsWithDelta(9928.80, $res6['totals']['cold_storage_gb'], 5.0);
         $this->assertEqualsWithDelta(45507.00, $res6['totals']['frozen_storage_gb'], 10.0);
         $this->assertEqualsWithDelta(60400.20, $res6['totals']['total_storage_footprint_gb'], 15.0);
-        $this->assertEquals(584, $res6['licensing']['total_ram_gb']);
-        $this->assertEquals(10, $res6['licensing']['required_erus']);
+        $this->assertEquals(420, $res6['licensing']['total_ram_gb']);
+        $this->assertEquals(7, $res6['licensing']['required_erus']);
     }
 
     public function test_sizing_engine_scales_up_for_large_storage_volumes(): void
@@ -166,8 +166,8 @@ class SizingEngineTest extends TestCase
 
         $hotNode = collect($res['nodes'])->firstWhere('name', 'hot-node-01');
         $this->assertNotNull($hotNode);
-        // It must scale up to 128 GB RAM (bypassing the default 24 GB cap)
-        $this->assertEquals(128.0, $hotNode['ram_gb']);
-        $this->assertEquals(4500.0, $hotNode['storage_gb']);
+        // It must cap at 64 GB RAM (enforcing the new absolute limit) and scale out to 3 nodes
+        $this->assertEquals(64.0, $hotNode['ram_gb']);
+        $this->assertEquals(3000.0, $hotNode['storage_gb']);
     }
 }

@@ -19,7 +19,7 @@ class Scenario extends Model
         'warm_replicas',
         'cold_replicas',
         'frozen_replicas',
-        'is_system_default'
+        'is_system_default',
     ];
 
     protected $casts = [

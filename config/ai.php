@@ -118,6 +118,12 @@ return [
             'url' => env('OLLAMA_URL', 'http://localhost:11434'),
         ],
 
+        'lmstudio' => [
+            'driver' => 'groq',
+            'key' => env('LMSTUDIO_API_KEY', 'lm-studio'),
+            'url' => env('LMSTUDIO_URL', 'http://localhost:1234/v1'),
+        ],
+
         'openai' => [
             'driver' => 'openai',
             'key' => env('OPENAI_API_KEY'),
@@ -127,6 +133,12 @@ return [
         'openrouter' => [
             'driver' => 'openrouter',
             'key' => env('OPENROUTER_API_KEY'),
+        ],
+
+        'qwen' => [
+            'driver' => 'openai',
+            'key' => env('PHPKAIHARNESS_QWEN_KEY') ?: env('QWEN_API_KEY') ?: env('DASHSCOPE_API_KEY'),
+            'url' => env('PHPKAIHARNESS_QWEN_URL') ?: env('QWEN_URL') ?: env('DASHSCOPE_URL') ?: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
         ],
 
         'voyageai' => [

@@ -1,0 +1,49 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 9,
+    "agent": "ElasticCostAssistant",
+    "category": "costing-tunisian",
+    "description": "Tunisian Arabic — SOC cost calculation for a new client",
+    "model": "qwen3.5-omni-flash-2026-03-15",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 63245,
+        "start_time": "2026-06-29T16:53:56+00:00",
+        "end_time": "2026-06-29T16:55:00+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 330,
+        "completion_tokens": 606,
+        "total_tokens": 936
+    },
+    "prompts": {
+        "raw_user_prompt": "knwa 3andi client jdid w n7eb na7seb el SOC cost mt3ou. 3andou 150 device Active Directory w 50 FortiGate. chnou el cout mensuel?",
+        "effective_user_prompt": "knwa 3andi client jdid w n7eb na7seb el SOC cost mt3ou. 3andou 150 device Active Directory w 50 FortiGate. chnou el cout mensuel?",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "أهلاً بك! لحساب تكلفة SOC بدقة، نحتاج لتحديد نموذج التسعير الذي تتبعه ElasticCost (عادةً يعتمد على عدد الأجهزة وحجم البيانات + تكاليف التشغيل البشرية).\n\nبناءً على المعطيات الأولية لديك (**150 Active Directory + 50 FortiGate = 200 جهاز**), إليك تقديرات أولية مفصلة:\n\n### 📊 افتراضات الحساب المبدئي\nلنفترض أن المشروع يتضمن **مراقبة كاملة (Full SOC)** مع فريق محلي صغير.\n\n| العنصر | التفاصيل | التكلفة التقديرية (شهرياً) |\n| :--- | :--- | :--- |\n| **ترخيص البرمجيات (Per Device)** | معدل متوسط $4\/جهاز شهري<br>(يشمل AD و Firewalls) | $800 |\n| **تكاليف التشغيل (Managed Services)** | فريق تحليل (L1\/L2) ومركز عمليات<br>(يغطي ~200 مصدر بيانات) | $2,500 - $3,500 |\n| **الإجمالي المقترح** | | **$3,300 - $4,300 \/ شهر** |\n\n*(ملاحظة: الأسعار بالدولار الأمريكي، ويمكن تحويلها للعملة المحلية بناءً على سعر الصرف الحالي).*\n\n---\n\n### ⚠️ عوامل تؤثر في السعر النهائي\nلكي أحصل لك على عرض سعري دقيق ونهائي، يرجى توضيح النقاط التالية:\n\n1.  **نطاق حجم البيانات:** كم جيجابايت من السجلات (Logs) تتوقع استلامها يومياً؟ (مثلاً: 50GB, 200GB?). هذا يؤثر بشكل كبير على تكاليف التخزين والمعالجة في Elasticsearch.\n2.  **مدة الاحتفاظ بالبيانات (Retention):** هل تريد حفظ اللوغز لمدة 30 يوماً فقط، أم سنة كاملة؟ (كلما زادت الفترة، زاد الحجم المطلوب).\n3.  **المستوى المطلوب:** هل تحتاج فقط لرصد الأحداث (Monitoring) أم الاستجابة الفورية للأحداث والتهديدات (MDR\/Fully Managed)?\n4.  **عملة العرض:** تفضل العرض بالدولار (USD)، اليورو (EUR)، أو الدينار التونسي (TND)?\n\nبمجرد تزويدي بهذه التفاصيل، سأقوم بتوليد جدول تسعير رسمي باستخدام أدواتنا المتخصصة.",
+    "response_length": 2421,
+    "success": true,
+    "errors": []
+}

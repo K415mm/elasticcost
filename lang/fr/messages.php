@@ -193,4 +193,8 @@ return [
     'ai_analysis' => "Analyse de Coût & Logique par l'IA",
     'ai_thinking' => "L'IA analyse la proposition...",
     'ai_error' => "L'analyse par l'IA a échoué. Veuillez vérifier la configuration de votre serveur Ollama ou réessayer.",
+    'dashboard' => 'Tableau de bord',
+    'ai_chat' => 'Assistant Chat IA',
+    'ai_agents' => 'Agents IA',
+    'agent_registry' => 'Registre des Agents IA',
 ];

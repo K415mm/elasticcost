@@ -1,0 +1,49 @@
+{
+    "test_mode": "A1-direct-api",
+    "request_index": 5,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-replicas",
+    "description": "Replica impact calculation",
+    "model": "qwen3.5-27b",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 18558,
+        "start_time": "2026-06-27T23:26:55+00:00",
+        "end_time": "2026-06-27T23:27:14+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 332,
+        "completion_tokens": 349,
+        "total_tokens": 681
+    },
+    "prompts": {
+        "raw_user_prompt": "What is the impact of replica shards on storage requirements? If I have 500GB of primary data with 1 replica, what is my total storage need?",
+        "effective_user_prompt": "What is the impact of replica shards on storage requirements? If I have 500GB of primary data with 1 replica, what is my total storage need?",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 1,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "### Impact of Replica Shards on Storage\n\nReplica shards are **full copies** of your primary shards. They do not share storage; they duplicate it to ensure high availability and improve read throughput.\n\n#### 1. Basic Calculation\nWith **1 Replica**, you effectively double your storage requirement for the data itself.\n\n| Component | Size | Multiplier | Total |\n| :--- | :--- | :--- | :--- |\n| **Primary Data** | 500 GB | 1x | 500 GB |\n| **Replica Data** | 500 GB | 1x | 500 GB |\n| **Total Raw Storage** | | | **1 TB** |\n\n#### 2. ElasticCost Recommended Sizing\nTo ensure cluster stability and account for index overhead, we apply the following adjustments based on our sizing engine:\n\n*   **Index Metadata Expansion:** Apply a **1.25x** factor to account for segment overhead, translogs, and internal metadata.\n*   **Disk Headroom:** Never fill disks beyond **80%** to prevent node rejection and maintain performance.\n\n**Adjusted Calculation:**\n1.  **Effective Primary Size:** `500 GB × 1.25` = **625 GB**\n2.  **Total Cluster Storage (1 Replica):** `625 GB × 2` = **1,250 GB**\n3.  **Required Provisioned Disk (at 80% utilization):** `1,250 GB ÷ 0.80` ≈ **1.56 TB**\n\n### Summary Recommendation\nWhile the raw data requires **1 TB**, you should provision approximately **1.6 TB** of SSD storage per node (distributed across the cluster) to safely accommodate metadata and maintenance buffers.",
+    "response_length": 1393,
+    "success": true,
+    "errors": []
+}

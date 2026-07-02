@@ -1,0 +1,104 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: elasticcost-app
+    restart: unless-stopped
+    environment:
+      CONTAINER_ROLE: app
+    env_file:
+      - .env
+    volumes:
+      - storage_data:/var/www/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - elasticcost-network
+
+  web:
+    image: nginx:alpine
+    container_name: elasticcost-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - .:/var/www
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+      - storage_data:/var/www/storage
+    depends_on:
+      - app
+    networks:
+      - elasticcost-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: elasticcost-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-elasticcost}
+      POSTGRES_USER: ${DB_USERNAME:-elasticcost}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-elasticcost} -d ${DB_DATABASE:-elasticcost}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - elasticcost-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: elasticcost-redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - elasticcost-network
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: elasticcost-worker
+    restart: unless-stopped
+    command: php artisan queue:work --tries=3 --timeout=90
+    env_file:
+      - .env
+    volumes:
+      - storage_data:/var/www/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - elasticcost-network
+
+networks:
+  elasticcost-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  storage_data:
+    driver: local

@@ -2,18 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Ai\Agents\SizingRegulator;
 use App\Models\Client;
+use App\Models\ClientScenarioMsspDetail;
 use App\Models\Scenario;
-use App\Services\SizingEngine;
+use App\Services\AiConfigHelper;
 use App\Services\CurrencyHelper;
+use App\Services\SizingEngine;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
-use PhpOffice\PhpSpreadsheet\Style\Color;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SizingDashboardController extends Controller
@@ -32,11 +34,129 @@ class SizingDashboardController extends Controller
     {
         // Calculate sizing metrics
         $data = $this->sizingEngine->calculate($client, $scenario);
-        
+
         // Load all scenarios for the selector dropdown/sidebar
         $scenarios = Scenario::all();
 
-        return view('dashboard.sizing', compact('client', 'scenario', 'data', 'scenarios'));
+        // Get the cached sizing analysis (if any) from mssp detail
+        $msspDetail = ClientScenarioMsspDetail::where([
+            'client_id' => $client->id,
+            'scenario_id' => $scenario->id,
+        ])->first();
+
+        $aiSizingAnalysis = $msspDetail?->ai_sizing_analysis;
+
+        return view('dashboard.sizing', compact('client', 'scenario', 'data', 'scenarios', 'aiSizingAnalysis'));
+    }
+
+    /**
+     * Call local Ollama AI model to analyze the Elasticsearch sizing configuration and return the result.
+     */
+    public function analyzeSizingAi(Client $client, Scenario $scenario)
+    {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(180);
+        }
+
+        try {
+            $data = $this->sizingEngine->calculate($client, $scenario);
+
+            // Format the sizing details for the agent
+            $sizingBreakdown = [
+                'client_name' => $client->name,
+                'scenario_name' => $scenario->name,
+                'workload_profile' => $scenario->workload_profile,
+                'retention_days' => $scenario->retention_days,
+                'ilm_retention_tiers' => [
+                    'hot' => [
+                        'days' => $scenario->hot_days,
+                        'replicas' => $scenario->hot_replicas,
+                        'storage_gb' => $data['totals']['hot_storage_gb'] ?? 0,
+                    ],
+                    'warm' => [
+                        'days' => $scenario->warm_days,
+                        'replicas' => $scenario->warm_replicas,
+                        'storage_gb' => $data['totals']['warm_storage_gb'] ?? 0,
+                    ],
+                    'cold' => [
+                        'days' => $scenario->cold_days,
+                        'replicas' => $scenario->cold_replicas,
+                        'storage_gb' => $data['totals']['cold_storage_gb'] ?? 0,
+                    ],
+                    'frozen' => [
+                        'days' => $scenario->frozen_days,
+                        'replicas' => $scenario->frozen_replicas,
+                        'storage_gb' => $data['totals']['frozen_storage_gb'] ?? 0,
+                    ],
+                ],
+                'totals' => [
+                    'daily_raw_gb' => $data['totals']['daily_raw_gb'],
+                    'daily_indexed_gb' => $data['totals']['daily_indexed_gb'],
+                    'total_storage_footprint_gb' => $data['totals']['total_storage_footprint_gb'],
+                    'total_ram_gb' => $data['licensing']['total_ram_gb'],
+                    'required_erus' => $data['licensing']['required_erus'],
+                    'annual_license_cost_usd' => $data['licensing']['annual_cost_usd'],
+                ],
+                'nodes' => collect($data['nodes'])->map(fn ($node) => [
+                    'name' => $node['name'],
+                    'role' => $node['role'],
+                    'count' => $node['count'],
+                    'ram_gb' => $node['ram_gb'].' GB',
+                    'storage_gb' => $node['storage_gb'].' GB',
+                    'storage_type' => $node['storage_type'],
+                ])->toArray(),
+            ];
+
+            $promptContent = "Please analyze the following Elasticsearch sizing details and topology configuration:\n\n".
+                      json_encode($sizingBreakdown, JSON_PRETTY_PRINT)."\n\n".
+                      'Evaluate the sizing/topology, RAM-to-disk ratios, storage tiers retention plan, and node specs. Offer enhancements and recommendations.';
+
+            // Run agent using Laravel AI SDK
+            $aiConfig = AiConfigHelper::configure();
+            $response = (new SizingRegulator)->prompt($promptContent, provider: $aiConfig['provider'], model: $aiConfig['model'], timeout: 120);
+
+            $analysisText = property_exists($response, 'structured')
+                ? ($response->structured['full_critique'] ?? $response->text)
+                : $response->text;
+
+            // Get provider display name
+            $providerName = is_object($aiConfig['provider']) ? $aiConfig['provider']->name : (string) $aiConfig['provider'];
+
+            // Build a debug footer so the user can verify the AI backend was used
+            $debugInfo = "\n\n---\n> 🤖 **AI Debug Info** | Provider: `{$providerName}` | Model: `{$aiConfig['model']}` | Generated: `".now()->format('Y-m-d H:i:s').'` | Prompt tokens (est.): ~'.(int) (strlen($promptContent) / 4).' | Response tokens (est.): ~'.(int) (strlen($analysisText) / 4);
+            $fullAnalysis = $analysisText.$debugInfo;
+
+            // Save the analysis text to the database
+            $msspDetail = ClientScenarioMsspDetail::firstOrCreate([
+                'client_id' => $client->id,
+                'scenario_id' => $scenario->id,
+            ]);
+
+            $msspDetail->update([
+                'ai_sizing_analysis' => $fullAnalysis,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'analysis' => $fullAnalysis,
+                'html' => Str::markdown($fullAnalysis),
+                'debug' => [
+                    'provider' => $providerName,
+                    'model' => $aiConfig['model'],
+                    'prompt_length' => strlen($promptContent),
+                    'response_length' => strlen($analysisText),
+                    'generated_at' => now()->toIso8601String(),
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Laravel AI SDK sizing regulator error: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error generating sizing analysis. Details: '.$e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -49,9 +169,9 @@ class SizingDashboardController extends Controller
         $markdown = "# Elasticsearch Sizing & Cost Report: {$scenario->name} - {$scenario->description}\n\n";
         $markdown .= "This report details the architectural footprint and licensing cost for **Client \"{$client->name}\"** under **{$scenario->name}**.\n\n";
         $markdown .= "---\n\n";
-        
+
         $markdown .= "## 1. Workload & Ingest Parameters\n\n";
-        $markdown .= "*   **Ingestion Profile**: **" . ucfirst($scenario->workload_profile) . " Workload**\n";
+        $markdown .= '*   **Ingestion Profile**: **'.ucfirst($scenario->workload_profile)." Workload**\n";
         $markdown .= "*   **Daily Raw Log Volume**: **`{$data['totals']['daily_raw_gb']} GB/day`**\n";
         $markdown .= "*   **Daily Indexed Volume (+25% Expansion)**: **`{$data['totals']['daily_indexed_gb']} GB/day`**\n";
         $markdown .= "*   **Retention Period**: **`{$scenario->retention_days} Days`** (1 Year)\n";
@@ -71,8 +191,8 @@ class SizingDashboardController extends Controller
         $markdown .= "\n---\n\n";
 
         $markdown .= "## 2. Storage Sizing Calculations\n\n";
-        $markdown .= "*   **Total Raw Data Stored**: " . $data['totals']['daily_raw_gb'] . " GB/day * " . $scenario->retention_days . " days = **" . $data['totals']['total_raw_storage_gb'] . " GB**\n";
-        $markdown .= "*   **Total Indexed Data (Active)**: " . $data['totals']['daily_indexed_gb'] . " GB/day * " . $scenario->retention_days . " days = **" . $data['totals']['total_indexed_storage_gb'] . " GB**\n";
+        $markdown .= '*   **Total Raw Data Stored**: '.$data['totals']['daily_raw_gb'].' GB/day * '.$scenario->retention_days.' days = **'.$data['totals']['total_raw_storage_gb']." GB**\n";
+        $markdown .= '*   **Total Indexed Data (Active)**: '.$data['totals']['daily_indexed_gb'].' GB/day * '.$scenario->retention_days.' days = **'.$data['totals']['total_indexed_storage_gb']." GB**\n";
         $markdown .= "*   **Tier Storage Breakdown (Cluster Physical Footprint)**:\n";
         if ($scenario->hot_days > 0) {
             $markdown .= "    *   **Hot Tier (NVMe SSD)**: **{$data['totals']['hot_storage_gb']} GB**\n";
@@ -86,15 +206,15 @@ class SizingDashboardController extends Controller
         if ($scenario->frozen_days > 0) {
             $markdown .= "    *   **Frozen Tier (Object Store Cache)**: **{$data['totals']['frozen_storage_gb']} GB**\n";
         }
-        $markdown .= "*   **Total Cluster Storage Required**: **" . $data['totals']['total_storage_footprint_gb'] . " GB**\n\n";
-        
+        $markdown .= '*   **Total Cluster Storage Required**: **'.$data['totals']['total_storage_footprint_gb']." GB**\n\n";
+
         $markdown .= "---\n\n";
 
         $markdown .= "## 3. Recommended Cluster Architecture (On-Premises VMs)\n\n";
         $markdown .= "| Node Name | Node Role | Count | RAM / Node | JVM Heap | Storage / Node | Storage Type |\n";
         $markdown .= "| :--- | :--- | :---: | :---: | :---: | :---: | :--- |\n";
         foreach ($data['nodes'] as $node) {
-            $gbVal = $node['storage_gb'] >= 1000 ? ($node['storage_gb']/1000) . " TB" : $node['storage_gb'] . " GB";
+            $gbVal = $node['storage_gb'] >= 1000 ? ($node['storage_gb'] / 1000).' TB' : $node['storage_gb'].' GB';
             $markdown .= "| **{$node['name']}** | {$node['role']} | {$node['count']} | {$node['ram_gb']} GB | {$node['heap_gb']} GB | {$gbVal} | {$node['storage_type']} |\n";
         }
         $markdown .= "\n### System Capacities:\n";
@@ -103,10 +223,10 @@ class SizingDashboardController extends Controller
         $markdown .= "---\n\n";
 
         $markdown .= "## 4. Elastic Resource Unit (ERU) Licensing Cost\n\n";
-        $markdown .= "$$\\text{Required ERUs} = \\left\\lceil \\frac{" . $data['licensing']['total_ram_gb'] . "\\text{ GB (Total RAM)}}{64\\text{ GB (1 ERU)}} \\right\\rceil = \\mathbf{" . $data['licensing']['required_erus'] . "\\text{ ERUs}}$$\n\n";
+        $markdown .= '$$\\text{Required ERUs} = \\left\\lceil \\frac{'.$data['licensing']['total_ram_gb'].'\\text{ GB (Total RAM)}}{64\\text{ GB (1 ERU)}} \\right\\rceil = \\mathbf{'.$data['licensing']['required_erus']."\\text{ ERUs}}$$\n\n";
         $markdown .= "> [!NOTE]\n";
         $markdown .= "> **Licensing Verdict**: This configuration requires **`{$data['licensing']['required_erus']} ERU`** subscription licenses. ";
-        $markdown .= "Annual projected license cost is **`" . CurrencyHelper::format($data['licensing']['annual_cost_usd']) . "`** based on " . CurrencyHelper::format($data['licensing']['eru_cost_usd']) . "/ERU assumptions.\n\n";
+        $markdown .= 'Annual projected license cost is **`'.CurrencyHelper::format($data['licensing']['annual_cost_usd']).'`** based on '.CurrencyHelper::format($data['licensing']['eru_cost_usd'])."/ERU assumptions.\n\n";
 
         // Add Mermaid Diagram
         $markdown .= "### Cluster Topology Diagram\n\n";
@@ -117,13 +237,13 @@ class SizingDashboardController extends Controller
         }
         $markdown .= "    end\n```\n";
 
-        $fileName = strtolower(str_replace(' ', '_', $client->name)) . "_scenario_" . $scenario->id . "_report.md";
+        $fileName = strtolower(str_replace(' ', '_', $client->name)).'_scenario_'.$scenario->id.'_report.md';
 
         return new StreamedResponse(function () use ($markdown) {
             echo $markdown;
         }, 200, [
             'Content-Type' => 'text/markdown',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
         ]);
     }
 
@@ -132,12 +252,12 @@ class SizingDashboardController extends Controller
      */
     public function exportExcel(Client $client, Scenario $scenario)
     {
-        $spreadsheet = new Spreadsheet();
-        
+        $spreadsheet = new Spreadsheet;
+
         // Set default font to Segoe UI and size to 10
         $spreadsheet->getDefaultStyle()->getFont()->setName('Segoe UI');
         $spreadsheet->getDefaultStyle()->getFont()->setSize(10);
-        
+
         // Remove default sheet
         $spreadsheet->removeSheetByIndex(0);
 
@@ -254,7 +374,7 @@ class SizingDashboardController extends Controller
         $sheet3->getStyle('A1:F2')->applyFromArray($titleStyle);
         $sheet3->getRowDimension(1)->setRowHeight(25);
         $sheet3->getRowDimension(2)->setRowHeight(25);
-        
+
         $currentRow = 4;
         foreach ($scenarios as $sc) {
             $data = $this->sizingEngine->calculate($client, $sc);
@@ -263,7 +383,7 @@ class SizingDashboardController extends Controller
             $sheet3->setCellValue("A{$currentRow}", "Scenario {$sc->id}: {$sc->description}");
             $sheet3->getStyle("A{$currentRow}:F{$currentRow}")->applyFromArray($sectionHeaderStyle);
             $sheet3->getRowDimension($currentRow)->setRowHeight(26);
-            
+
             $headerRow = $currentRow + 1;
             $sheet3->setCellValue("A{$headerRow}", 'Node Name');
             $sheet3->setCellValue("B{$headerRow}", 'Role');
@@ -271,7 +391,7 @@ class SizingDashboardController extends Controller
             $sheet3->setCellValue("D{$headerRow}", 'RAM per Node (GB)');
             $sheet3->setCellValue("E{$headerRow}", 'JVM Heap (GB)');
             $sheet3->setCellValue("F{$headerRow}", 'Total Node RAM (GB)');
-            
+
             $sheet3->getStyle("A{$headerRow}:F{$headerRow}")->applyFromArray($tableHeaderStyle);
             $sheet3->getStyle("A{$headerRow}:B{$headerRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
             $sheet3->getStyle("C{$headerRow}:F{$headerRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
@@ -286,16 +406,16 @@ class SizingDashboardController extends Controller
                 $sheet3->setCellValue("D{$nodeRow}", $node['ram_gb']);
                 $sheet3->setCellValue("E{$nodeRow}", "=D{$nodeRow}/2");
                 $sheet3->setCellValue("F{$nodeRow}", "=C{$nodeRow}*D{$nodeRow}");
-                
+
                 $sheet3->getRowDimension($nodeRow)->setRowHeight(20);
-                
+
                 // Alignments
                 $sheet3->getStyle("A{$nodeRow}:B{$nodeRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                 $sheet3->getStyle("C{$nodeRow}:F{$nodeRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-                
+
                 // Formats
                 $sheet3->getStyle("C{$nodeRow}:F{$nodeRow}")->getNumberFormat()->setFormatCode('#,##0');
-                
+
                 // Zebra Striping
                 if ($nIdx % 2 === 1) {
                     $sheet3->getStyle("A{$nodeRow}:F{$nodeRow}")->applyFromArray($zebraFill);
@@ -311,7 +431,7 @@ class SizingDashboardController extends Controller
             $sheet3->setCellValue("A{$totalRamRow}", 'Total RAM (GB)');
             $sheet3->setCellValue("D{$totalRamRow}", "=SUM(F{$startNodeRow}:F{$endNodeRow})");
             $sheet3->setCellValue("F{$totalRamRow}", "=D{$totalRamRow}");
-            
+
             $sheet3->getRowDimension($totalRamRow)->setRowHeight(20);
             $sheet3->getStyle("A{$totalRamRow}:F{$totalRamRow}")->applyFromArray($totalRowStyle);
             $sheet3->getStyle("D{$totalRamRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
@@ -321,7 +441,7 @@ class SizingDashboardController extends Controller
 
             $sheet3->setCellValue("A{$eruRow}", 'Required ERUs');
             $sheet3->setCellValue("D{$eruRow}", "=CEILING(D{$totalRamRow}/'1. Dashboard & Costs'!\$B\$14, 1)");
-            
+
             $sheet3->getRowDimension($eruRow)->setRowHeight(20);
             $sheet3->getStyle("A{$eruRow}:F{$eruRow}")->applyFromArray([
                 'font' => ['bold' => true],
@@ -346,7 +466,7 @@ class SizingDashboardController extends Controller
 
         // 1. Populate Sheet 1: Dashboard & Costs
         $sheet1->mergeCells('A1:H2');
-        $sheet1->setCellValue('A1', "Client '" . strtoupper($client->name) . "' Elasticsearch Sizing & Cost Dashboard");
+        $sheet1->setCellValue('A1', "Client '".strtoupper($client->name)."' Elasticsearch Sizing & Cost Dashboard");
         $sheet1->getStyle('A1:H2')->applyFromArray($titleStyle);
         $sheet1->getRowDimension(1)->setRowHeight(25);
         $sheet1->getRowDimension(2)->setRowHeight(25);
@@ -370,7 +490,7 @@ class SizingDashboardController extends Controller
 
         // Dynamic counts of devices based on client asset inventory
         $assets = $client->clientAssets()->with('assetType')->get();
-        
+
         $adCount = $assets->where('asset_type_id', 1)->first()?->device_count ?? 2;
         $fwCount = $assets->where('asset_type_id', 2)->first()?->device_count ?? 2;
         $swCount = $assets->where('asset_type_id', 6)->first()?->device_count ?? 10;
@@ -396,13 +516,13 @@ class SizingDashboardController extends Controller
             $sheet1->setCellValue("B{$rowNum}", $row[1]);
             $sheet1->setCellValue("C{$rowNum}", $row[2]);
             $sheet1->setCellValue("D{$rowNum}", $row[3]);
-            
+
             $sheet1->getRowDimension($rowNum)->setRowHeight(20);
             $sheet1->getStyle("A{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
             $sheet1->getStyle("B{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
             $sheet1->getStyle("C{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet1->getStyle("D{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-            
+
             // Format value
             if ($row[0] === 'Annual subscription cost per ERU') {
                 $sheet1->getStyle("B{$rowNum}")->getNumberFormat()->setFormatCode(CurrencyHelper::excelFormatCode(false));
@@ -411,7 +531,7 @@ class SizingDashboardController extends Controller
             } else {
                 $sheet1->getStyle("B{$rowNum}")->getNumberFormat()->setFormatCode('#,##0');
             }
-            
+
             // Zebra
             if ($i % 2 === 1) {
                 $sheet1->getStyle("A{$rowNum}:D{$rowNum}")->applyFromArray($zebraFill);
@@ -434,7 +554,7 @@ class SizingDashboardController extends Controller
         $sheet1->setCellValue('G19', 'Required ERUs');
         $sheet1->setCellValue('H19', 'Annual Subscription Cost');
         $sheet1->getStyle('A19:H19')->applyFromArray($tableHeaderStyle);
-        
+
         $sheet1->getStyle('A19')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet1->getStyle('B19:C19')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
         $sheet1->getStyle('D19')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
@@ -446,41 +566,49 @@ class SizingDashboardController extends Controller
             $rowNum = 20 + $idx;
             $sheet1->setCellValue("A{$rowNum}", "Scenario {$sc->id}");
             $sheet1->setCellValue("B{$rowNum}", $sc->description);
-            
+
             $profileText = ($sc->workload_profile === 'min') ? 'Minimum' : (($sc->workload_profile === 'avg') ? 'Average' : 'Maximum');
             $sheet1->setCellValue("C{$rowNum}", $profileText);
             $sheet1->setCellValue("D{$rowNum}", $sc->retention_days);
-            
+
             $tiers = [];
-            if ($sc->hot_days > 0) $tiers[] = 'Hot';
-            if ($sc->warm_days > 0) $tiers[] = 'Warm';
-            if ($sc->cold_days > 0) $tiers[] = 'Cold';
-            if ($sc->frozen_days > 0) $tiers[] = 'Frozen';
+            if ($sc->hot_days > 0) {
+                $tiers[] = 'Hot';
+            }
+            if ($sc->warm_days > 0) {
+                $tiers[] = 'Warm';
+            }
+            if ($sc->cold_days > 0) {
+                $tiers[] = 'Cold';
+            }
+            if ($sc->frozen_days > 0) {
+                $tiers[] = 'Frozen';
+            }
             $architecture = implode(' + ', $tiers);
             $sheet1->setCellValue("E{$rowNum}", $architecture);
-            
+
             $ramCell = $scenarioRowMapping[$sc->id]['ram_cell'];
             $eruCell = $scenarioRowMapping[$sc->id]['eru_cell'];
-            
+
             $sheet1->setCellValue("F{$rowNum}", "='3. Infrastructure Details'!{$ramCell}");
             $sheet1->setCellValue("G{$rowNum}", "='3. Infrastructure Details'!{$eruCell}");
             $sheet1->setCellValue("H{$rowNum}", "=G{$rowNum}*'1. Dashboard & Costs'!\$B\$13");
-            
+
             $sheet1->getRowDimension($rowNum)->setRowHeight(20);
-            
+
             // Alignments
             $sheet1->getStyle("A{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet1->getStyle("B{$rowNum}:C{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
             $sheet1->getStyle("D{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
             $sheet1->getStyle("E{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
             $sheet1->getStyle("F{$rowNum}:H{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-            
+
             // Formats
             $sheet1->getStyle("D{$rowNum}")->getNumberFormat()->setFormatCode('#,##0');
             $sheet1->getStyle("F{$rowNum}")->getNumberFormat()->setFormatCode('#,##0');
             $sheet1->getStyle("G{$rowNum}")->getNumberFormat()->setFormatCode('#,##0');
             $sheet1->getStyle("H{$rowNum}")->getNumberFormat()->setFormatCode(CurrencyHelper::excelFormatCode(false));
-            
+
             // Zebra
             if ($idx % 2 === 1) {
                 $sheet1->getStyle("A{$rowNum}:H{$rowNum}")->applyFromArray($zebraFill);
@@ -531,15 +659,15 @@ class SizingDashboardController extends Controller
             $sheet2->setCellValue("B{$rowNum}", $row[1]);
             $sheet2->setCellValue("C{$rowNum}", $row[2]);
             $sheet2->setCellValue("D{$rowNum}", $row[3]);
-            
+
             $sheet2->getRowDimension($rowNum)->setRowHeight(20);
             $sheet2->getStyle("A{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
             $sheet2->getStyle("B{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
             $sheet2->getStyle("C{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet2->getStyle("D{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-            
+
             $sheet2->getStyle("B{$rowNum}")->getNumberFormat()->setFormatCode('#,##0');
-            
+
             if ($i % 2 === 1) {
                 $sheet2->getStyle("A{$rowNum}:D{$rowNum}")->applyFromArray($zebraFill);
             }
@@ -564,7 +692,7 @@ class SizingDashboardController extends Controller
         $sources = [
             ['Active Directory', 0.60, 2.67, "=('1. Dashboard & Costs'!B7*B7)/30"],
             ['FortiGate Firewalls', 1.00, 3.33, "=('1. Dashboard & Costs'!B8*B8)/30"],
-            ['EDR / XDR Integration', 0.10, 0.40, "=B9/30"],
+            ['EDR / XDR Integration', 0.10, 0.40, '=B9/30'],
             ['Windows Servers', 1.38, 11.06, "=('1. Dashboard & Costs'!B10*B10*B11*86400)/1000000000"],
             ['Linux Servers', 0.22, 1.30, "=('1. Dashboard & Costs'!B11*B12*B13*86400)/1000000000"],
             ['Network Switches', 0.02, 0.43, "=('1. Dashboard & Costs'!B9*B14*B15*86400)/1000000000"],
@@ -576,12 +704,12 @@ class SizingDashboardController extends Controller
             $sheet2->setCellValue("B{$rowNum}", $row[1]);
             $sheet2->setCellValue("C{$rowNum}", $row[2]);
             $sheet2->setCellValue("D{$rowNum}", $row[3]);
-            
+
             $sheet2->getRowDimension($rowNum)->setRowHeight(20);
             $sheet2->getStyle("A{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
             $sheet2->getStyle("B{$rowNum}:D{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
             $sheet2->getStyle("B{$rowNum}:D{$rowNum}")->getNumberFormat()->setFormatCode('#,##0.00');
-            
+
             if ($i % 2 === 1) {
                 $sheet2->getStyle("A{$rowNum}:D{$rowNum}")->applyFromArray($zebraFill);
             }
@@ -614,7 +742,7 @@ class SizingDashboardController extends Controller
         $sheet2->setCellValue('H30', 'Frozen Cache (GB)');
         $sheet2->setCellValue('I30', 'Total Storage Footprint');
         $sheet2->getStyle('A30:I30')->applyFromArray($tableHeaderStyle);
-        
+
         $sheet2->getStyle('A30')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet2->getStyle('B30:I30')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
         $sheet2->getRowDimension(30)->setRowHeight(22);
@@ -622,50 +750,50 @@ class SizingDashboardController extends Controller
         foreach ($scenarios as $idx => $sc) {
             $rowNum = 31 + $idx;
             $sheet2->setCellValue("A{$rowNum}", "Scenario {$sc->id}");
-            
+
             $rawCol = ($sc->workload_profile === 'min') ? 'B' : (($sc->workload_profile === 'avg') ? 'C' : 'D');
             $sheet2->setCellValue("B{$rowNum}", "={$rawCol}26");
             $sheet2->setCellValue("C{$rowNum}", "=B{$rowNum}*'1. Dashboard & Costs'!\$B\$15");
             $sheet2->setCellValue("D{$rowNum}", $sc->retention_days);
-            
+
             if ($sc->hot_days > 0) {
-                $sheet2->setCellValue("E{$rowNum}", "=C{$rowNum}*" . ($sc->hot_replicas + 1) . "*{$sc->hot_days}");
+                $sheet2->setCellValue("E{$rowNum}", "=C{$rowNum}*".($sc->hot_replicas + 1)."*{$sc->hot_days}");
             } else {
                 $sheet2->setCellValue("E{$rowNum}", 0);
             }
-            
+
             if ($sc->warm_days > 0) {
-                $sheet2->setCellValue("F{$rowNum}", "=C{$rowNum}*" . ($sc->warm_replicas + 1) . "*{$sc->warm_days}");
+                $sheet2->setCellValue("F{$rowNum}", "=C{$rowNum}*".($sc->warm_replicas + 1)."*{$sc->warm_days}");
             } else {
                 $sheet2->setCellValue("F{$rowNum}", 0);
             }
-            
+
             if ($sc->cold_days > 0) {
-                $sheet2->setCellValue("G{$rowNum}", "=C{$rowNum}*" . ($sc->cold_replicas + 1) . "*{$sc->cold_days}");
+                $sheet2->setCellValue("G{$rowNum}", "=C{$rowNum}*".($sc->cold_replicas + 1)."*{$sc->cold_days}");
             } else {
                 $sheet2->setCellValue("G{$rowNum}", 0);
             }
-            
+
             if ($sc->frozen_days > 0) {
-                $sheet2->setCellValue("H{$rowNum}", "=C{$rowNum}*" . ($sc->frozen_replicas + 1) . "*{$sc->frozen_days}");
+                $sheet2->setCellValue("H{$rowNum}", "=C{$rowNum}*".($sc->frozen_replicas + 1)."*{$sc->frozen_days}");
             } else {
                 $sheet2->setCellValue("H{$rowNum}", 0);
             }
-            
+
             $sheet2->setCellValue("I{$rowNum}", "=SUM(E{$rowNum}:H{$rowNum})");
-            
+
             $sheet2->getRowDimension($rowNum)->setRowHeight(20);
-            
+
             // Alignments & Formats
             $sheet2->getStyle("A{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet2->getStyle("B{$rowNum}:C{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
             $sheet2->getStyle("D{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
             $sheet2->getStyle("E{$rowNum}:I{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-            
+
             $sheet2->getStyle("B{$rowNum}:C{$rowNum}")->getNumberFormat()->setFormatCode('#,##0.00');
             $sheet2->getStyle("D{$rowNum}")->getNumberFormat()->setFormatCode('#,##0');
             $sheet2->getStyle("E{$rowNum}:I{$rowNum}")->getNumberFormat()->setFormatCode('#,##0.00');
-            
+
             if ($idx % 2 === 1) {
                 $sheet2->getStyle("A{$rowNum}:I{$rowNum}")->applyFromArray($zebraFill);
             }
@@ -682,13 +810,13 @@ class SizingDashboardController extends Controller
         }
 
         $writer = new Xlsx($spreadsheet);
-        $fileName = strtolower(str_replace(' ', '_', $client->name)) . "_sizing_model.xlsx";
+        $fileName = strtolower(str_replace(' ', '_', $client->name)).'_sizing_model.xlsx';
 
         return new StreamedResponse(function () use ($writer) {
             $writer->save('php://output');
         }, 200, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
             'Cache-Control' => 'max-age=0',
         ]);
     }
@@ -699,8 +827,8 @@ class SizingDashboardController extends Controller
     public function exportWord(Client $client, Scenario $scenario)
     {
         $data = $this->sizingEngine->calculate($client, $scenario);
-        
-        $fileName = strtolower(str_replace(' ', '_', $client->name)) . "_scenario_" . $scenario->id . "_report.doc";
+
+        $fileName = strtolower(str_replace(' ', '_', $client->name)).'_scenario_'.$scenario->id.'_report.doc';
 
         // Build HTML template
         $html = '<html xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -822,16 +950,16 @@ class SizingDashboardController extends Controller
 
     <div class="title-banner">
         <h1>ElasticSearch Sizing & Cost Report</h1>
-        <p>Client: ' . htmlspecialchars($client->name) . ' &bull; Scenario: ' . htmlspecialchars($scenario->name) . ' &bull; Profile: ' . ucfirst($scenario->workload_profile) . '</p>
+        <p>Client: '.htmlspecialchars($client->name).' &bull; Scenario: '.htmlspecialchars($scenario->name).' &bull; Profile: '.ucfirst($scenario->workload_profile).'</p>
     </div>
 
     <h2>1. Workload & Ingest Parameters</h2>
-    <p>This report details the architectural footprint and licensing cost for <strong>Client "' . htmlspecialchars($client->name) . '"</strong> under the <strong>' . htmlspecialchars($scenario->name) . '</strong> sizing scenario.</p>
+    <p>This report details the architectural footprint and licensing cost for <strong>Client "'.htmlspecialchars($client->name).'"</strong> under the <strong>'.htmlspecialchars($scenario->name).'</strong> sizing scenario.</p>
     <ul>
-        <li><strong>Ingestion Profile:</strong> ' . ucfirst($scenario->workload_profile) . ' Workload</li>
-        <li><strong>Daily Raw Log Volume:</strong> <span class="mono">' . number_format($data['totals']['daily_raw_gb'], 2) . ' GB/day</span></li>
-        <li><strong>Daily Indexed Volume (+25% Expansion):</strong> <span class="mono">' . number_format($data['totals']['daily_indexed_gb'], 2) . ' GB/day</span></li>
-        <li><strong>Retention Period:</strong> <span class="mono">' . number_format($scenario->retention_days) . ' Days</span></li>
+        <li><strong>Ingestion Profile:</strong> '.ucfirst($scenario->workload_profile).' Workload</li>
+        <li><strong>Daily Raw Log Volume:</strong> <span class="mono">'.number_format($data['totals']['daily_raw_gb'], 2).' GB/day</span></li>
+        <li><strong>Daily Indexed Volume (+25% Expansion):</strong> <span class="mono">'.number_format($data['totals']['daily_indexed_gb'], 2).' GB/day</span></li>
+        <li><strong>Retention Period:</strong> <span class="mono">'.number_format($scenario->retention_days).' Days</span></li>
     </ul>
 
     <h3>ILM Data Lifecycle Tiers</h3>
@@ -850,36 +978,36 @@ class SizingDashboardController extends Controller
             $html .= '
             <tr>
                 <td><span class="badge badge-hot">HOT</span> primary ingest, high search rate</td>
-                <td class="text-center">' . $scenario->hot_days . ' Days</td>
-                <td class="text-center">' . $scenario->hot_replicas . '</td>
-                <td>' . number_format($data['totals']['daily_ingested_gb'], 2) . ' GB/day (incl. replicas)</td>
+                <td class="text-center">'.$scenario->hot_days.' Days</td>
+                <td class="text-center">'.$scenario->hot_replicas.'</td>
+                <td>'.number_format($data['totals']['daily_ingested_gb'], 2).' GB/day (incl. replicas)</td>
             </tr>';
         }
         if ($scenario->warm_days > 0) {
             $html .= '
             <tr>
                 <td><span class="badge badge-warm">WARM</span> active search, lower performance storage</td>
-                <td class="text-center">' . $scenario->warm_days . ' Days</td>
-                <td class="text-center">' . $scenario->warm_replicas . '</td>
-                <td>' . number_format($data['totals']['daily_indexed_gb'] * ($scenario->warm_replicas + 1), 2) . ' GB/day</td>
+                <td class="text-center">'.$scenario->warm_days.' Days</td>
+                <td class="text-center">'.$scenario->warm_replicas.'</td>
+                <td>'.number_format($data['totals']['daily_indexed_gb'] * ($scenario->warm_replicas + 1), 2).' GB/day</td>
             </tr>';
         }
         if ($scenario->cold_days > 0) {
             $html .= '
             <tr>
                 <td><span class="badge badge-cold">COLD</span> read-only search, object storage cache</td>
-                <td class="text-center">' . $scenario->cold_days . ' Days</td>
-                <td class="text-center">' . $scenario->cold_replicas . ' (0% replica overhead)</td>
-                <td>' . number_format($data['totals']['daily_indexed_gb'], 2) . ' GB/day</td>
+                <td class="text-center">'.$scenario->cold_days.' Days</td>
+                <td class="text-center">'.$scenario->cold_replicas.' (0% replica overhead)</td>
+                <td>'.number_format($data['totals']['daily_indexed_gb'], 2).' GB/day</td>
             </tr>';
         }
         if ($scenario->frozen_days > 0) {
             $html .= '
             <tr>
                 <td><span class="badge badge-frozen">FROZEN</span> archive search, searchable snapshots only</td>
-                <td class="text-center">' . $scenario->frozen_days . ' Days</td>
-                <td class="text-center">' . $scenario->frozen_replicas . ' (0% replica overhead)</td>
-                <td>' . number_format($data['totals']['daily_indexed_gb'], 2) . ' GB/day</td>
+                <td class="text-center">'.$scenario->frozen_days.' Days</td>
+                <td class="text-center">'.$scenario->frozen_replicas.' (0% replica overhead)</td>
+                <td>'.number_format($data['totals']['daily_indexed_gb'], 2).' GB/day</td>
             </tr>';
         }
 
@@ -889,9 +1017,9 @@ class SizingDashboardController extends Controller
 
     <h2>2. Storage Sizing Calculations</h2>
     <ul>
-        <li><strong>Total Raw Data Stored:</strong> ' . number_format($data['totals']['daily_raw_gb'], 2) . ' GB/day * ' . $scenario->retention_days . ' days = <strong>' . number_format($data['totals']['total_raw_storage_gb'], 2) . ' GB</strong></li>
-        <li><strong>Total Indexed Data (Active):</strong> ' . number_format($data['totals']['daily_indexed_gb'], 2) . ' GB/day * ' . $scenario->retention_days . ' days = <strong>' . number_format($data['totals']['total_indexed_storage_gb'], 2) . ' GB</strong></li>
-        <li><strong>Total Cluster Storage Required:</strong> <strong>' . number_format($data['totals']['total_storage_footprint_gb'], 2) . ' GB</strong> physical footprint</li>
+        <li><strong>Total Raw Data Stored:</strong> '.number_format($data['totals']['daily_raw_gb'], 2).' GB/day * '.$scenario->retention_days.' days = <strong>'.number_format($data['totals']['total_raw_storage_gb'], 2).' GB</strong></li>
+        <li><strong>Total Indexed Data (Active):</strong> '.number_format($data['totals']['daily_indexed_gb'], 2).' GB/day * '.$scenario->retention_days.' days = <strong>'.number_format($data['totals']['total_indexed_storage_gb'], 2).' GB</strong></li>
+        <li><strong>Total Cluster Storage Required:</strong> <strong>'.number_format($data['totals']['total_storage_footprint_gb'], 2).' GB</strong> physical footprint</li>
     </ul>
 
     <h3>Tier Storage Breakdown</h3>
@@ -905,21 +1033,21 @@ class SizingDashboardController extends Controller
         </thead>
         <tbody>';
         if ($scenario->hot_days > 0) {
-            $html .= '<tr><td><span class="badge badge-hot">HOT</span></td><td>NVMe SSD (Primary + Replica)</td><td class="text-right"><strong>' . number_format($data['totals']['hot_storage_gb'], 2) . ' GB</strong></td></tr>';
+            $html .= '<tr><td><span class="badge badge-hot">HOT</span></td><td>NVMe SSD (Primary + Replica)</td><td class="text-right"><strong>'.number_format($data['totals']['hot_storage_gb'], 2).' GB</strong></td></tr>';
         }
         if ($scenario->warm_days > 0) {
-            $html .= '<tr><td><span class="badge badge-warm">WARM</span></td><td>SATA SSD / HDD</td><td class="text-right"><strong>' . number_format($data['totals']['warm_storage_gb'], 2) . ' GB</strong></td></tr>';
+            $html .= '<tr><td><span class="badge badge-warm">WARM</span></td><td>SATA SSD / HDD</td><td class="text-right"><strong>'.number_format($data['totals']['warm_storage_gb'], 2).' GB</strong></td></tr>';
         }
         if ($scenario->cold_days > 0) {
-            $html .= '<tr><td><span class="badge badge-cold">COLD</span></td><td>Object Store + Local Cache</td><td class="text-right"><strong>' . number_format($data['totals']['cold_storage_gb'], 2) . ' GB</strong></td></tr>';
+            $html .= '<tr><td><span class="badge badge-cold">COLD</span></td><td>Object Store + Local Cache</td><td class="text-right"><strong>'.number_format($data['totals']['cold_storage_gb'], 2).' GB</strong></td></tr>';
         }
         if ($scenario->frozen_days > 0) {
-            $html .= '<tr><td><span class="badge badge-frozen">FROZEN</span></td><td>Object Store Cache</td><td class="text-right"><strong>' . number_format($data['totals']['frozen_storage_gb'], 2) . ' GB</strong></td></tr>';
+            $html .= '<tr><td><span class="badge badge-frozen">FROZEN</span></td><td>Object Store Cache</td><td class="text-right"><strong>'.number_format($data['totals']['frozen_storage_gb'], 2).' GB</strong></td></tr>';
         }
         $html .= '
             <tr style="background-color: #f1f5f9; font-weight: bold;">
                 <td colspan="2">Total Physical Storage Footprint</td>
-                <td class="text-right">' . number_format($data['totals']['total_storage_footprint_gb'], 2) . ' GB</td>
+                <td class="text-right">'.number_format($data['totals']['total_storage_footprint_gb'], 2).' GB</td>
             </tr>
         </tbody>
     </table>
@@ -941,23 +1069,23 @@ class SizingDashboardController extends Controller
         <tbody>';
 
         foreach ($data['nodes'] as $node) {
-            $gbVal = $node['storage_gb'] >= 1000 ? ($node['storage_gb']/1000) . ' TB' : $node['storage_gb'] . ' GB';
+            $gbVal = $node['storage_gb'] >= 1000 ? ($node['storage_gb'] / 1000).' TB' : $node['storage_gb'].' GB';
             $html .= '
             <tr>
-                <td><strong>' . htmlspecialchars($node['name']) . '</strong></td>
-                <td>' . htmlspecialchars($node['role']) . '</td>
-                <td class="text-center">' . $node['count'] . '</td>
-                <td class="text-right">' . $node['ram_gb'] . ' GB</td>
-                <td class="text-right">' . $node['heap_gb'] . ' GB</td>
-                <td class="text-right">' . $gbVal . '</td>
-                <td>' . htmlspecialchars($node['storage_type']) . '</td>
+                <td><strong>'.htmlspecialchars($node['name']).'</strong></td>
+                <td>'.htmlspecialchars($node['role']).'</td>
+                <td class="text-center">'.$node['count'].'</td>
+                <td class="text-right">'.$node['ram_gb'].' GB</td>
+                <td class="text-right">'.$node['heap_gb'].' GB</td>
+                <td class="text-right">'.$gbVal.'</td>
+                <td>'.htmlspecialchars($node['storage_type']).'</td>
             </tr>';
         }
 
         $html .= '
             <tr style="background-color: #f1f5f9; font-weight: bold;">
                 <td colspan="3">Total Cluster Memory Footprint</td>
-                <td class="text-right" colspan="4">' . number_format($data['licensing']['total_ram_gb']) . ' GB RAM</td>
+                <td class="text-right" colspan="4">'.number_format($data['licensing']['total_ram_gb']).' GB RAM</td>
             </tr>
         </tbody>
     </table>
@@ -965,12 +1093,12 @@ class SizingDashboardController extends Controller
     <h2>4. Elastic Resource Unit (ERU) Licensing Cost</h2>
     <p>Required ERUs are calculated using the total memory footprint divided by the standard ERU size:</p>
     <div style="text-align: center; margin: 15px 0; font-size: 12pt; font-weight: bold; color: #0f766e;">
-        Required ERUs = Ceiling( ' . $data['licensing']['total_ram_gb'] . ' GB RAM / 64 GB ) = ' . $data['licensing']['required_erus'] . ' ERUs
+        Required ERUs = Ceiling( '.$data['licensing']['total_ram_gb'].' GB RAM / 64 GB ) = '.$data['licensing']['required_erus'].' ERUs
     </div>
 
     <div class="alert">
-        <strong>Licensing Verdict:</strong> This configuration requires <strong>' . $data['licensing']['required_erus'] . ' ERU</strong> subscription licenses. 
-        Annual projected license cost is <strong>' . CurrencyHelper::format($data['licensing']['annual_cost_usd']) . '</strong> based on an assumed ' . CurrencyHelper::format($data['licensing']['eru_cost_usd']) . '/ERU commercial list price.
+        <strong>Licensing Verdict:</strong> This configuration requires <strong>'.$data['licensing']['required_erus'].' ERU</strong> subscription licenses. 
+        Annual projected license cost is <strong>'.CurrencyHelper::format($data['licensing']['annual_cost_usd']).'</strong> based on an assumed '.CurrencyHelper::format($data['licensing']['eru_cost_usd']).'/ERU commercial list price.
     </div>
 
 </body>
@@ -980,8 +1108,54 @@ class SizingDashboardController extends Controller
             echo $html;
         }, 200, [
             'Content-Type' => 'application/msword',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
             'Cache-Control' => 'max-age=0',
         ]);
+    }
+
+    /**
+     * Save custom nodes layout for the client and scenario.
+     */
+    public function saveCustomNodes(Request $request, Client $client, Scenario $scenario)
+    {
+        $validated = $request->validate([
+            'nodes' => 'required|array',
+            'nodes.*.name' => 'required|string|max:255',
+            'nodes.*.role' => 'required|string|max:255',
+            'nodes.*.count' => 'required|integer|min:1',
+            'nodes.*.ram_gb' => 'required|numeric|min:0.1',
+            'nodes.*.storage_gb' => 'required|numeric|min:0.1',
+            'nodes.*.storage_type' => 'required|string|max:255',
+        ]);
+
+        $msspDetail = ClientScenarioMsspDetail::firstOrCreate([
+            'client_id' => $client->id,
+            'scenario_id' => $scenario->id,
+        ]);
+
+        $msspDetail->update([
+            'custom_nodes' => $validated['nodes'],
+        ]);
+
+        return redirect()->back()->with('success', 'Custom node topology saved successfully.');
+    }
+
+    /**
+     * Reset custom nodes to the default engine recommendations.
+     */
+    public function resetCustomNodes(Client $client, Scenario $scenario)
+    {
+        $msspDetail = ClientScenarioMsspDetail::where([
+            'client_id' => $client->id,
+            'scenario_id' => $scenario->id,
+        ])->first();
+
+        if ($msspDetail) {
+            $msspDetail->update([
+                'custom_nodes' => null,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Node topology reset to auto-recommendations.');
     }
 }

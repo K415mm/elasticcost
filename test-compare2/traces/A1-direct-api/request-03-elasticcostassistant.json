@@ -1,0 +1,49 @@
+{
+    "test_mode": "A1-direct-api",
+    "request_index": 2,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-french",
+    "description": "French language question about ES tier differences",
+    "model": "qwen3.5-27b",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 11731,
+        "start_time": "2026-06-27T23:25:40+00:00",
+        "end_time": "2026-06-27T23:25:52+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 322,
+        "completion_tokens": 326,
+        "total_tokens": 648
+    },
+    "prompts": {
+        "raw_user_prompt": "Quelle est la différence entre les tiers Hot, Warm, Cold et Frozen en termes de ratio RAM-disque?",
+        "effective_user_prompt": "Quelle est la différence entre les tiers Hot, Warm, Cold et Frozen en termes de ratio RAM-disque?",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 1,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "Voici les ratios **RAM-disque recommandés** pour chaque niveau de stockage (tier) dans une architecture Elasticsearch optimisée :\n\n| Tier | Usage Typique | Ratio RAM \/ Disque | Priorité |\n| :--- | :--- | :--- | :--- |\n| **🔥 Hot** | Indexation et recherche récente | **1 : 30** | Performance maximale (Cache agressif) |\n| **🟡 Warm** | Recherche historique à court terme | **1 : 80** | Équilibre coût\/performance |\n| **🔵 Cold** | Archivage à long terme (rarement consulté) | **1 : 100** | Optimisation du stockage |\n| **❄️ Frozen** | Archivage froid (très rarement consulté) | **1 : 160** | Coût minimal (Données décompressées à la volée) |\n\n### Points clés à retenir :\n*   **Tier Hot :** Nécessite plus de RAM pour maintenir le cache des segments et accélérer les requêtes fréquentes.\n*   **Tier Frozen :** Utilise très peu de RAM car les données sont compressées sur disque et décompressées uniquement lors d'une consultation explicite.\n*   **JVM Heap :** Assurez-vous que la taille du tas JVM ne dépasse pas 50% de la RAM totale disponible par nœud.\n\nSouhaitez-vous que je vous aide à dimensionner un cluster spécifique ? Si oui, merci de me fournir votre **volume journalier de logs**, vos **exigences de rétention** et le **nombre d'actifs surveillés**.",
+    "response_length": 1304,
+    "success": true,
+    "errors": []
+}

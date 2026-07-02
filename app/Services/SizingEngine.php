@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Client;
+use App\Models\ClientScenarioMsspDetail;
 use App\Models\GlobalSetting;
 use App\Models\Scenario;
 
@@ -92,7 +93,28 @@ class SizingEngine
         $totalIndexedStorageStored = $totalIndexedDailyGb * $scenario->retention_days;
 
         // 4. Infrastructure Node Recommendations
-        $nodes = $this->recommendNodes($scenario, $hotStorage, $warmStorage, $coldStorage, $frozenStorage);
+        $msspDetail = ClientScenarioMsspDetail::where([
+            'client_id' => $client->id,
+            'scenario_id' => $scenario->id,
+        ])->first();
+
+        if ($msspDetail && ! empty($msspDetail->custom_nodes)) {
+            $nodes = [];
+            foreach ($msspDetail->custom_nodes as $cn) {
+                $ram = (float) $cn['ram_gb'];
+                $nodes[] = [
+                    'name' => $cn['name'],
+                    'role' => $cn['role'],
+                    'count' => (int) $cn['count'],
+                    'ram_gb' => $ram,
+                    'heap_gb' => $ram / 2,
+                    'storage_gb' => (float) $cn['storage_gb'],
+                    'storage_type' => $cn['storage_type'],
+                ];
+            }
+        } else {
+            $nodes = $this->recommendNodes($scenario, $hotStorage, $warmStorage, $coldStorage, $frozenStorage);
+        }
 
         // Calculate total RAM
         $totalClusterRam = 0;
@@ -153,32 +175,49 @@ class SizingEngine
         $isTiered = ($scenario->warm_days > 0 || $scenario->cold_days > 0 || $scenario->frozen_days > 0);
         $nodes = [];
 
+        // 1. Hot Nodes
         if ($profile === 'min') {
-            // Hot Nodes
-            $hotDisk = $this->roundToNeatDiskSize(max(20, ($hotStorage / 2) * 1.20));
-            $hotRamNeeded = $hotDisk / 30;
-            $hotRam = $this->getNearestVmProfile($hotRamNeeded, $isTiered ? 24 : 16);
+            $hotNodes = $this->recommendTierNodes(
+                tierName: 'hot',
+                roleName: 'Master / Data (Hot)',
+                tierStorage: $hotStorage,
+                ratio: 30,
+                startCount: 2,
+                overheadFactor: 1.20,
+                storageType: 'Local NVMe SSD',
+                maxRamPerNode: 64.0,
+                replicas: $scenario->hot_replicas
+            );
+        } elseif ($profile === 'avg') {
+            $hotNodes = $this->recommendTierNodes(
+                tierName: 'hot',
+                roleName: 'Dedicated Data (Hot)',
+                tierStorage: $hotStorage,
+                ratio: 30,
+                startCount: 2,
+                overheadFactor: 1.10,
+                storageType: 'Local NVMe SSD',
+                maxRamPerNode: 64.0,
+                replicas: $scenario->hot_replicas
+            );
+        } else { // max
+            $hotNodes = $this->recommendTierNodes(
+                tierName: 'hot',
+                roleName: 'Dedicated Data (Hot)',
+                tierStorage: $hotStorage,
+                ratio: 30,
+                startCount: 3,
+                overheadFactor: 1.10,
+                storageType: 'Local NVMe SSD',
+                maxRamPerNode: 64.0,
+                replicas: $scenario->hot_replicas
+            );
+        }
+        $nodes = array_merge($nodes, $hotNodes);
+        $hotRam = ! empty($hotNodes) ? $hotNodes[0]['ram_gb'] : 16.0;
 
-            $nodes[] = [
-                'name' => 'hot-node-01',
-                'role' => 'Master / Data (Hot)',
-                'count' => 1,
-                'ram_gb' => $hotRam,
-                'heap_gb' => $hotRam / 2,
-                'storage_gb' => $hotDisk,
-                'storage_type' => 'Local NVMe SSD',
-            ];
-            $nodes[] = [
-                'name' => 'hot-node-02',
-                'role' => 'Master / Data (Hot)',
-                'count' => 1,
-                'ram_gb' => $hotRam,
-                'heap_gb' => $hotRam / 2,
-                'storage_gb' => $hotDisk,
-                'storage_type' => 'Local NVMe SSD',
-            ];
-
-            // Master Tiebreaker
+        // 2. Master Nodes
+        if ($profile === 'min') {
             $masterRam = ($hotRam <= 4) ? 1 : (($hotRam <= 16) ? 2 : 4);
             $nodes[] = [
                 'name' => 'master-tiebreaker',
@@ -189,70 +228,7 @@ class SizingEngine
                 'storage_gb' => 20,
                 'storage_type' => 'Local SSD',
             ];
-
-            // Cold Nodes
-            if ($scenario->cold_days > 0) {
-                $coldDisk = $this->roundToNeatDiskSize(max(20, ($coldStorage / 2) * 1.10));
-                $coldRamNeeded = $coldDisk / 100;
-                $coldRam = $this->getNearestVmProfile($coldRamNeeded, 8);
-                $nodes[] = [
-                    'name' => 'cold-node-01',
-                    'role' => 'Data (Cold)',
-                    'count' => 1,
-                    'ram_gb' => $coldRam,
-                    'heap_gb' => $coldRam / 2,
-                    'storage_gb' => $coldDisk,
-                    'storage_type' => 'SATA SSD / HDD (Snapshot Cache)',
-                ];
-                $nodes[] = [
-                    'name' => 'cold-node-02',
-                    'role' => 'Data (Cold) (HA)',
-                    'count' => 1,
-                    'ram_gb' => $coldRam,
-                    'heap_gb' => $coldRam / 2,
-                    'storage_gb' => $coldDisk,
-                    'storage_type' => 'SATA SSD / HDD (Snapshot Cache)',
-                ];
-            }
-
-            // ML Node
-            if ($isTiered) {
-                $mlRam = ($hotRam <= 4) ? 2 : (($hotRam <= 16) ? 4 : 16);
-                $nodes[] = [
-                    'name' => 'ml-node-01',
-                    'role' => 'Dedicated Machine Learning',
-                    'count' => 1,
-                    'ram_gb' => $mlRam,
-                    'heap_gb' => $mlRam / 2,
-                    'storage_gb' => 50,
-                    'storage_type' => 'Local SSD',
-                ];
-            }
-
-            // Kibana / Fleet Nodes
-            $kibanaCount = $isTiered ? 2 : 1;
-            $kibanaRam = ($hotRam <= 4) ? 2 : (($hotRam <= 16) ? 4 : 8);
-            for ($i = 1; $i <= $kibanaCount; $i++) {
-                $nameSuffix = $kibanaCount > 1 ? "-0{$i}" : '';
-                $roleText = 'Kibana / Fleet Server'.($i === 2 ? ' (HA)' : '');
-                $nodes[] = [
-                    'name' => "kibana-fleet{$nameSuffix}",
-                    'role' => $roleText,
-                    'count' => 1,
-                    'ram_gb' => $kibanaRam,
-                    'heap_gb' => $kibanaRam / 2,
-                    'storage_gb' => 50,
-                    'storage_type' => 'Local SSD',
-                ];
-            }
-
-        } elseif ($profile === 'avg') {
-            // Hot Nodes
-            $hotDisk = $this->roundToNeatDiskSize(max(20, ($hotStorage / 2) * 1.10));
-            $hotRamNeeded = $hotDisk / 30;
-            $hotRam = $this->getNearestVmProfile($hotRamNeeded, 32);
-
-            // Master Nodes
+        } else {
             $masterRam = ($hotRam <= 4) ? 2 : (($hotRam <= 16) ? 4 : 8);
             $nodes[] = [
                 'name' => 'master-node-0[1-3]',
@@ -263,96 +239,96 @@ class SizingEngine
                 'storage_gb' => 50,
                 'storage_type' => 'Local SSD',
             ];
+        }
 
-            $nodes[] = [
-                'name' => 'hot-node-01',
-                'role' => 'Dedicated Data (Hot)',
-                'count' => 1,
-                'ram_gb' => $hotRam,
-                'heap_gb' => $hotRam / 2,
-                'storage_gb' => $hotDisk,
-                'storage_type' => 'Local NVMe SSD',
-            ];
-            $nodes[] = [
-                'name' => 'hot-node-02',
-                'role' => 'Dedicated Data (Hot)',
-                'count' => 1,
-                'ram_gb' => $hotRam,
-                'heap_gb' => $hotRam / 2,
-                'storage_gb' => $hotDisk,
-                'storage_type' => 'Local NVMe SSD',
-            ];
+        // 3. Warm Nodes
+        if ($scenario->warm_days > 0) {
+            $warmNodes = $this->recommendTierNodes(
+                tierName: 'warm',
+                roleName: $profile === 'min' ? 'Data (Warm)' : 'Dedicated Data (Warm)',
+                tierStorage: $warmStorage,
+                ratio: 80,
+                startCount: $profile === 'max' ? 3 : 2,
+                overheadFactor: 1.10,
+                storageType: 'SATA SSD / HDD',
+                maxRamPerNode: 64.0,
+                replicas: $scenario->warm_replicas
+            );
+            $nodes = array_merge($nodes, $warmNodes);
+        }
 
-            // Warm Nodes
-            if ($scenario->warm_days > 0) {
-                $warmDisk = $this->roundToNeatDiskSize(max(20, ($warmStorage / 2) * 1.10));
-                $warmRamNeeded = $warmDisk / 80;
-                $warmRam = $this->getNearestVmProfile($warmRamNeeded, 32);
-                $nodes[] = [
-                    'name' => 'warm-node-01',
-                    'role' => 'Dedicated Data (Warm)',
-                    'count' => 1,
-                    'ram_gb' => $warmRam,
-                    'heap_gb' => $warmRam / 2,
-                    'storage_gb' => $warmDisk,
-                    'storage_type' => 'SATA SSD / HDD',
-                ];
-                $nodes[] = [
-                    'name' => 'warm-node-02',
-                    'role' => 'Dedicated Data (Warm)',
-                    'count' => 1,
-                    'ram_gb' => $warmRam,
-                    'heap_gb' => $warmRam / 2,
-                    'storage_gb' => $warmDisk,
-                    'storage_type' => 'SATA SSD / HDD',
-                ];
+        // 4. Cold Nodes
+        if ($scenario->cold_days > 0) {
+            $coldNodes = $this->recommendTierNodes(
+                tierName: 'cold',
+                roleName: $profile === 'min' ? 'Data (Cold)' : 'Dedicated Data (Cold)',
+                tierStorage: $coldStorage,
+                ratio: 100,
+                startCount: $profile === 'max' ? 3 : ($profile === 'avg' ? 1 : 2),
+                overheadFactor: 1.10,
+                storageType: 'SATA SSD (Snapshot Cache)',
+                maxRamPerNode: 64.0,
+                replicas: $scenario->cold_replicas
+            );
+            if ($profile === 'min' && count($coldNodes) >= 2) {
+                $coldNodes[1]['role'] = 'Data (Cold) (HA)';
             }
+            $nodes = array_merge($nodes, $coldNodes);
+        }
 
-            // Cold Nodes
-            if ($scenario->cold_days > 0) {
-                $coldDisk = $this->roundToNeatDiskSize(max(20, ($coldStorage / 1) * 1.10));
-                $coldRamNeeded = $coldDisk / 100;
-                $coldRam = $this->getNearestVmProfile($coldRamNeeded, 32);
-                $nodes[] = [
-                    'name' => 'cold-node-01',
-                    'role' => 'Dedicated Data (Cold)',
-                    'count' => 1,
-                    'ram_gb' => $coldRam,
-                    'heap_gb' => $coldRam / 2,
-                    'storage_gb' => $coldDisk,
-                    'storage_type' => 'SATA SSD (Snapshot Cache)',
-                ];
-            }
+        // 5. Frozen Nodes
+        if ($scenario->frozen_days > 0) {
+            $frozenNodes = $this->recommendTierNodes(
+                tierName: 'frozen',
+                roleName: $profile === 'min' ? 'Data (Frozen)' : 'Dedicated Data (Frozen)',
+                tierStorage: $frozenStorage,
+                ratio: 160,
+                startCount: $profile === 'max' ? 3 : 1,
+                overheadFactor: $profile === 'max' ? 1.05 : 0.30,
+                storageType: 'SATA SSD (Snapshot Cache)',
+                maxRamPerNode: 64.0,
+                replicas: $scenario->frozen_replicas
+            );
+            $nodes = array_merge($nodes, $frozenNodes);
+        }
 
-            // Frozen Nodes
-            if ($scenario->frozen_days > 0) {
-                $frozenDisk = $this->roundToNeatDiskSize(max(20, ($frozenStorage * 0.30)));
-                $frozenRamNeeded = $frozenDisk / 160;
-                $frozenRam = $this->getNearestVmProfile($frozenRamNeeded, 32);
-                $nodes[] = [
-                    'name' => 'frozen-node-01',
-                    'role' => 'Dedicated Data (Frozen)',
-                    'count' => 1,
-                    'ram_gb' => $frozenRam,
-                    'heap_gb' => $frozenRam / 2,
-                    'storage_gb' => $frozenDisk,
-                    'storage_type' => 'SATA SSD (Snapshot Cache)',
-                ];
-            }
-
-            // Kibana Node
-            $kibanaRam = ($hotRam <= 4) ? 2 : (($hotRam <= 16) ? 4 : 16);
+        // 6. Management Nodes (Kibana, Fleet, ML)
+        $kibanaCount = ($profile === 'max' || $isTiered) ? 2 : 1;
+        $kibanaRam = ($hotRam <= 4) ? 2 : (($hotRam <= 16) ? 4 : 16);
+        for ($i = 1; $i <= $kibanaCount; $i++) {
+            $nameSuffix = $kibanaCount > 1 ? "-0{$i}" : '';
+            $roleText = 'Kibana / Fleet Server'.($i === 2 ? ' (HA)' : '');
             $nodes[] = [
-                'name' => 'kibana-fleet',
-                'role' => 'Kibana / Fleet Server',
+                'name' => "kibana-fleet{$nameSuffix}",
+                'role' => $roleText,
                 'count' => 1,
                 'ram_gb' => $kibanaRam,
                 'heap_gb' => $kibanaRam / 2,
-                'storage_gb' => 100,
+                'storage_gb' => $profile === 'min' ? 50 : 100,
                 'storage_type' => 'Local SSD',
             ];
+        }
 
-            // Logstash Node
+        if ($isTiered) {
+            $mlCount = $profile === 'max' ? 2 : 1;
+            $mlRam = ($hotRam <= 4) ? 2 : (($hotRam <= 16) ? 4 : 16);
+            for ($i = 1; $i <= $mlCount; $i++) {
+                $nameSuffix = $mlCount > 1 ? "-0{$i}" : '';
+                $roleText = 'Dedicated Machine Learning'.($i === 2 ? ' (HA)' : '');
+                $nodes[] = [
+                    'name' => "ml-node{$nameSuffix}",
+                    'role' => $roleText,
+                    'count' => 1,
+                    'ram_gb' => $mlRam,
+                    'heap_gb' => $mlRam / 2,
+                    'storage_gb' => 50,
+                    'storage_type' => 'Local SSD',
+                ];
+            }
+        }
+
+        // 7. Logstash Ingestion
+        if ($profile === 'avg') {
             $logstashRam = ($hotRam <= 4) ? 2 : (($hotRam <= 16) ? 4 : 16);
             $nodes[] = [
                 'name' => 'logstash-node',
@@ -363,109 +339,7 @@ class SizingEngine
                 'storage_gb' => 50,
                 'storage_type' => 'Local SSD',
             ];
-
         } elseif ($profile === 'max') {
-            // Hot Nodes
-            $hotDisk = $this->roundToNeatDiskSize(max(20, ($hotStorage / 2) * 1.10));
-            $hotRamNeeded = $hotDisk / 30;
-            $hotRam = $this->getNearestVmProfile($hotRamNeeded, 64);
-
-            // Master Nodes
-            $masterRam = ($hotRam <= 4) ? 2 : (($hotRam <= 16) ? 4 : 8);
-            $nodes[] = [
-                'name' => 'master-node-0[1-3]',
-                'role' => 'Dedicated Master (Quorum)',
-                'count' => 3,
-                'ram_gb' => $masterRam,
-                'heap_gb' => $masterRam / 2,
-                'storage_gb' => 50,
-                'storage_type' => 'Local SSD',
-            ];
-
-            $nodes[] = [
-                'name' => 'hot-node-01',
-                'role' => 'Dedicated Data (Hot)',
-                'count' => 1,
-                'ram_gb' => $hotRam,
-                'heap_gb' => $hotRam / 2,
-                'storage_gb' => $hotDisk,
-                'storage_type' => 'Local NVMe SSD',
-            ];
-            $nodes[] = [
-                'name' => 'hot-node-02',
-                'role' => 'Dedicated Data (Hot)',
-                'count' => 1,
-                'ram_gb' => $hotRam,
-                'heap_gb' => $hotRam / 2,
-                'storage_gb' => $hotDisk,
-                'storage_type' => 'Local NVMe SSD',
-            ];
-
-            // Warm Nodes
-            if ($scenario->warm_days > 0) {
-                $warmCount = ($warmStorage > 10000) ? 3 : 2;
-                $warmDisk = $this->roundToNeatDiskSize(max(20, ($warmStorage / $warmCount) * 1.10));
-                $warmRamNeeded = $warmDisk / 80;
-                $warmRam = $this->getNearestVmProfile($warmRamNeeded, 64);
-
-                for ($i = 1; $i <= $warmCount; $i++) {
-                    $nodes[] = [
-                        'name' => "warm-node-0{$i}",
-                        'role' => 'Dedicated Data (Warm)',
-                        'count' => 1,
-                        'ram_gb' => $warmRam,
-                        'heap_gb' => $warmRam / 2,
-                        'storage_gb' => $warmDisk,
-                        'storage_type' => 'SATA SSD / HDD',
-                    ];
-                }
-            }
-
-            // Cold Nodes
-            if ($scenario->cold_days > 0) {
-                $coldDisk = $this->roundToNeatDiskSize(max(20, ($coldStorage / 1) * 1.10));
-                $coldRamNeeded = $coldDisk / 100;
-                $coldRam = $this->getNearestVmProfile($coldRamNeeded, 32);
-                $nodes[] = [
-                    'name' => 'cold-node-01',
-                    'role' => 'Dedicated Data (Cold)',
-                    'count' => 1,
-                    'ram_gb' => $coldRam,
-                    'heap_gb' => $coldRam / 2,
-                    'storage_gb' => $coldDisk,
-                    'storage_type' => 'SATA SSD (Snapshot Cache)',
-                ];
-            }
-
-            // Frozen Nodes
-            if ($scenario->frozen_days > 0) {
-                $frozenDisk = $this->roundToNeatDiskSize(max(20, ($frozenStorage * 1.05)));
-                $frozenRamNeeded = $frozenDisk / 160;
-                $frozenRam = $this->getNearestVmProfile($frozenRamNeeded, 32);
-                $nodes[] = [
-                    'name' => 'frozen-node-01',
-                    'role' => 'Dedicated Data (Frozen)',
-                    'count' => 1,
-                    'ram_gb' => $frozenRam,
-                    'heap_gb' => $frozenRam / 2,
-                    'storage_gb' => $frozenDisk,
-                    'storage_type' => 'SATA SSD (Snapshot Cache)',
-                ];
-            }
-
-            // Kibana Node
-            $kibanaRam = ($hotRam <= 4) ? 2 : (($hotRam <= 16) ? 4 : 16);
-            $nodes[] = [
-                'name' => 'kibana-fleet',
-                'role' => 'Kibana / Fleet Server',
-                'count' => 1,
-                'ram_gb' => $kibanaRam,
-                'heap_gb' => $kibanaRam / 2,
-                'storage_gb' => 100,
-                'storage_type' => 'Local SSD',
-            ];
-
-            // Logstash Nodes
             $logstashRam = ($hotRam <= 4) ? 2 : (($hotRam <= 16) ? 4 : 16);
             $nodes[] = [
                 'name' => 'logstash-node-0[1-2]',
@@ -482,6 +356,63 @@ class SizingEngine
     }
 
     /**
+     * Recommends nodes for a specific data tier by scaling out if RAM exceeds 64GB.
+     */
+    private function recommendTierNodes(
+        string $tierName,
+        string $roleName,
+        float $tierStorage,
+        float $ratio,
+        int $startCount,
+        float $overheadFactor,
+        string $storageType,
+        float $maxRamPerNode = 64.0,
+        int $replicas = 0
+    ): array {
+        if ($tierStorage <= 0.0) {
+            return [];
+        }
+
+        $minNodes = 1 + $replicas;
+        $count = max($startCount, $minNodes);
+        $maxNodesLimit = 3;
+
+        while (true) {
+            $diskPerNode = max(20.0, ($tierStorage / $count) * $overheadFactor);
+            $roundedDisk = $this->roundToNeatDiskSize($diskPerNode);
+            $ramNeeded = $roundedDisk / $ratio;
+
+            // Find nearest VM profile. Capped at $maxRamPerNode (64.0)
+            $ram = $this->getNearestVmProfile($ramNeeded, $maxRamPerNode);
+
+            // Scale out by adding a node if RAM exceeds cap, but only up to 3 nodes
+            if (($ramNeeded > $maxRamPerNode || $ram > $maxRamPerNode) && $count < $maxNodesLimit) {
+                $count++;
+
+                continue;
+            }
+
+            break;
+        }
+
+        $nodes = [];
+        for ($i = 1; $i <= $count; $i++) {
+            $nameSuffix = $count > 1 ? sprintf('-0%d', $i) : '';
+            $nodes[] = [
+                'name' => strtolower($tierName).'-node'.$nameSuffix,
+                'role' => $roleName,
+                'count' => 1,
+                'ram_gb' => $ram,
+                'heap_gb' => $ram / 2,
+                'storage_gb' => $roundedDisk,
+                'storage_type' => $storageType,
+            ];
+        }
+
+        return $nodes;
+    }
+
+    /**
      * Finds the nearest standard Elastic Cloud RAM profile.
      */
     private function getNearestVmProfile(float $neededRam, float $maxRam): float
@@ -491,9 +422,7 @@ class SizingEngine
         $minDiff = null;
 
         foreach ($profiles as $profile) {
-            // Capping is only applied if the needed RAM is within the scenario's default maxRam limits.
-            // If the needed RAM exceeds the default maxRam, we let it scale up to satisfy the RAM-to-disk ratio.
-            if ($neededRam <= $maxRam && $profile > $maxRam) {
+            if ($profile > $maxRam) {
                 break;
             }
             $diff = abs($neededRam - $profile);

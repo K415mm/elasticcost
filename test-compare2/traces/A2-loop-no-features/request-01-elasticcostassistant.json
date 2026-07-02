@@ -1,0 +1,49 @@
+{
+    "test_mode": "A2-loop-no-features",
+    "request_index": 0,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-basic",
+    "description": "Simple factual question about ES sizing ratios",
+    "model": "qwen3.5-27b",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 4412,
+        "start_time": "2026-06-27T23:21:02+00:00",
+        "end_time": "2026-06-27T23:21:07+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 312,
+        "completion_tokens": 226,
+        "total_tokens": 538
+    },
+    "prompts": {
+        "raw_user_prompt": "What is the RAM-to-disk ratio for Hot tier in Elasticsearch?",
+        "effective_user_prompt": "What is the RAM-to-disk ratio for Hot tier in Elasticsearch?",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "For the **Hot Tier** in Elasticsearch, the recommended RAM-to-Disk ratio is:\n\n### **1 : 30**\n*(Approximately 1 GB of RAM for every 30 GB of Disk Storage)*\n\n#### Key Considerations for Hot Nodes:\n*   **Purpose:** Optimized for high write throughput and fast search latency on recent data.\n*   **JVM Heap Constraint:** Ensure that only ~50% of total system RAM is allocated to the JVM heap (max 31GB per node), leaving sufficient memory for OS page cache to handle disk I\/O efficiently.\n*   **Shard Size:** Maintain primary shard sizes between **30–50 GB** to ensure optimal performance and avoid overhead from too many small shards.\n*   **Index Metadata:** Account for a **1.25x multiplier** when calculating final storage needs due to index metadata expansion and Lucene segments.\n\nWould you like me to help calculate specific hardware requirements based on your daily log volume or retention policy?",
+    "response_length": 902,
+    "success": true,
+    "errors": []
+}

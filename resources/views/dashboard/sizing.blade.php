@@ -16,6 +16,12 @@
         </h1>
     </div>
     <div class="d-flex gap-2">
+        <button id="btn-test-ollama" type="button" class="btn btn-outline-warning" title="Test AI Connection">
+            <i class="bi bi-wifi me-1"></i> Test AI Connection
+        </button>
+        <button id="btn-ask-ai" type="button" class="btn btn-outline-info">
+            <i class="bi bi-cpu me-1"></i> Analyze Sizing
+        </button>
         <a href="{{ route('clients.show', $client->id) }}" class="btn btn-outline-secondary">
             <i class="bi bi-x-circle me-1"></i> {{ __('messages.close') }}
         </a>
@@ -106,6 +112,27 @@
                 <div class="card-arrow-bottom-right"></div>
             </div>
         </div>
+</div>
+
+<div id="ollama-ping-toast-container" style="position: fixed; top: 80px; right: 20px; z-index: 9999;"></div>
+
+<!-- AI Analysis Card -->
+<div class="card mb-4 border-info border-opacity-40" id="ai-analysis-card" style="{{ empty($aiSizingAnalysis) ? 'display: none;' : '' }}">
+    <div class="card-body py-4">
+        <h5 class="card-title text-info mb-3">
+            <i class="bi bi-cpu me-2"></i> AI Sizing Regulator Analysis
+        </h5>
+        <div id="ai-analysis-content" class="text-white text-opacity-80 leading-relaxed markdown-body">
+            @if(!empty($aiSizingAnalysis))
+                {!! \Illuminate\Support\Str::markdown($aiSizingAnalysis) !!}
+            @endif
+        </div>
+    </div>
+    <div class="card-arrow">
+        <div class="card-arrow-top-left"></div>
+        <div class="card-arrow-top-right"></div>
+        <div class="card-arrow-bottom-left"></div>
+        <div class="card-arrow-bottom-right"></div>
     </div>
 </div>
 
@@ -318,6 +345,104 @@
     </div>
 </div>
 
+<!-- Cluster Topology Editor -->
+<div class="card mb-4 border-theme border-opacity-35">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title text-theme mb-0">
+                <i class="bi bi-pencil-square me-2"></i> Cluster Topology Editor
+            </h5>
+            <div>
+                @php
+                    $isCustom = !empty($client->clientScenarioMsspDetails()->where('scenario_id', $scenario->id)->first()?->custom_nodes);
+                @endphp
+                @if($isCustom)
+                    <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-30 me-2">Customized Layout</span>
+                @else
+                    <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30 me-2">Auto-Recommended Layout</span>
+                @endif
+            </div>
+        </div>
+        <p class="text-muted small mb-4">
+            Customize the cluster node architecture below. You can modify existing nodes, add new ones (e.g. dedicated masters, ML, Logstash), or delete rows. Saving changes will immediately update the total RAM, ERU licensing counts, and annual subscription costs.
+        </p>
+
+        <form action="{{ route('sizing.custom-nodes.save', [$client->id, $scenario->id]) }}" method="POST">
+            @csrf
+            <div class="table-responsive">
+                <table class="table table-borderless table-hover align-middle mb-0" id="custom-nodes-table">
+                    <thead>
+                        <tr class="border-bottom text-muted small uppercase-tracking">
+                            <th>Node Name</th>
+                            <th>Role / Description</th>
+                            <th style="width: 100px;">Node Count</th>
+                            <th style="width: 110px;">RAM (GB)</th>
+                            <th style="width: 130px;">Storage (GB)</th>
+                            <th>Storage Type</th>
+                            <th style="width: 80px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="nodes-tbody">
+                        @foreach($data['nodes'] as $index => $node)
+                            <tr>
+                                <td>
+                                    <input type="text" name="nodes[{{ $index }}][name]" value="{{ $node['name'] }}" class="form-control form-control-sm bg-black bg-opacity-30 border-secondary border-opacity-30 text-white" required>
+                                </td>
+                                <td>
+                                    <input type="text" name="nodes[{{ $index }}][role]" value="{{ $node['role'] }}" class="form-control form-control-sm bg-black bg-opacity-30 border-secondary border-opacity-30 text-white" required>
+                                </td>
+                                <td>
+                                    <input type="number" name="nodes[{{ $index }}][count]" value="{{ $node['count'] }}" min="1" class="form-control form-control-sm bg-black bg-opacity-30 border-secondary border-opacity-30 text-white text-center" required>
+                                </td>
+                                <td>
+                                    <input type="number" step="0.1" name="nodes[{{ $index }}][ram_gb]" value="{{ $node['ram_gb'] }}" min="0.1" class="form-control form-control-sm bg-black bg-opacity-30 border-secondary border-opacity-30 text-white text-center" required>
+                                </td>
+                                <td>
+                                    <input type="number" step="0.1" name="nodes[{{ $index }}][storage_gb]" value="{{ $node['storage_gb'] }}" min="0.1" class="form-control form-control-sm bg-black bg-opacity-30 border-secondary border-opacity-30 text-white text-center" required>
+                                </td>
+                                <td>
+                                    <input type="text" name="nodes[{{ $index }}][storage_type]" value="{{ $node['storage_type'] }}" class="form-control form-control-sm bg-black bg-opacity-30 border-secondary border-opacity-30 text-white" required>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-outline-danger btn-sm w-100 delete-node-row">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-between mt-3 pt-3 border-top border-secondary border-opacity-25">
+                <button type="button" class="btn btn-outline-info btn-sm" id="btn-add-node">
+                    <i class="bi bi-plus-circle me-1"></i> Add Custom Node
+                </button>
+                <div class="d-flex gap-2">
+                    @if($isCustom)
+                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="document.getElementById('reset-topology-form').submit();">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset to Defaults
+                        </button>
+                    @endif
+                    <button type="submit" class="btn btn-theme btn-sm px-4">
+                        <i class="bi bi-save me-1"></i> Save Layout & Recalculate
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="card-arrow">
+        <div class="card-arrow-top-left"></div>
+        <div class="card-arrow-top-right"></div>
+        <div class="card-arrow-bottom-left"></div>
+        <div class="card-arrow-bottom-right"></div>
+    </div>
+</div>
+
+<form id="reset-topology-form" action="{{ route('sizing.custom-nodes.reset', [$client->id, $scenario->id]) }}" method="POST" style="display:none;">
+    @csrf
+</form>
+
 <!-- 4. Visual Topology Representation -->
 <div class="card mb-4 border-secondary border-opacity-20">
     <div class="card-body">
@@ -414,6 +539,188 @@
 
         var chart = new ApexCharts(document.querySelector("#ingestionDonutChart"), options);
         chart.render();
+
+        // Ask AI Sizing Regulator AJAX Handler
+        var btnAskAi = document.getElementById("btn-ask-ai");
+        var aiCard = document.getElementById("ai-analysis-card");
+        var aiContent = document.getElementById("ai-analysis-content");
+
+        if (btnAskAi && aiCard && aiContent) {
+            btnAskAi.addEventListener("click", function() {
+                aiCard.style.display = "";
+                aiContent.innerHTML = `
+                    <div class="d-flex flex-column align-items-center justify-content-center py-5">
+                        <div class="position-relative mb-4" style="width: 80px; height: 80px;">
+                            <img src="/assets/css/images/logo-dark.png" alt="Logo" class="brand-logo-img-dark position-absolute start-50 top-50 translate-middle" style="width: 40px; height: auto; z-index: 10;">
+                            <img src="/assets/css/images/logo.png" alt="Logo" class="brand-logo-img-light position-absolute start-50 top-50 translate-middle" style="width: 40px; height: auto; z-index: 10;">
+                            <div class="spinner-border text-theme position-absolute top-0 start-0 w-100 h-100" style="border-width: 3px;" role="status"></div>
+                        </div>
+                        <div class="h5 text-theme text-center mt-2 mb-1" id="ai-loading-step">Initializing Sizing Regulator Agent...</div>
+                        <div class="text-muted small text-center" id="ai-loading-desc">Setting up local Ollama connection to gemma4:e2b...</div>
+                    </div>
+                `;
+                btnAskAi.disabled = true;
+
+                var steps = [
+                    { title: "Initializing Sizing Regulator Agent...", desc: "Setting up local Ollama connection to gemma4:e2b..." },
+                    { title: "Loading Reference Documentation...", desc: "Reading doc/learn/elasticsearch_sizing_standards.md..." },
+                    { title: "Reviewing Sizing Calculator Logic...", desc: "Comparing calculated Hot/Warm/Cold storage ratios..." },
+                    { title: "Auditing Master Node Specs...", desc: "Checking if quorum master configurations match constraints..." },
+                    { title: "Evaluating Cluster Topology...", desc: "Formulating Elasticsearch cluster sizing audit logs..." },
+                    { title: "Formatting Proposal Suggestions...", desc: "Structuring final recommendations and pricing notes..." }
+                ];
+                var stepIndex = 0;
+                var stepInterval = setInterval(function() {
+                    stepIndex = (stepIndex + 1) % steps.length;
+                    var stepTitleEl = document.getElementById("ai-loading-step");
+                    var stepDescEl = document.getElementById("ai-loading-desc");
+                    if (stepTitleEl && stepDescEl) {
+                        stepTitleEl.innerText = steps[stepIndex].title;
+                        stepDescEl.innerText = steps[stepIndex].desc;
+                    }
+                }, 2500);
+
+                fetch("{{ route('sizing.analyze-ai', [$client->id, $scenario->id]) }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    clearInterval(stepInterval);
+                    btnAskAi.disabled = false;
+                    if (data.success) {
+                        aiContent.innerHTML = data.html;
+                    } else {
+                        aiContent.innerHTML = `
+                            <div class="alert alert-danger mb-0">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i> ${data.message || "Error during AI generation."}
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    clearInterval(stepInterval);
+                    btnAskAi.disabled = false;
+                    aiContent.innerHTML = `
+                        <div class="alert alert-danger mb-0">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i> AI generation failed: ${error.message}
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        // Test AI Connection
+        var btnTestOllama = document.getElementById("btn-test-ollama");
+        var pingContainer = document.getElementById("ollama-ping-toast-container");
+
+        if (btnTestOllama && pingContainer) {
+            btnTestOllama.addEventListener("click", function () {
+                btnTestOllama.disabled = true;
+                btnTestOllama.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testing...';
+
+                fetch("{{ route('ollama.ping') }}", { method: 'GET' })
+                .then(r => r.json())
+                .then(data => {
+                    btnTestOllama.disabled = false;
+                    btnTestOllama.innerHTML = '<i class="bi bi-wifi me-1"></i> Test AI Connection';
+
+                    var providerName = data.provider_name || 'AI';
+                    var isOk = data.status === 'ok';
+                    var badgeClass = isOk ? 'success' : (data.status === 'warning' ? 'warning' : 'danger');
+                    var icon = isOk ? '✅' : '⚠️';
+
+                    var modelsHtml = '';
+                    if (data.available_models && data.available_models.length > 0) {
+                        modelsHtml = '<div class="mt-2 small"><strong>Available models:</strong><br>' +
+                            data.available_models.map(m => `<code class="me-1">${m}</code>`).join('') + '</div>';
+                    }
+
+                    var toastId = 'ping-toast-' + Date.now();
+                    var toastHtml = `
+                        <div id="${toastId}" class="toast show align-items-start border-${badgeClass} border-opacity-50 mb-2"
+                            role="alert" style="min-width: 360px; background: #1a2433; color: #e0e8f0;">
+                            <div class="toast-header border-${badgeClass} border-opacity-25" style="background: #0f1c2e; color: #e0e8f0;">
+                                <strong class="me-auto">${icon} ${providerName} Status</strong>
+                                <small class="text-muted">${data.timestamp ? data.timestamp.substring(11, 19) : 'now'}</small>
+                                <button type="button" class="btn-close btn-close-white ms-2" onclick="document.getElementById('${toastId}').remove()"></button>
+                            </div>
+                            <div class="toast-body small">
+                                <div><strong>URL:</strong> <code>${data.url || ''}</code></div>
+                                <div><strong>Status:</strong> ${data.message}</div>
+                                ${data.model_status ? '<div class="mt-1">' + data.model_status + '</div>' : ''}
+                                ${modelsHtml}
+                            </div>
+                        </div>`;
+
+                    pingContainer.insertAdjacentHTML('beforeend', toastHtml);
+
+                    // Auto-remove after 12 seconds
+                    setTimeout(() => {
+                        var el = document.getElementById(toastId);
+                        if (el) el.remove();
+                    }, 12000);
+                })
+                .catch(err => {
+                    btnTestOllama.disabled = false;
+                    btnTestOllama.innerHTML = '<i class="bi bi-wifi me-1"></i> Test AI Connection';
+                    pingContainer.insertAdjacentHTML('beforeend',
+                        `<div class="toast show border-danger mb-2" style="min-width:300px;background:#1a2433;color:#e0e8f0;">
+                            <div class="toast-body">⚠️ Could not reach Laravel backend: ${err.message}</div>
+                        </div>`);
+                });
+        // Add Node Row
+        var btnAddNode = document.getElementById("btn-add-node");
+        var nodesTbody = document.getElementById("nodes-tbody");
+        if (btnAddNode && nodesTbody) {
+            var nodeIndex = {{ count($data['nodes']) }};
+            btnAddNode.addEventListener("click", function() {
+                var newRow = document.createElement("tr");
+                newRow.innerHTML = `
+                    <td>
+                        <input type="text" name="nodes[${nodeIndex}][name]" value="custom-node" class="form-control form-control-sm bg-black bg-opacity-30 border-secondary border-opacity-30 text-white" required>
+                    </td>
+                    <td>
+                        <input type="text" name="nodes[${nodeIndex}][role]" value="Custom Role" class="form-control form-control-sm bg-black bg-opacity-30 border-secondary border-opacity-30 text-white" required>
+                    </td>
+                    <td>
+                        <input type="number" name="nodes[${nodeIndex}][count]" value="1" min="1" class="form-control form-control-sm bg-black bg-opacity-30 border-secondary border-opacity-30 text-white text-center" required>
+                    </td>
+                    <td>
+                        <input type="number" step="0.1" name="nodes[${nodeIndex}][ram_gb]" value="16.0" min="0.1" class="form-control form-control-sm bg-black bg-opacity-30 border-secondary border-opacity-30 text-white text-center" required>
+                    </td>
+                    <td>
+                        <input type="number" step="0.1" name="nodes[${nodeIndex}][storage_gb]" value="100.0" min="0.1" class="form-control form-control-sm bg-black bg-opacity-30 border-secondary border-opacity-30 text-white text-center" required>
+                    </td>
+                    <td>
+                        <input type="text" name="nodes[${nodeIndex}][storage_type]" value="Local SSD" class="form-control form-control-sm bg-black bg-opacity-30 border-secondary border-opacity-30 text-white" required>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100 delete-node-row">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                nodesTbody.appendChild(newRow);
+                nodeIndex++;
+            });
+        }
+
+        // Delete Node Row (using event delegation)
+        if (nodesTbody) {
+            nodesTbody.addEventListener("click", function(e) {
+                if (e.target.classList.contains("delete-node-row") || e.target.closest(".delete-node-row")) {
+                    var btn = e.target.classList.contains("delete-node-row") ? e.target : e.target.closest(".delete-node-row");
+                    var tr = btn.closest("tr");
+                    if (tr) {
+                        tr.remove();
+                    }
+                }
+            });
+        }
     });
 </script>
 @endsection

@@ -1,0 +1,62 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 14,
+    "agent": "RgSocEngineer",
+    "category": "db-query-french",
+    "description": "French — query scenarios and roles",
+    "model": "qwen3.5-27b",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 5065,
+        "start_time": "2026-06-27T23:18:42+00:00",
+        "end_time": "2026-06-27T23:18:47+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 234,
+        "completion_tokens": 0,
+        "total_tokens": 234
+    },
+    "prompts": {
+        "raw_user_prompt": "Montre-moi tous les scénarios disponibles et leurs rôles assignés.",
+        "effective_user_prompt": "Montre-moi tous les scénarios disponibles et leurs rôles assignés.",
+        "original_system_prompt": "You are the \"RG SOC Engineer\" (Light Router), the primary classifier and router for the Security Operations Center.\nYour job is to read the user request and decide how to respond:\n1. If the request requires any action (such as querying database tables, inspecting current system settings, listing clients, showing settings, checking status, updating device counts, or modifying settings), delegate it immediately to the `execute_action` sub-agent tool. Pass the user's request as a clean, direct task instruction to the tool.\n2. If the request is a simple greeting (e.g. \"hello\", \"hi\"), conversational exchange, or general query that does not require database access or updates, answer it directly and concisely.\n3. If you do not know what to do or if the request is ambiguous, delegate it to the `execute_action` sub-agent tool to inspect details and process it.",
+        "optimized_system_prompt": "You are the \"RG SOC Engineer\" (Light Router), the primary classifier and router for the Security Operations Center.\nYour job is to read the user request and decide how to respond:\n1. If the request requires any action (such as querying database tables, inspecting current system settings, listing clients, showing settings, checking status, updating device counts, or modifying settings), delegate it immediately to the `execute_action` sub-agent tool. Pass the user's request as a clean, direct task instruction to the tool.\n2. If the request is a simple greeting (e.g. \"hello\", \"hi\"), conversational exchange, or general query that does not require database access or updates, answer it directly and concisely.\n3. If you do not know what to do or if the request is ambiguous, delegate it to the `execute_action` sub-agent tool to inspect details and process it."
+    },
+    "pipeline_stages": [
+        {
+            "stage": "horizon_dispatch",
+            "status": "dispatched",
+            "detail": "RgSocEngineer queued to Horizon"
+        },
+        {
+            "stage": "horizon_poll",
+            "status": "waiting",
+            "detail": "status=failed, 0 Horizon jobs pending, waited 5s"
+        }
+    ],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 0,
+    "llm_calls": 0,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "",
+    "response_length": 0,
+    "success": false,
+    "errors": [
+        "Agent error: HTTP request returned status code 400:\n{\"error\":{\"message\":\"<400> InternalError.Algo.InvalidParameter: 'messages' must contain the word 'json' in some form, to (truncated...)\n"
+    ]
+}

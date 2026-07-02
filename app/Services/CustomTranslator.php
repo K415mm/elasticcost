@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use Illuminate\Translation\Translator as BaseTranslator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Translation\Translator as BaseTranslator;
 
 class CustomTranslator extends BaseTranslator
 {

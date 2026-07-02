@@ -1,0 +1,49 @@
+{
+    "test_mode": "A1-direct-api",
+    "request_index": 8,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-shards",
+    "description": "Shard sizing best practices explanation",
+    "model": "qwen3.5-omni-flash-2026-03-15",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 3035,
+        "start_time": "2026-06-29T17:07:53+00:00",
+        "end_time": "2026-06-29T17:07:56+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 325,
+        "completion_tokens": 478,
+        "total_tokens": 803
+    },
+    "prompts": {
+        "raw_user_prompt": "What shard size do you recommend for optimal Elasticsearch performance? Explain why 30-50GB is the sweet spot.",
+        "effective_user_prompt": "What shard size do you recommend for optimal Elasticsearch performance? Explain why 30-50GB is the sweet spot.",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 1,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "For optimal Elasticsearch performance, the recommended shard size is **30 GB to 50 GB**.\n\nHere is why this range represents the \"sweet spot\" for cluster health and operations:\n\n### 🎯 Why 30–50 GB is Ideal\n\n| Factor | Impact of Small Shards (<10 GB) | Impact of Large Shards (>60 GB) | **Sweet Spot (30–50 GB)** |\n| :--- | :--- | :--- | : |\n| **Rebalancing** | Causes excessive network I\/O and CPU overhead during node joins or failures. | Takes too long to move; causes prolonged unavailability during rebalancing. | **Fast & Efficient**: Moves quickly without saturating the network. |\n| **Query Latency** | Too many shards increase coordination overhead (`_search` requests). | Single large shard slows down segment merging and compaction. | **Balanced**: Minimal coordination overhead with fast merge times. |\n| **Failover Recovery** | Rapid recovery but high resource churn. | Slow recovery; single point of failure can impact massive data volumes. | **Resilient**: Quick recovery time objective (RTO) with manageable risk. |\n| **Segment Management** | High number of segments leads to metadata bloat. | Fewer segments make merging inefficient and memory-intensive. | **Optimized**: Good segment count for Lucene's internal structures. |\n\n### ⚠️ Critical Constraints to Remember\n*   **JVM Heap Limit**: Ensure your JVM heap does not exceed **50% of the physical RAM** on a node. Large shards force larger heap sizes, which can trigger Stop-the-World (STW) GC pauses.\n*   **Metadata Expansion**: Always apply a **1.25x multiplier** when calculating total disk requirements due to index metadata growth over time.\n*   **Replica Strategy**: For Hot\/Warm tiers, maintain at least **1 replica** per shard. For Cold\/Frozen tiers, replicas may be reduced based on compliance needs.\n\nWould you like me to calculate the exact number of shards needed for your specific daily log volume and retention period?",
+    "response_length": 1912,
+    "success": true,
+    "errors": []
+}

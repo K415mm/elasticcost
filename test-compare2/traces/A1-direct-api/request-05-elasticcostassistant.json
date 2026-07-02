@@ -1,0 +1,49 @@
+{
+    "test_mode": "A1-direct-api",
+    "request_index": 4,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-tunisian",
+    "description": "Tunisian Arabic dialect — sizing 1TB\/day 90-day retention",
+    "model": "qwen3.5-27b",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 38823,
+        "start_time": "2026-06-27T23:26:16+00:00",
+        "end_time": "2026-06-27T23:26:55+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 323,
+        "completion_tokens": 816,
+        "total_tokens": 1139
+    },
+    "prompts": {
+        "raw_user_prompt": "3andi cluster ES ken n7eb 1TB log nhar w 90 jour retention, chnou lazem men hardware? hot w warm tiers",
+        "effective_user_prompt": "3andi cluster ES ken n7eb 1TB log nhar w 90 jour retention, chnou lazem men hardware? hot w warm tiers",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 1,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "مرحباً بك! بصفتي **ElasticCost Assistant**، ها هو التحليل التقني والموارد المطلوبة لتوسيع الـ Cluster الخاص بك بناءً على المعطيات التي ذكرتها (1TB يومياً، 90 يوم احتفاظ).\n\nلقد قمت بحساب الاحتياجات بناءً على أفضل الممارسات في ElasticCost (Hot\/Warm Architecture) مع أخذ نسبة الـ Metadata Expansion (1.25x) و Replicas (1 نسخة احتياطية) في الحسبان.\n\n### 📊 ملخص المتطلبات (Hardware Requirements)\n\n| المعيار | Hot Tier (7 أيام) | Warm Tier (83 يوماً) | المجموع الكلي |\n| :--- | :--- | :--- | :--- |\n| **البيانات الخام** | 7 TB | 83 TB | 90 TB |\n| **مساحة التخزين الفعلية*** | ~17.5 TB | ~207.5 TB | ~225 TB |\n| **نسبة الذاكرة (RAM)** | 1:30 | 1:80 | - |\n| **ذاكرة عشوائية مطلوبة** | ~583 GB | ~2.6 TB | ~3.2 TB |\n| **عدد العقد المقترح (Nodes)** | 3 إلى 4 عقد | 10 إلى 12 عقد | ~15 عقدة |\n\n*\\*ملاحظة: المساحة تشمل Metadata (1.25x) + Replicas (x2).*\n\n---\n\n### 🔍 تفاصيل الحسابات\n\n1.  **حجم البيانات الكلي:**\n    *   `1 TB\/يوم × 90 يوم = 90 TB` (بيانات خام).\n    *   مع مراعاة توسع الميتاداتا (Index Metadata): `90 TB × 1.25 = 112.5 TB`.\n    *   مع إضافة نسخة احتياطية واحدة (Primary + 1 Replica): `112.5 TB × 2 = 225 TB` تخزين فعلي مطلوب.\n\n2.  **توزيع الطبقات (Tiers):**\n    *   **Hot Tier (الأحدث):** نحتفظ بآخر 7 أيام للبحث السريع والكتابة.\n        *   التخزين: `7 TB × 1.25 × 2 = 17.5 TB`.\n        *   الذاكرة (RAM): `17.5 TB ÷ 30 (النسبة) ≈ 583 GB`.\n    *   **Warm Tier (الأرشفة):** نحتفظ بالباقي (83 يوماً).\n        *   التخزين: `83 TB × 1.25 × 2 = 207.5 TB`.\n        *   الذاكرة (RAM): `207.5 TB ÷ 80 (النسبة) ≈ 2.6 TB`.\n\n---\n\n### ⚙️ توصيات تقنية هامة\n\n*   **جهاز JVM Heap:** تأكد من ضبط الـ Heap لا يتجاوز **31GB** أو **50%** من إجمالي الذاكرة المتاحة لكل عقدة (أيهما أقل).\n*   **حجم الشاردات (Shard Size):** حافظ على حجم كل شارد بين **30GB إلى 50GB** لضمان الأداء الأمثل.\n*   **نوع القرص:** استخدم **SSD NVMe** للطبقة الساخنة (Hot)، ويمكن استخدام **HDD SATA** أو **SSD SATA** للطبقة الدافئة (Warm) لتقليل التكلفة.\n*   **تحسين التكلفة (Cold\/Frozen):** نظراً لحجم الـ Warm الكبير جداً (2.6TB RAM)، أنصحك بالنظر في تفعيل طبقة **Frozen Tier** للبيانات الأقدم من 30 يوماً لتوفير ما يصل إلى 70% من تكاليف الذاكرة.\n\n### 💡 الخطوة التالية\nهل تود أن أقوم بتقدير **التكلفة الشهرية (MRC)** لهذا البنية التحتية؟ أم أنك تحتاج إلى مساعدة في إعداد ملف عرض سعر لمزود خدمات SOC (MSSP Proposal)؟",
+    "response_length": 3264,
+    "success": true,
+    "errors": []
+}

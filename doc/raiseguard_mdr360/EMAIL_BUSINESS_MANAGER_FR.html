@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proposition Commerciale — RaiseGuard MDR 360°</title>
+<style>
+  /* ==================== RESET & BASE ==================== */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+    line-height: 1.65;
+    padding: 24px 12px;
+  }
+
+  /* ==================== EMAIL WRAPPER ==================== */
+  .email-wrapper {
+    max-width: 760px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.12);
+    overflow: hidden;
+  }
+
+  /* ==================== HEADER ==================== */
+  .header {
+    background: linear-gradient(135deg, #0a192f 0%, #112240 50%, #1d3461 100%);
+    padding: 40px 48px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    background: rgba(255,200,0,0.07);
+    border-radius: 50%;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: -40px;
+    width: 160px; height: 160px;
+    background: rgba(100,210,255,0.06);
+    border-radius: 50%;
+  }
+  .header-logo {
+    font-size: 22px;
+    font-weight: 800;
+    color: #ffc200;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+  }
+  .header-logo span { color: #64d2ff; }
+  .header-tagline {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .header-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 6px;
+  }
+  .header-subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+  }
+  .header-badge {
+    display: inline-block;
+    background: rgba(255,194,0,0.15);
+    border: 1px solid rgba(255,194,0,0.4);
+    color: #ffc200;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-top: 14px;
+  }
+
+  /* ==================== EMAIL META ==================== */
+  .email-meta {
+    background: #f8f9fb;
+    border-bottom: 1px solid #e5e8ef;
+    padding: 16px 48px;
+    font-size: 13px;
+    color: #555;
+  }
+  .email-meta table { width: 100%; border-collapse: collapse; }
+  .email-meta td { padding: 3px 0; }
+  .email-meta .label { color: #888; width: 80px; font-weight: 600; }
+  .email-meta .value { color: #222; }
+  .email-meta .value strong { color: #0a192f; }
+
+  /* ==================== BODY ==================== */
+  .body { padding: 40px 48px; }
+
+  /* ==================== SALUTATION ==================== */
+  .salutation {
+    font-size: 16px;
+    color: #1a1a2e;
+    margin-bottom: 20px;
+  }
+  .intro-text {
+    font-size: 14.5px;
+    color: #444;
+    margin-bottom: 32px;
+    line-height: 1.8;
+  }
+
+  /* ==================== SECTION TITLE ==================== */
+  .section-title {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #64d2ff;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e8ecf5;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ==================== AGENT PILLS ==================== */
+  .agents-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .agent-pill {
+    flex: 1;
+    min-width: 180px;
+    border-radius: 12px;
+    padding: 18px 20px;
+    border: 1px solid;
+  }
+  .agent-pill.siem {
+    background: linear-gradient(135deg, #e8f4fd, #d0eaf8);
+    border-color: #90caf9;
+  }
+  .agent-pill.mdr {
+    background: linear-gradient(135deg, #fef3e2, #fde8c0);
+    border-color: #ffb74d;
+  }
+  .agent-pill.edr {
+    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    border-color: #81c784;
+  }
+  .agent-pill-icon { font-size: 22px; margin-bottom: 8px; }
+  .agent-pill-name {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .agent-pill.siem .agent-pill-name { color: #1565c0; }
+  .agent-pill.mdr .agent-pill-name { color: #e65100; }
+  .agent-pill.edr .agent-pill-name { color: #2e7d32; }
+  .agent-pill-desc {
+    font-size: 12px;
+    color: #555;
+    line-height: 1.5;
+  }
+
+  /* ==================== WARNING BOX ==================== */
+  .notice-box {
+    background: linear-gradient(135deg, #fff8e1, #fff3cd);
+    border: 1px solid #ffe082;
+    border-left: 4px solid #ffc200;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 32px;
+    font-size: 13px;
+    color: #5d4037;
+    line-height: 1.7;
+  }
+  .notice-box strong { color: #e65100; }
+
+  /* ==================== OFFER CARDS ==================== */
+  .offer-card {
+    border-radius: 14px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border: 1px solid #e0e0e0;
+  }
+  .offer-header {
+    padding: 20px 24px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .offer-card.recommended .offer-header {
+    background: linear-gradient(135deg, #0a192f, #1d3461);
+    color: white;
+  }
+  .offer-card.standard .offer-header {
+    background: linear-gradient(135deg, #1b2838, #2a3f5f);
+    color: white;
+  }
+  .offer-card.premium .offer-header {
+    background: linear-gradient(135deg, #1a0533, #3d1070);
+    color: white;
+  }
+  .offer-badge {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+  .offer-card.recommended .offer-badge { background: #ffc200; color: #0a192f; }
+  .offer-card.standard .offer-badge { background: rgba(100,210,255,0.25); color: #64d2ff; border: 1px solid #64d2ff; }
+  .offer-card.premium .offer-badge { background: rgba(200,100,255,0.2); color: #e040fb; border: 1px solid #e040fb; }
+  .offer-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 4px;
+  }
+  .offer-desc-short {
+    font-size: 12px;
+    opacity: 0.7;
+    color: white;
+  }
+  .offer-total {
+    text-align: right;
+  }
+  .offer-total-label { font-size: 10px; opacity: 0.6; color: white; text-transform: uppercase; letter-spacing: 1px; }
+  .offer-total-amount { font-size: 24px; font-weight: 800; color: #ffc200; }
+  .offer-total-period { font-size: 11px; opacity: 0.6; color: white; }
+
+  .offer-table-wrapper { background: #fafbfc; }
+  .offer-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  .offer-table thead tr {
+    background: #f0f2f5;
+  }
+  .offer-table thead th {
+    padding: 10px 20px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #888;
+  }
+  .offer-table thead th:not(:first-child) { text-align: right; }
+  .offer-table tbody tr { border-top: 1px solid #edf0f5; }
+  .offer-table tbody tr:last-child { border-bottom: 1px solid #edf0f5; }
+  .offer-table td { padding: 13px 20px; }
+  .offer-table td:not(:first-child) { text-align: right; }
+  .agent-name-cell { display: flex; align-items: center; gap: 10px; font-weight: 600; color: #1a1a2e; }
+  .agent-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dot-siem { background: #42a5f5; }
+  .dot-mdr { background: #ffa726; }
+  .dot-edr { background: #66bb6a; }
+  .price-cell { font-weight: 700; color: #1a1a2e; }
+  .subtotal-row { background: #f5f7fa; }
+  .subtotal-row td { font-weight: 700; padding: 14px 20px; }
+  .subtotal-row .total-label { color: #0a192f; font-size: 14px; }
+  .subtotal-row .total-amount { font-size: 16px; color: #0a192f; }
+  .offer-card.recommended .subtotal-row .total-amount { color: #1565c0; }
+  .offer-card.premium .subtotal-row .total-amount { color: #7b1fa2; }
+
+  /* ==================== COMPARISON TABLE ==================== */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 32px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  }
+  .compare-table thead tr { background: #0a192f; }
+  .compare-table thead th { padding: 14px 18px; color: white; font-size: 12px; font-weight: 700; text-align: center; }
+  .compare-table thead th:first-child { text-align: left; }
+  .compare-table tbody tr:nth-child(even) { background: #f8f9fb; }
+  .compare-table tbody tr:nth-child(odd) { background: #ffffff; }
+  .compare-table td { padding: 11px 18px; text-align: center; border-bottom: 1px solid #edf0f5; }
+  .compare-table td:first-child { text-align: left; font-weight: 600; color: #444; }
+  .compare-table .highlight-col { background: rgba(21,101,192,0.07); font-weight: 700; color: #1565c0; }
+  .total-row td { background: #e8f0fe; font-weight: 800; font-size: 15px; padding: 16px 18px; }
+  .total-row .highlight-col { background: #c8d8ff; color: #0d47a1; }
+  .check { color: #2e7d32; font-weight: 700; }
+  .cross { color: #bbb; }
+
+  /* ==================== ONBOARDING BOX ==================== */
+  .onboarding-box {
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+    border: 1px solid #90caf9;
+    border-left: 4px solid #1565c0;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .onboarding-icon { font-size: 28px; flex-shrink: 0; }
+  .onboarding-title { font-size: 15px; font-weight: 800; color: #0d47a1; margin-bottom: 6px; }
+  .onboarding-amount { font-size: 26px; font-weight: 900; color: #0d47a1; }
+  .onboarding-sub { font-size: 12px; color: #1565c0; margin-bottom: 8px; }
+  .onboarding-desc { font-size: 13px; color: #444; line-height: 1.6; }
+
+  /* ==================== ATTACHMENT BOX ==================== */
+  .attachment-box {
+    background: #f8f9fb;
+    border: 1px dashed #c5cae9;
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 32px;
+  }
+  .attachment-icon { font-size: 28px; }
+  .attachment-name { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+  .attachment-desc { font-size: 12px; color: #888; margin-top: 2px; }
+
+  /* ==================== CLOSING ==================== */
+  .closing-text {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 28px;
+    line-height: 1.8;
+  }
+  .signature {
+    border-top: 2px solid #e8ecf5;
+    padding-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .sig-avatar {
+    width: 52px; height: 52px;
+    background: linear-gradient(135deg, #0a192f, #1d3461);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #ffc200;
+    font-size: 20px;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+  .sig-name { font-size: 15px; font-weight: 700; color: #0a192f; }
+  .sig-title { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .sig-contact { font-size: 12px; color: #555; }
+  .sig-contact a { color: #1565c0; text-decoration: none; }
+
+  /* ==================== FOOTER ==================== */
+  .footer {
+    background: #0a192f;
+    padding: 20px 48px;
+    text-align: center;
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    line-height: 1.7;
+  }
+  .footer strong { color: rgba(255,255,255,0.55); }
+
+  /* ==================== PRINT / RESPONSIVE ==================== */
+  @media (max-width: 600px) {
+    .body, .header, .email-meta, .footer { padding-left: 20px; padding-right: 20px; }
+    .agents-row { flex-direction: column; }
+    .offer-header { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="email-wrapper">
+
+  <!-- ====== HEADER ====== -->
+  <div class="header">
+    <div class="header-logo">Raise<span>Guard</span></div>
+    <div class="header-tagline">Security Operations Center</div>
+    <div class="header-title">Proposition Commerciale — RaiseGuard MDR 360°</div>
+    <div class="header-subtitle">Détection et Réponse Gérées — Couverture Totale</div>
+    <div class="header-badge">📊 Offre Tarifaire 2026</div>
+  </div>
+
+  <!-- ====== EMAIL META ====== -->
+  <div class="email-meta">
+    <table>
+      <tr>
+        <td class="label">À :</td>
+        <td class="value"><strong>[Prénom Nom — Business Manager]</strong></td>
+      </tr>
+      <tr>
+        <td class="label">De :</td>
+        <td class="value">[Votre Prénom & Nom] — SOC Team, RaiseGuard</td>
+      </tr>
+      <tr>
+        <td class="label">Objet :</td>
+        <td class="value"><strong>Proposition MDR 360° | [Nom du Client] | Juin 2026</strong></td>
+      </tr>
+      <tr>
+        <td class="label">Pièce jointe :</td>
+        <td class="value">📎 inventaire_client_[nom_client].xlsx</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ====== BODY ====== -->
+  <div class="body">
+
+    <div class="salutation">Bonjour <strong>[Prénom]</strong>,</div>
+
+    <div class="intro-text">
+      Faisant suite à notre analyse de l'inventaire informatique du client <strong>[Nom du Client]</strong>,
+      je vous transmets ci-dessous la synthèse des <strong>trois propositions tarifaires RaiseGuard MDR 360°</strong>
+      que nous avons élaborées. Le fichier Excel détaillant l'inventaire complet ainsi que le calcul par actif
+      est joint à cet email pour votre référence.
+    </div>
+
+    <!-- ====== AGENTS ====== -->
+    <div class="section-title">🛡️ Les 3 Agents RaiseGuard MDR 360°</div>
+
+    <div class="agents-row">
+      <div class="agent-pill siem">
+        <div class="agent-pill-icon">🔭</div>
+        <div class="agent-pill-name">RG-SIEM</div>
+        <div class="agent-pill-desc">Collecte centralisée des journaux, corrélation temps réel et détection automatisée des menaces sur l'ensemble du réseau et des serveurs.</div>
+      </div>
+      <div class="agent-pill mdr">
+        <div class="agent-pill-icon">🔍</div>
+        <div class="agent-pill-name">RG-MDR</div>
+        <div class="agent-pill-desc">Surveillance humaine 24h/24 — 7j/7 par nos analystes SOC dédiés, avec chasse proactive aux menaces et réponse aux incidents sous SLA contractuel.</div>
+      </div>
+      <div class="agent-pill edr">
+        <div class="agent-pill-icon">🔒</div>
+        <div class="agent-pill-name">RG-EDR</div>
+        <div class="agent-pill-desc">Protection comportementale avancée sur chaque endpoint (serveurs & postes), avec isolation, remédiation et rollback ransomware en temps réel.</div>
+      </div>
+    </div>
+
+    <!-- ====== NOTICE ====== -->
+    <div class="notice-box">
+      ⚠️ <strong>Note importante :</strong> Les tarifs présentés ci-dessous couvrent <strong>uniquement le coût mensuel des agents MDR 360°</strong>
+      (licences agents + infrastructure Elastic Stack + personnel SOC dédié). D'autres services additionnels
+      (consulting, audits ponctuels, formations, intégrations spécifiques, etc.) peuvent être ajoutés
+      à cette base tarifaire selon vos besoins commerciaux.
+    </div>
+
+    <!-- ====== OFFERS ====== -->
+    <div class="section-title">💼 Les Trois Propositions Tarifaires</div>
+
+    <!-- OFFER 3 — Recommended -->
+    <div class="offer-card recommended">
+      <div class="offer-header">
+        <div>
+          <div class="offer-badge">⭐ Recommandée — Plus Compétitive</div>
+          <div class="offer-name" style="margin-top:10px;">Offre 3 — Calibration Optimisée SIEM / MDR Serveurs</div>
+          <div class="offer-desc-short">Répartition intelligente des serveurs entre agents SIEM et MDR selon leur criticité, sans déploiement EDR.</div>
+        </div>
+        <div class="offer-total">
+          <div class="offer-total-label">Total Mensuel</div>
+          <div class="offer-total-amount">7 910 TND</div>
+          <div class="offer-total-period">/mois</div>
+        </div>
+      </div>
+      <div class="offer-table-wrapper">
+        <table class="offer-table">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Prix Unitaire / mois</th>
+              <th>Nbre d'Unités</th>
+              <th>Coût Mensuel</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="agent-name-cell"><span class="agent-dot dot-mdr"></span>RG-MDR</div></td>
+              <td>380 TND</td>
+              <td>13</td>
+              <td class="price-cell">4 940 TND</td>
+            </tr>
+            <tr>
+              <td><div class="agent-name-cell"><span class="agent-dot dot-siem"></span>RG-SIEM</div></td>
+              <td>270 TND</td>
+              <td>11</td>
+              <td class="price-cell">2 970 TND</td>
+            </tr>
+            <tr>
+              <td><div class="agent-name-cell"><span class="agent-dot dot-edr"></span>RG-EDR</div></td>
+              <td>80 TND</td>
+              <td>0</td>
+              <td class="price-cell" style="color:#aaa;">—</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="subtotal-row">
+              <td colspan="3" class="total-label">💰 TOTAL MENSUEL</td>
+              <td class="total-amount">7 910 TND/mois</td>
+            </tr>
+            <tr class="subtotal-row">
+              <td colspan="3" style="font-size:12px;color:#888;font-weight:400;">Coût annuel estimé</td>
+              <td style="font-size:12px;color:#888;">~94 920 TND/an</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- OFFER 2 — Standard -->
+    <div class="offer-card standard">
+      <div class="offer-header">
+        <div>
+          <div class="offer-badge">Réseau Renforcé</div>
+          <div class="offer-name" style="margin-top:10px;">Offre 2 — MDR 360° avec Intégration EDR & Commutateurs Core</div>
+          <div class="offer-desc-short">Couverture MDR renforcée sur les commutateurs cœur de réseau et intégration des alertes EDR tierces existantes.</div>
+        </div>
+        <div class="offer-total">
+          <div class="offer-total-label">Total Mensuel</div>
+          <div class="offer-total-amount">8 460 TND</div>
+          <div class="offer-total-period">/mois</div>
+        </div>
+      </div>
+      <div class="offer-table-wrapper">
+        <table class="offer-table">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Prix Unitaire / mois</th>
+              <th>Nbre d'Unités</th>
+              <th>Coût Mensuel</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="agent-name-cell"><span class="agent-dot dot-mdr"></span>RG-MDR</div></td>
+              <td>380 TND</td>
+              <td>18</td>
+              <td class="price-cell">6 840 TND</td>
+            </tr>
+            <tr>
+              <td><div class="agent-name-cell"><span class="agent-dot dot-siem"></span>RG-SIEM</div></td>
+              <td>270 TND</td>
+              <td>6</td>
+              <td class="price-cell">1 620 TND</td>
+            </tr>
+            <tr>
+              <td><div class="agent-name-cell"><span class="agent-dot dot-edr"></span>RG-EDR</div></td>
+              <td>80 TND</td>
+              <td>0</td>
+              <td class="price-cell" style="color:#aaa;">—</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="subtotal-row">
+              <td colspan="3" class="total-label">💰 TOTAL MENSUEL</td>
+              <td class="total-amount">8 460 TND/mois</td>
+            </tr>
+            <tr class="subtotal-row">
+              <td colspan="3" style="font-size:12px;color:#888;font-weight:400;">Coût annuel estimé</td>
+              <td style="font-size:12px;color:#888;">~101 520 TND/an</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- OFFER 1 — Premium / Full -->
+    <div class="offer-card premium">
+      <div class="offer-header">
+        <div>
+          <div class="offer-badge">🔒 Couverture Totale 360°</div>
+          <div class="offer-name" style="margin-top:10px;">Offre 1 — MDR 360° Tous Actifs dans Elastic (avec EDR Endpoint)</div>
+          <div class="offer-desc-short">Couverture maximale : tous les actifs dans Elastic + déploiement EDR complet sur 200 endpoints. Visibilité totale du réseau à chaque poste.</div>
+        </div>
+        <div class="offer-total">
+          <div class="offer-total-label">Total Mensuel</div>
+          <div class="offer-total-amount">26 130 TND</div>
+          <div class="offer-total-period">/mois</div>
+        </div>
+      </div>
+      <div class="offer-table-wrapper">
+        <table class="offer-table">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Prix Unitaire / mois</th>
+              <th>Nbre d'Unités</th>
+              <th>Coût Mensuel</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="agent-name-cell"><span class="agent-dot dot-mdr"></span>RG-MDR</div></td>
+              <td>380 TND</td>
+              <td>16</td>
+              <td class="price-cell">6 080 TND</td>
+            </tr>
+            <tr>
+              <td><div class="agent-name-cell"><span class="agent-dot dot-siem"></span>RG-SIEM</div></td>
+              <td>270 TND</td>
+              <td>15</td>
+              <td class="price-cell">4 050 TND</td>
+            </tr>
+            <tr>
+              <td><div class="agent-name-cell"><span class="agent-dot dot-edr"></span>RG-EDR</div></td>
+              <td>80 TND</td>
+              <td>200 endpoints</td>
+              <td class="price-cell">16 000 TND</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="subtotal-row">
+              <td colspan="3" class="total-label">💰 TOTAL MENSUEL</td>
+              <td class="total-amount" style="color:#7b1fa2;">26 130 TND/mois</td>
+            </tr>
+            <tr class="subtotal-row">
+              <td colspan="3" style="font-size:12px;color:#888;font-weight:400;">Coût annuel estimé</td>
+              <td style="font-size:12px;color:#888;">~313 560 TND/an</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- ====== COMPARISON ====== -->
+    <div class="section-title" style="margin-top:36px;">📊 Tableau Comparatif</div>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Critère</th>
+          <th class="highlight-col">Offre 3 ⭐</th>
+          <th>Offre 2</th>
+          <th>Offre 1</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Unités RG-SIEM</td>
+          <td class="highlight-col">11 unités</td>
+          <td>6 unités</td>
+          <td>15 unités</td>
+        </tr>
+        <tr>
+          <td>Unités RG-MDR</td>
+          <td class="highlight-col">13 unités</td>
+          <td>18 unités</td>
+          <td>16 unités</td>
+        </tr>
+        <tr>
+          <td>Agents RG-EDR (Endpoint)</td>
+          <td class="highlight-col cross">—</td>
+          <td class="cross">—</td>
+          <td class="check">✅ 200 endpoints</td>
+        </tr>
+        <tr>
+          <td>Couverture Réseau & Serveurs</td>
+          <td class="highlight-col check">✅</td>
+          <td class="check">✅ Renforcée</td>
+          <td class="check">✅</td>
+        </tr>
+        <tr>
+          <td>Couverture Endpoints (postes)</td>
+          <td class="highlight-col cross">❌</td>
+          <td class="cross">❌</td>
+          <td class="check">✅ Totale</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td><strong>TOTAL MENSUEL</strong></td>
+          <td class="highlight-col"><strong>7 910 TND</strong></td>
+          <td><strong>8 460 TND</strong></td>
+          <td><strong>26 130 TND</strong></td>
+        </tr>
+        <tr class="total-row">
+          <td style="font-size:12px;font-weight:400;color:#555;">Coût annuel (estimation)</td>
+          <td class="highlight-col" style="font-size:12px;">~94 920 TND</td>
+          <td style="font-size:12px;">~101 520 TND</td>
+          <td style="font-size:12px;">~313 560 TND</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- ====== ONBOARDING ====== -->
+    <div class="section-title">💳 Frais d'Intégration Initiale (One-Time)</div>
+
+    <div class="onboarding-box">
+      <div class="onboarding-icon">🚀</div>
+      <div>
+        <div class="onboarding-title">Onboarding & Mise en Production</div>
+        <div class="onboarding-amount">10 000 TND</div>
+        <div class="onboarding-sub">Frais uniques — non récurrents</div>
+        <div class="onboarding-desc">
+          Ce montant couvre le déploiement initial de la plateforme Elastic Stack, l'installation et la configuration
+          des agents, la création des pipelines d'ingestion, le paramétrage des règles de détection SIEM,
+          et la formation de transfert de connaissances vers l'équipe du client. Ces frais s'appliquent
+          <strong>indépendamment de l'offre sélectionnée</strong>.
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== ATTACHMENT ====== -->
+    <div class="section-title">📎 Pièce Jointe</div>
+
+    <div class="attachment-box">
+      <div class="attachment-icon">📊</div>
+      <div>
+        <div class="attachment-name">inventaire_client_[nom_client].xlsx</div>
+        <div class="attachment-desc">
+          Contient : inventaire complet des actifs · détail du calcul par agent · paramètres de calibration ·
+          récapitulatif des coûts par offre
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== CLOSING ====== -->
+    <div class="closing-text">
+      Je reste entièrement disponible pour tout complément d'information, pour ajuster les paramètres
+      de l'une ou l'autre des offres, ou pour préparer une présentation client selon vos retours commerciaux.<br><br>
+      Bien cordialement,
+    </div>
+
+    <!-- ====== SIGNATURE ====== -->
+    <div class="signature">
+      <div class="sig-avatar">RG</div>
+      <div>
+        <div class="sig-name">[Votre Prénom & Nom]</div>
+        <div class="sig-title">SOC Engineer — RaiseGuard Security Operations</div>
+        <div class="sig-contact">
+          📧 <a href="mailto:votre.email@raiseguard.com">votre.email@raiseguard.com</a> &nbsp;|&nbsp;
+          📞 +216 XX XXX XXX
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- ====== FOOTER ====== -->
+  <div class="footer">
+    <strong>RaiseGuard — Security Operations Center</strong><br>
+    Ce document est confidentiel et destiné exclusivement à son destinataire.<br>
+    Les tarifs indiqués sont valables jusqu'au <strong>31/12/2026</strong>.<br>
+    Les prix s'entendent en Dinars Tunisiens (TND) hors taxes applicables.
+  </div>
+
+</div><!-- /email-wrapper -->
+
+</body>
+</html>

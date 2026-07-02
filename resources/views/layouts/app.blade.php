@@ -229,10 +229,24 @@
                 <div class="menu">
                     <div class="menu-header">{{ __('messages.navigation') }}</div>
                     
-                    <div class="menu-item {{ Request::is('clients*') || Request::is('/') ? 'active' : '' }}">
+                    <div class="menu-item {{ Request::is('dashboard') ? 'active' : '' }}">
+                        <a href="{{ route('dashboard') }}" class="menu-link">
+                            <span class="menu-icon"><i class="bi bi-house"></i></span>
+                            <span class="menu-text">{{ __('messages.dashboard') }}</span>
+                        </a>
+                    </div>
+                    
+                    <div class="menu-item {{ Request::is('clients*') ? 'active' : '' }}">
                         <a href="{{ route('clients.index') }}" class="menu-link">
                             <span class="menu-icon"><i class="bi bi-people"></i></span>
                             <span class="menu-text">{{ __('messages.clients_sizing') }}</span>
+                        </a>
+                    </div>
+
+                    <div class="menu-item {{ Request::is('ai-chat*') ? 'active' : '' }}">
+                        <a href="{{ route('ai-chat.index') }}" class="menu-link">
+                            <span class="menu-icon"><i class="bi bi-chat-dots"></i></span>
+                            <span class="menu-text">{{ __('messages.ai_chat') }}</span>
                         </a>
                     </div>
                     
@@ -254,6 +268,20 @@
                         <a href="{{ route('settings.system') }}" class="menu-link">
                             <span class="menu-icon"><i class="bi bi-cpu"></i></span>
                             <span class="menu-text">{{ __('messages.system_settings') }}</span>
+                        </a>
+                    </div>
+
+                    <div class="menu-item {{ Request::is('settings/agents*') ? 'active' : '' }}">
+                        <a href="{{ route('settings.agents') }}" class="menu-link">
+                            <span class="menu-icon"><i class="bi bi-robot text-theme"></i></span>
+                            <span class="menu-text">{{ __('messages.ai_agents') ?: 'AI Agents' }}</span>
+                        </a>
+                    </div>
+
+                    <div class="menu-item {{ Request::is('settings/files*') ? 'active' : '' }}">
+                        <a href="{{ route('settings.files') }}" class="menu-link">
+                            <span class="menu-icon"><i class="bi bi-folder2-open"></i></span>
+                            <span class="menu-text">File Manager (RAG)</span>
                         </a>
                     </div>
                 </div>
@@ -349,6 +377,8 @@
     <!-- ================== BEGIN core-js ================== -->
     <script src="/assets/js/vendor.min.js"></script>
     <script src="/assets/js/app.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- ================== END core-js ================== -->
     @yield('scripts')
 </body>

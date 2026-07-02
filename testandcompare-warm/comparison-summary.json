@@ -1,0 +1,14 @@
+{
+    "B-full-harness": {
+        "total_requests": 17,
+        "successful": 17,
+        "failed": 0,
+        "avg_latency_ms": 34502,
+        "min_latency_ms": 53,
+        "max_latency_ms": 66269,
+        "avg_total_tokens": 729,
+        "avg_tool_calls": 1.88,
+        "avg_response_length": 1757,
+        "pipeline_stages_avg": 2
+    }
+}

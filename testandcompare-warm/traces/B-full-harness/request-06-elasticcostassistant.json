@@ -1,0 +1,49 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 5,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-replicas",
+    "description": "Replica impact calculation",
+    "model": "qwen3.5-omni-flash-2026-03-15",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 53111,
+        "start_time": "2026-06-29T16:35:07+00:00",
+        "end_time": "2026-06-29T16:36:00+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 332,
+        "completion_tokens": 205,
+        "total_tokens": 537
+    },
+    "prompts": {
+        "raw_user_prompt": "What is the impact of replica shards on storage requirements? If I have 500GB of primary data with 1 replica, what is my total storage need?",
+        "effective_user_prompt": "What is the impact of replica shards on storage requirements? If I have 500GB of primary data with 1 replica, what is my total storage need?",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "Having one replica means your data is stored twice across the cluster for high availability and fault tolerance. This directly doubles your storage consumption compared to having no replicas.\n\n### Storage Impact Calculation\n\nFor **500 GB** of primary data with **1 replica**:\n\n*   **Primary Data:** 500 GB\n*   **Replica Data:** 500 GB (exact copy)\n*   **Total Raw Requirement:** $500 \\times 2 = 1,000$ GB (**1 TB**)\n\n> **Note on Overhead:** In production environments like Elasticsearch, you should also account for approximately **10–20% overhead** due to segment merging, transaction logs, and index metadata expansion. A more realistic estimate would be roughly **1.1 – 1.2 TB**.\n\nWould you like me to help calculate the full sizing including JVM heap and disk ratios based on a specific retention period or EPS?",
+    "response_length": 819,
+    "success": true,
+    "errors": []
+}

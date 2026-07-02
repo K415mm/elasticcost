@@ -1,0 +1,49 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 8,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-shards",
+    "description": "Shard sizing best practices explanation",
+    "model": "qwen3.5-27b",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 29531,
+        "start_time": "2026-06-27T23:15:34+00:00",
+        "end_time": "2026-06-27T23:16:04+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 325,
+        "completion_tokens": 882,
+        "total_tokens": 1207
+    },
+    "prompts": {
+        "raw_user_prompt": "What shard size do you recommend for optimal Elasticsearch performance? Explain why 30-50GB is the sweet spot.",
+        "effective_user_prompt": "What shard size do you recommend for optimal Elasticsearch performance? Explain why 30-50GB is the sweet spot.",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "For optimal Elasticsearch performance, the recommended target is **30–50 GB per primary shard**. Exceeding 100 GB should generally be avoided, while staying below 10 GB is typically inefficient unless handling specific high-cardinality time-series scenarios.\n\nHere is why the **30–50 GB** range represents the architectural \"sweet spot\":\n\n### 🚀 Why Larger Than 50 GB is Problematic (Upper Limit Risks)\nWhen shards grow beyond this threshold, several operational risks increase significantly:\n\n*   **Slower Recovery & Failover Latency:** In the event of a node failure, Elasticsearch must replicate lost data to new nodes. Copying a single 200 GB shard takes much longer than redistributing four 50 GB shards. Large shards create \"long-tail\" latency during failovers, increasing the window where the cluster might become unavailable or hit memory limits before recovering.\n*   **Segment Merge Overhead:** Lucene manages data via segment merges. As indices exceed ~50 GB, maintaining efficient merge operations becomes harder due to file system fragmentation and OS-level file handle limitations. This can degrade write throughput and complicate garbage collection.\n*   **Unpredictable Memory Spikes:** While larger shards reduce metadata object counts, they often require more aggressive caching strategies. During heavy ingestion, this can lead to unpredictable spikes in JVM heap usage, risking OutOfMemory errors.\n\n### ⏱️ Why Smaller Than 10 GB is Inefficient (Lower Limit Risks)\nConversely, creating too many tiny shards introduces significant overhead that degrades overall cluster health:\n\n*   **Fixed Overhead Dominance:** Every shard carries fixed costs regardless of size (thread pools, file handles, Lucene directories). Hundreds of 1 GB shards consume disproportionate CPU and RAM resources compared to their actual data payload.\n*   **Query Coordination Bottlenecks:** Search queries are executed against every relevant shard. An index composed of thousands of tiny shards forces the coordinator node to manage thousands of sub-requests simultaneously. This leads to excessive network chatter and aggregation delays, drastically slowing down search times.\n*   **Cluster State Bloat:** Each shard adds entries to the global Cluster State held in memory. Too many small shards bloat this state, making leader elections slower and delaying routing decisions across the entire cluster.\n\n### ✅ The Sweet Spot Mechanics (30–50 GB)\nTargeting this range offers the best balance between parallelism, resource efficiency, and stability:\n\n| Benefit | Explanation |\n| :--- | :--- |\n| **Optimal Segment Merging** | Allows Lucene to maintain healthy, large merged segments (typically 100MB – 1GB+), maximizing read throughput while keeping merge tasks manageable. |\n| **Balanced Parallelism** | Provides sufficient parallelism for standard hardware (e.g., 8-core\/32GB RAM nodes) without overwhelming the coordination layer. It also offers a safe buffer for index growth before rollover is needed. |\n| **I\/O Efficiency** | Aligns well with modern NVMe SSD characteristics, ensuring consistent I\/O patterns without the random-access penalties seen in massive single-file datasets. |\n\n### 💡 Implementation Tip\nTo maintain this sweet spot automatically, configure your **Index Lifecycle Management (ILM)** policies to trigger index rollovers based on **size** (targeting ~40 GB) rather than just time-based intervals. This ensures shards stay within the optimal performance envelope even as log volumes fluctuate.",
+    "response_length": 3526,
+    "success": true,
+    "errors": []
+}

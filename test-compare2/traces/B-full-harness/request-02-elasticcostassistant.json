@@ -1,0 +1,49 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 1,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-calculation",
+    "description": "Multi-step sizing calculation requiring ratios and formulas",
+    "model": "qwen3.5-27b",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 57003,
+        "start_time": "2026-06-27T23:12:12+00:00",
+        "end_time": "2026-06-27T23:13:09+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 329,
+        "completion_tokens": 917,
+        "total_tokens": 1246
+    },
+    "prompts": {
+        "raw_user_prompt": "I need to size an Elasticsearch cluster for 500GB\/day of logs with 30 days retention. Hot tier only. What hardware do I need?",
+        "effective_user_prompt": "I need to size an Elasticsearch cluster for 500GB\/day of logs with 30 days retention. Hot tier only. What hardware do I need?",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "Based on your requirements (**500 GB\/day**, **30-day retention**, **Hot Tier only**), here is the calculated sizing recommendation.\n\n### 📊 Capacity Analysis\nBefore defining hardware, we establish the storage baseline:\n*   **Active Data Volume**: $500 \\text{ GB\/day} \\times 30 \\text{ days} = 15 \\text{ TB}$.\n*   **Redundancy Overhead**: With `number_of_replicas: 1` (standard HA), physical storage doubles to **30 TB**.\n*   **ES Overhead Buffer**: Account for Lucene segment merging, translogs, and index bloat (+20%).\n*   **Total Usable Storage Required**: $\\approx 36\\text{--}40 \\text{ TB}$.\n\nSince this is a **Hot-only** architecture, every node must sustain high ingestion rates and immediate query loads. We recommend a **Scale-Out** topology with **4 Dedicated Data Nodes**.\n\n---\n\n### 💻 Recommended Hardware Specifications\n\n| Component | Specification | Rationale |\n| :--- | :--- | :--- |\n| **Node Count** | **4 Servers** | Ensures High Availability (quorum maintained even if 1 node fails) and distributes I\/O load. |\n| **Processor (CPU)** | **16 vCores** (Dual Socket) | Indexing is CPU-bound; ensures low latency during peak writes and concurrent searches. |\n| **System Memory (RAM)** | **128 GB DDR4\/DDR5 ECC** | Allows for optimal split: 64 GB for JVM Heap + 64 GB for OS File System Cache (Critical for read perf). |\n| **JVM Heap Setting** | **64 GB** (`Xms=Xmx`) | Do not exceed 50% of physical RAM. Leave remaining RAM free for Lucene's filesystem cache. |\n| **Storage (Disk)** | **2 × 10 TB NVMe SSDs** (per node)<br>*(Configured as JBOD)* | **Do not use Hardware RAID.** Use Direct Attached Storage (DAS\/JBOD) and rely on Elasticsearch Replicas for redundancy.<br>Total Raw: 80 TB → Usable (w\/ RF=1): 40 TB. |\n| **Network** | **2 × 10 GbE** (Bonded\/LACP) | One interface for client traffic, one dedicated to inter-node communication\/recovery. |\n| **OS Tuning** | Linux Kernel Optimized | Disable swap, set `vm.max_map_count ≥ 262144`. |\n\n---\n\n### ⚙️ Key Configuration Recommendations\n\n#### 1. Index Template Settings\nEnsure new indices inherit these defaults to prevent shard explosion and optimize merge policies.\n```yaml\nindex.number_of_shards: 3 # Dynamic scaling recommended based on daily volume\nindex.number_of_replicas: 1\nindex.refresh_interval: \"30s\" # Increase from default 1s to boost write throughput\nindex.codec: zstd           # Enable compression to save disk space\n```\n\n#### 2. Lifecycle Management (ILM) Policy\nConfigure a policy to automatically delete old data after 30 days. Since there is no warm\/cold tier, the action moves directly to deletion.\n\n```json\nPUT _ilm\/policy\/logs-hot-retention\n{\n  \"policy\": {\n    \"phases\": {\n      \"hot\": {\n        \"actions\": {\n          \"rollover\": {\n            \"max_size\": \"50gb\", \n            \"max_age\": \"1d\"\n          }\n        }\n      },\n      \"delete\": {\n        \"min_age\": \"30d\",\n        \"actions\": {\n          \"delete\": {}\n        }\n      }\n    }\n  }\n}\n```\n\n#### 3. Operational Best Practices\n*   **Ingestion Spikes**: While average is 500GB\/day, bursts can saturate CPU\/NVMe. Monitor `indices.indexing.index_total_time_in_millis`. Consider buffering behind Kafka if spikes exceed 10MB\/sec sustained.\n*   **Deletion Latency**: Deleting 500GB of data daily generates significant I\/O. NVMe is essential here; spinning disks will likely cause timeouts during cleanup windows.\n*   **Snapshots**: Even in a \"Hot Only\" setup, configure a remote snapshot repository (NFS\/S3\/GCS) nightly for Disaster Recovery, as local deletions cannot be undone once executed.\n\nWould you like me to calculate the estimated monthly operational costs (hardware leasing\/hosting) for this configuration?",
+    "response_length": 3667,
+    "success": true,
+    "errors": []
+}

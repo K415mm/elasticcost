@@ -1,0 +1,38 @@
+{
+    "B-full-harness": {
+        "total_requests": 20,
+        "successful": 17,
+        "failed": 3,
+        "avg_latency_ms": 21949,
+        "min_latency_ms": 5033,
+        "max_latency_ms": 57003,
+        "avg_total_tokens": 700,
+        "avg_tool_calls": 1.9,
+        "avg_response_length": 1675,
+        "pipeline_stages_avg": 3
+    },
+    "A2-loop-no-features": {
+        "total_requests": 20,
+        "successful": 20,
+        "failed": 0,
+        "avg_latency_ms": 11437,
+        "min_latency_ms": 1893,
+        "max_latency_ms": 26779,
+        "avg_total_tokens": 1015,
+        "avg_tool_calls": 0,
+        "avg_response_length": 1935,
+        "pipeline_stages_avg": 3
+    },
+    "A1-direct-api": {
+        "total_requests": 20,
+        "successful": 20,
+        "failed": 0,
+        "avg_latency_ms": 12681,
+        "min_latency_ms": 1963,
+        "max_latency_ms": 39042,
+        "avg_total_tokens": 783,
+        "avg_tool_calls": 0,
+        "avg_response_length": 1007,
+        "pipeline_stages_avg": 0
+    }
+}

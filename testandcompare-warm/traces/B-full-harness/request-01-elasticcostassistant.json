@@ -1,0 +1,49 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 0,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-basic",
+    "description": "Simple factual question about ES sizing ratios",
+    "model": "qwen3.5-omni-flash-2026-03-15",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 56110,
+        "start_time": "2026-06-29T16:30:00+00:00",
+        "end_time": "2026-06-29T16:30:56+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 312,
+        "completion_tokens": 253,
+        "total_tokens": 565
+    },
+    "prompts": {
+        "raw_user_prompt": "What is the RAM-to-disk ratio for Hot tier in Elasticsearch?",
+        "effective_user_prompt": "What is the RAM-to-disk ratio for Hot tier in Elasticsearch?",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "For the **Hot tier** in Elasticsearch, there isn't a single fixed \"RAM-to-disk ratio\" enforced by the engine itself. However, in our **ElasticCost Sizing & Costing Calculator**, we apply industry-standard architectural guidelines for optimal performance:\n\n### 📊 Recommended Allocation Guidelines (Per Tier)\n\n| Tier   | RAM : Disk Ratio | Typical Use Case                          |\n|--------|------------------|-------------------------------------------|\n| **Hot**    | **1 : 30**       | Frequently accessed data; low latency     |\n| Warm   | 1 : 80           | Less frequently queried                   |\n| Cold   | 1 : 100          | Infrequently accessed                     |\n| Frozen  | 1 : 160          | Archived or rarely searched               |\n\nThese ratios help ensure that enough JVM heap is allocated to keep hot indices responsive while managing storage costs efficiently.\n\nLet me know if you'd like assistance sizing your cluster based on daily log volume, device count, or retention needs!",
+    "response_length": 1011,
+    "success": true,
+    "errors": []
+}

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Email — Proposition RaiseGuard MDR 360°</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+    padding: 32px 16px;
+    line-height: 1.7;
+  }
+  .wrapper {
+    max-width: 680px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    overflow: hidden;
+  }
+
+  /* --- Header bar --- */
+  .header {
+    background: linear-gradient(135deg, #0a192f 0%, #1d3461 100%);
+    padding: 32px 44px 28px;
+  }
+  .logo { font-size: 20px; font-weight: 800; color: #ffc200; letter-spacing: 1px; margin-bottom: 4px; }
+  .logo span { color: #64d2ff; }
+  .logo-sub { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 3px; text-transform: uppercase; }
+
+  /* --- Meta bar --- */
+  .meta {
+    background: #f7f8fa;
+    border-bottom: 1px solid #e8eaf0;
+    padding: 14px 44px;
+    font-size: 13px;
+    color: #555;
+  }
+  .meta table { width: 100%; border-collapse: collapse; }
+  .meta td { padding: 3px 0; }
+  .meta .lbl { color: #999; font-weight: 600; width: 90px; }
+
+  /* --- Body --- */
+  .body { padding: 40px 44px 36px; font-size: 14.5px; color: #333; }
+  .salutation { margin-bottom: 18px; font-size: 15px; }
+  p { margin-bottom: 16px; }
+
+  /* --- Attachment pill --- */
+  .attach-box {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #f0f4ff;
+    border: 1px dashed #93b4f5;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 28px 0;
+  }
+  .attach-icon { font-size: 32px; flex-shrink: 0; }
+  .attach-name { font-size: 14px; font-weight: 700; color: #1a237e; }
+  .attach-sub { font-size: 12px; color: #666; margin-top: 3px; }
+
+  /* --- Signature --- */
+  .sig {
+    border-top: 1px solid #eef0f5;
+    margin-top: 32px;
+    padding-top: 22px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  .sig-av {
+    width: 46px; height: 46px;
+    background: linear-gradient(135deg,#0a192f,#1d3461);
+    border-radius: 50%;
+    color: #ffc200;
+    font-weight: 900; font-size: 17px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .sig-name { font-size: 14px; font-weight: 700; color: #0a192f; }
+  .sig-role { font-size: 12px; color: #888; }
+  .sig-contact { font-size: 12px; color: #555; margin-top: 2px; }
+  .sig-contact a { color: #1565c0; text-decoration: none; }
+
+  /* --- Footer --- */
+  .footer {
+    background: #0a192f;
+    padding: 16px 44px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    text-align: center;
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">Raise<span>Guard</span></div>
+    <div class="logo-sub">Security Operations Center</div>
+  </div>
+
+  <!-- Meta -->
+  <div class="meta">
+    <table>
+      <tr><td class="lbl">À :</td><td><strong>[Prénom Nom — Business Manager]</strong></td></tr>
+      <tr><td class="lbl">De :</td><td>[Votre Prénom & Nom] — SOC Team, RaiseGuard</td></tr>
+      <tr><td class="lbl">Objet :</td><td><strong>Proposition Commerciale MDR 360° | [Nom du Client]</strong></td></tr>
+      <tr><td class="lbl">P.J. :</td><td>📎 RaiseGuard_MDR360_Proposition_[NomClient].pdf</td></tr>
+    </table>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <div class="salutation">Bonjour <strong>[Prénom]</strong>,</div>
+
+    <p>
+      Veuillez trouver ci-joint le document <strong>PDF de l'analyse détaillée de l'offre RaiseGuard MDR 360°</strong>
+      élaborée pour le client <strong>[Nom du Client]</strong>.
+    </p>
+
+    <p>
+      Ce document présente les trois propositions tarifaires que nous avons modélisées sur la base
+      de l'inventaire des actifs du client, avec le détail complet des agents déployés,
+      les coûts mensuels par offre, ainsi que les frais d'intégration initiale.
+    </p>
+
+    <!-- Attachment pill -->
+    <div class="attach-box">
+      <div class="attach-icon">📄</div>
+      <div>
+        <div class="attach-name">RaiseGuard_MDR360_Proposition_[NomClient].pdf</div>
+        <div class="attach-sub">Analyse détaillée des 3 offres · Inventaire actifs · Calcul des coûts · Frais d'onboarding</div>
+      </div>
+    </div>
+
+    <p>
+      Je reste disponible pour toute question ou pour affiner l'une des propositions selon vos retours.
+    </p>
+
+    <p>Bien cordialement,</p>
+
+    <!-- Signature -->
+    <div class="sig">
+      <div class="sig-av">RG</div>
+      <div>
+        <div class="sig-name">[Votre Prénom & Nom]</div>
+        <div class="sig-role">SOC Engineer — RaiseGuard Security Operations</div>
+        <div class="sig-contact">
+          📧 <a href="#">votre.email@raiseguard.com</a> &nbsp;|&nbsp; 📞 +216 XX XXX XXX
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    RaiseGuard — Confidentiel · Les tarifs sont valables jusqu'au 31/12/2026 · Prix en TND HT
+  </div>
+
+</div>
+</body>
+</html>

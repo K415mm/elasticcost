@@ -38,32 +38,46 @@
             {{ __('messages.client_asset_inventory_subtitle') }}
         </p>
 
-        <div class="table-responsive">
-            <table class="table table-borderless table-hover mb-0 align-middle">
-                <thead>
-                    <tr class="border-bottom">
-                        <th class="text-muted" style="width: 25%;">{{ __('messages.log_source') }}</th>
-                        <th class="text-muted" style="width: 15%;">{{ __('messages.device_count') }}</th>
-                        <th class="text-muted" style="width: 20%;">{{ __('messages.default_calibration') }}</th>
-                        <th class="text-muted" style="width: 25%;">{{ __('messages.custom_overrides') }}</th>
-                        <th class="text-muted text-end" style="width: 15%;">{{ __('messages.actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($inventory as $item)
-                        <tr>
-                            <form action="{{ route('client-assets.update', [$client->id, $item->id]) }}" method="POST">
-                                @csrf
-                                @method('PUT')
+        <form action="{{ route('client-assets.update-bulk', $client->id) }}" method="POST">
+            @csrf
+            @method('PUT')
+            <div class="table-responsive">
+                <table class="table table-borderless table-hover mb-0 align-middle">
+                    <thead>
+                        <tr class="border-bottom">
+                            <th class="text-muted" style="width: 25%;">{{ __('messages.log_source') }}</th>
+                            <th class="text-muted" style="width: 15%;">{{ __('messages.device_count') }}</th>
+                            <th class="text-muted" style="width: 20%;">{{ __('messages.default_calibration') }}</th>
+                            <th class="text-muted" style="width: 25%;">{{ __('messages.custom_overrides') }}</th>
+                            <th class="text-muted text-end" style="width: 15%;">{{ __('messages.actions') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($inventory as $item)
+                            <tr>
                                 <td>
                                     <strong class="text-theme fs-15px">{{ $item->assetType->name }}</strong>
                                     <div class="small text-muted mt-1">
                                         {{ $item->assetType->description }}
                                     </div>
+                                    <div class="mt-2 d-flex gap-3 align-items-center">
+                                        <div class="form-check form-check-inline mb-0">
+                                            <input class="form-check-input border-secondary" type="checkbox" name="assets[{{ $item->id }}][runs_siem_agent]" id="siem_{{ $item->id }}" value="1" {{ $item->runs_siem_agent ? 'checked' : '' }}>
+                                            <label class="form-check-label text-primary-light small fw-bold cursor-pointer" for="siem_{{ $item->id }}">SIEM</label>
+                                        </div>
+                                        <div class="form-check form-check-inline mb-0">
+                                            <input class="form-check-input border-secondary" type="checkbox" name="assets[{{ $item->id }}][runs_mdr_agent]" id="mdr_{{ $item->id }}" value="1" {{ $item->runs_mdr_agent ? 'checked' : '' }}>
+                                            <label class="form-check-label text-success-light small fw-bold cursor-pointer" for="mdr_{{ $item->id }}">MDR</label>
+                                        </div>
+                                        <div class="form-check form-check-inline mb-0">
+                                            <input class="form-check-input border-secondary" type="checkbox" name="assets[{{ $item->id }}][runs_edr_agent]" id="edr_{{ $item->id }}" value="1" {{ $item->runs_edr_agent ? 'checked' : '' }}>
+                                            <label class="form-check-label text-info-light small fw-bold cursor-pointer" for="edr_{{ $item->id }}">EDR</label>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     <div class="input-group input-group-sm" style="max-width: 110px;">
-                                        <input type="number" name="device_count" class="form-control mono-cell" value="{{ $item->device_count }}" min="0" required>
+                                        <input type="number" name="assets[{{ $item->id }}][device_count]" class="form-control mono-cell" value="{{ $item->device_count }}" min="0" required>
                                     </div>
                                 </td>
                                 <td class="small text-muted">
@@ -79,51 +93,56 @@
                                     <div class="d-flex flex-column gap-2" style="max-width: 280px;">
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text bg-transparent text-muted border-secondary border-opacity-30" style="width: 90px; font-size: 11px;">{{ __('messages.event_size_label') }}</span>
-                                            <input type="number" name="custom_avg_event_size_bytes" class="form-control mono-cell" value="{{ $item->custom_avg_event_size_bytes }}" placeholder="{{ $item->assetType->avg_event_size_bytes }} B">
+                                            <input type="number" name="assets[{{ $item->id }}][custom_avg_event_size_bytes]" class="form-control mono-cell" value="{{ $item->custom_avg_event_size_bytes }}" placeholder="{{ $item->assetType->avg_event_size_bytes }} B">
                                         </div>
                                         @if($item->assetType->calibration_mode === 'eps_per_device')
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-transparent text-muted border-secondary border-opacity-30" style="width: 90px; font-size: 11px;">{{ __('messages.min_avg_eps_label') }}</span>
-                                                <input type="text" name="custom_min_eps" class="form-control mono-cell" value="{{ $item->custom_min_eps }}" placeholder="Min: {{ $item->assetType->min_eps_default }}">
-                                                <input type="text" name="custom_avg_eps" class="form-control mono-cell" value="{{ $item->custom_avg_eps }}" placeholder="Avg: {{ $item->assetType->avg_eps_default }}">
+                                                <input type="text" name="assets[{{ $item->id }}][custom_min_eps]" class="form-control mono-cell" value="{{ $item->custom_min_eps }}" placeholder="Min: {{ $item->assetType->min_eps_default }}">
+                                                <input type="text" name="assets[{{ $item->id }}][custom_avg_eps]" class="form-control mono-cell" value="{{ $item->custom_avg_eps }}" placeholder="Avg: {{ $item->assetType->avg_eps_default }}">
                                             </div>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-transparent text-muted border-secondary border-opacity-30" style="width: 90px; font-size: 11px;">{{ __('messages.max_eps_label_input') }}</span>
-                                                <input type="text" name="custom_max_eps" class="form-control mono-cell" value="{{ $item->custom_max_eps }}" placeholder="Max: {{ $item->assetType->max_eps_default }}">
+                                                <input type="text" name="assets[{{ $item->id }}][custom_max_eps]" class="form-control mono-cell" value="{{ $item->custom_max_eps }}" placeholder="Max: {{ $item->assetType->max_eps_default }}">
                                             </div>
                                         @else
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-transparent text-muted border-secondary border-opacity-30" style="width: 90px; font-size: 11px;">{{ __('messages.min_avg_eps_label') }}</span>
-                                                <input type="text" name="custom_min_eps" class="form-control mono-cell" value="{{ $item->custom_min_eps }}" placeholder="Min: {{ $item->assetType->min_eps_default }}">
-                                                <input type="text" name="custom_avg_eps" class="form-control mono-cell" value="{{ $item->custom_avg_eps }}" placeholder="Avg: {{ $item->assetType->avg_eps_default }}">
+                                                <input type="text" name="assets[{{ $item->id }}][custom_min_eps]" class="form-control mono-cell" value="{{ $item->custom_min_eps }}" placeholder="Min: {{ $item->assetType->min_eps_default }}">
+                                                <input type="text" name="assets[{{ $item->id }}][custom_avg_eps]" class="form-control mono-cell" value="{{ $item->custom_avg_eps }}" placeholder="Avg: {{ $item->assetType->avg_eps_default }}">
                                             </div>
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text bg-transparent text-muted border-secondary border-opacity-30" style="width: 90px; font-size: 11px;">{{ __('messages.max_volume_label') }}</span>
-                                                <input type="text" name="custom_max_monthly_gb" class="form-control mono-cell" value="{{ $item->custom_max_monthly_gb }}" placeholder="Max: {{ $item->assetType->max_monthly_gb_default }} GB">
+                                                <input type="text" name="assets[{{ $item->id }}][custom_max_monthly_gb]" class="form-control mono-cell" value="{{ $item->custom_max_monthly_gb }}" placeholder="Max: {{ $item->assetType->max_monthly_gb_default }} GB">
                                             </div>
                                         @endif
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="d-flex gap-2 justify-content-end">
-                                        <button type="submit" class="btn btn-outline-theme btn-sm">
-                                            {{ __('messages.update') }}
+                                    <div class="d-flex justify-content-end">
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="event.preventDefault(); if (confirm('Remove this asset type from client inventory?')) { document.getElementById('delete-form-{{ $item->id }}').submit(); }">
+                                            <i class="bi bi-trash"></i>
                                         </button>
-                            </form>
-                                        <form action="{{ route('client-assets.destroy', [$client->id, $item->id]) }}" method="POST" onsubmit="return confirm('Remove this asset type from client inventory?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger btn-sm">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
                                     </div>
                                 </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-end mt-3">
+                <button type="submit" class="btn btn-outline-theme">
+                    <i class="bi bi-check-circle me-1"></i> {{ __('messages.save_changes') }}
+                </button>
+            </div>
+        </form>
+
+        @foreach($inventory as $item)
+            <form id="delete-form-{{ $item->id }}" action="{{ route('client-assets.destroy', [$client->id, $item->id]) }}" method="POST" class="d-none">
+                @csrf
+                @method('DELETE')
+            </form>
+        @endforeach
 
         @if($availableAssetTypes->isNotEmpty())
             <div class="mt-4 pt-4 border-top border-secondary border-opacity-30">

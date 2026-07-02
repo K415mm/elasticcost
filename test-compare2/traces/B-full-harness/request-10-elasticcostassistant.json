@@ -1,0 +1,49 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 9,
+    "agent": "ElasticCostAssistant",
+    "category": "costing-tunisian",
+    "description": "Tunisian Arabic — SOC cost calculation for a new client",
+    "model": "qwen3.5-27b",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 37364,
+        "start_time": "2026-06-27T23:16:04+00:00",
+        "end_time": "2026-06-27T23:16:41+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 330,
+        "completion_tokens": 654,
+        "total_tokens": 984
+    },
+    "prompts": {
+        "raw_user_prompt": "knwa 3andi client jdid w n7eb na7seb el SOC cost mt3ou. 3andou 150 device Active Directory w 50 FortiGate. chnou el cout mensuel?",
+        "effective_user_prompt": "knwa 3andi client jdid w n7eb na7seb el SOC cost mt3ou. 3andou 150 device Active Directory w 50 FortiGate. chnou el cout mensuel?",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "أهلاً بك! عشان نعطيك حساب دقيق لـ **Monthly Recurring Cost (MRC)** ديال الـ SOC، كاينين عوامل مهمة كتوقف ليهم الثمن باش ما نخسروش فالحساب ولا نتكلفو بزاف بلا ضرور.\n\nبما أن عندك **150 جهاز Active Directory** و **50 FortiGate**، الحساب غيعتمد على نوع الخدمة اللي بغيتي تقدم للكلينت:\n\n### 🔍 الخيارات المتاحة وتأثيرها على السعر:\n\n#### 1️⃣ خيار الأول: SIEM فقط (تخزين وتحليل السجلات)\nفي الحالة هادى، الكلينت كيدفع فقط لتجميع اللوجات وحفظها، بدون مراقبة بشرية مستمرة.\n*   **التكلفة التقريبية:** تتراوح بين **$1,500 - $2,500 شهرياً** (حسب حجم البيانات والاحتفاظ).\n*   **يشمل:** التخزين، الاستعلام عن اللوغز، وإنشاء تقارير تلقائية.\n\n#### 2️⃣ الخيار الثاني: SOC كامل (مراقبة بشرية 24\/7 أو Business Hours)\nهاد هو الحل الكامل حيث كايكون فيه محللين (Tier 1\/Tier 2) كيحللوا التنبيهات ويديروا التدخل السريع.\n*   **التكلفة التقريبية:** تبدأ من **$6,000 إلى $8,000+ شهرياً**.\n*   **يشمل:** كل شي في الخيار الأول + فريق مراقبة، إدارة الحوادث، وتقارير أمنية مخصصة.\n\n---\n\n### ❓ معلومات إضافية مطلوبة للحساب الدقيق:\nعشان نشغّل لك المحاكاة الدقيقة فـ لوحة التحكم (**MSSP Cost Dashboard**) ونخرج رقم نهائي، بحاجتك تزودني بالبيانات التالية:\n\n1.  **نطاق المراقبة:** هل يريد العميل مجرد رؤية (Logs Visibility) ولا حماية فعالة مع فرق تحليل؟\n2.  **فترة الاحتفاظ (Retention):** كم شهر يريد الاحتفاظ باللوجات؟ (المعايير عادة تكون 6 أشهر أو سنة).\n3.  **حجم بيانات الفورتيجيت:** هل النفاذ عالي جداً أم متوسط؟ (هذا يحدد كمية الجيجابايت الشهرية بشكل كبير).\n4.  **عملة العرض:** تفضل عرض التكلفة بـ دولار أمريكي (USD)، أورو (EUR)، ولا درهم مغربي (MAD)؟\n\nجرب تزودني بهاذ التفاصيل وغادي نحاسب ليك الرقم النهائي بدقة عالية فوراً! 🚀",
+    "response_length": 2616,
+    "success": true,
+    "errors": []
+}

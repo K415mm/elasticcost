@@ -1,0 +1,92 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 11,
+    "agent": "RgSocEngineer",
+    "category": "db-query-settings",
+    "description": "Query global settings table",
+    "model": "qwen3.5-27b",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 12181,
+        "start_time": "2026-06-27T23:17:21+00:00",
+        "end_time": "2026-06-27T23:17:51+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 236,
+        "completion_tokens": 461,
+        "total_tokens": 697
+    },
+    "prompts": {
+        "raw_user_prompt": "What are the current global settings? Show me all configured rates and prices.",
+        "effective_user_prompt": "What are the current global settings? Show me all configured rates and prices.",
+        "original_system_prompt": "You are the \"RG SOC Engineer\" (Light Router), the primary classifier and router for the Security Operations Center.\nYour job is to read the user request and decide how to respond:\n1. If the request requires any action (such as querying database tables, inspecting current system settings, listing clients, showing settings, checking status, updating device counts, or modifying settings), delegate it immediately to the `execute_action` sub-agent tool. Pass the user's request as a clean, direct task instruction to the tool.\n2. If the request is a simple greeting (e.g. \"hello\", \"hi\"), conversational exchange, or general query that does not require database access or updates, answer it directly and concisely.\n3. If you do not know what to do or if the request is ambiguous, delegate it to the `execute_action` sub-agent tool to inspect details and process it.",
+        "optimized_system_prompt": "You are the \"RG SOC Engineer\" (Light Router), the primary classifier and router for the Security Operations Center.\nYour job is to read the user request and decide how to respond:\n1. If the request requires any action (such as querying database tables, inspecting current system settings, listing clients, showing settings, checking status, updating device counts, or modifying settings), delegate it immediately to the `execute_action` sub-agent tool. Pass the user's request as a clean, direct task instruction to the tool.\n2. If the request is a simple greeting (e.g. \"hello\", \"hi\"), conversational exchange, or general query that does not require database access or updates, answer it directly and concisely.\n3. If you do not know what to do or if the request is ambiguous, delegate it to the `execute_action` sub-agent tool to inspect details and process it."
+    },
+    "pipeline_stages": [
+        {
+            "stage": "horizon_dispatch",
+            "status": "dispatched",
+            "detail": "RgSocEngineer queued to Horizon"
+        },
+        {
+            "stage": "horizon_poll",
+            "status": "waiting",
+            "detail": "status=pending, 1 Horizon jobs pending, waited 5s"
+        },
+        {
+            "stage": "horizon_poll",
+            "status": "waiting",
+            "detail": "status=pending, 1 Horizon jobs pending, waited 10s"
+        },
+        {
+            "stage": "horizon_poll",
+            "status": "waiting",
+            "detail": "status=pending, 1 Horizon jobs pending, waited 15s"
+        },
+        {
+            "stage": "horizon_poll",
+            "status": "waiting",
+            "detail": "status=pending, 1 Horizon jobs pending, waited 20s"
+        },
+        {
+            "stage": "horizon_poll",
+            "status": "waiting",
+            "detail": "status=pending, 1 Horizon jobs pending, waited 25s"
+        },
+        {
+            "stage": "horizon_poll",
+            "status": "waiting",
+            "detail": "status=completed, 0 Horizon jobs pending, waited 30s"
+        }
+    ],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 1,
+        "calls": [
+            {
+                "name": "GetSystemDetailsTool",
+                "arguments": [],
+                "result_length": 4922,
+                "result_preview": "{\n    \"settings\": {\n        \"eru_cost_usd\": \"14000\",\n        \"ram_per_eru_gb\": \"64\",\n        \"index_expansion_factor\": \"1.25\",\n        \"elastic_cloud_monthly_cost_per_gb_ram\": \"45.0000\",\n        \"mdr_agent_monthly_cost_per_device\": \"30.0000\",\n        \"edr_agent_monthly_cost_per_device\": \"10.0000\",\n        \"ai_provider\": \"qwen\",\n        \"ai_multi_agent_enabled\": \"0\",\n        \"ollama_model\": \"gemma4:e2b\",\n        \"ollama_light_model\": \"gemma-3-1b-it-glm-4.7-flash-heretic-uncensored-thinking_gguf\","
+            }
+        ]
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 2,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "Here are the current global settings, including all configured rates and prices:\n\n### 💰 Agent & Infrastructure Costs\n| Setting Key | Value | Description |\n| :--- | :--- | :--- |\n| `siem_agent_monthly_cost_per_device` | **$25.00** | Monthly cost per device for SIEM agents |\n| `mdr_agent_monthly_cost_per_device` | **$30.00** | Monthly cost per device for MDR agents |\n| `edr_agent_monthly_cost_per_device` | **$10.00** | Monthly cost per device for EDR agents |\n| `elastic_cloud_monthly_cost_per_gb_ram` | **$45.00** | Cost per GB RAM on Elastic Cloud infrastructure |\n| `eru_cost_usd` | **$14,000** | Base ERU (Elastic Resource Unit) cost |\n| `ram_per_eru_gb` | **64 GB** | RAM allocated per ERU unit |\n| `index_expansion_factor` | **1.25** | Multiplier used for index size calculations |\n\n### 🌍 Currency Exchange Rates\n| Rate | Value | Direction |\n| :--- | :--- | :--- |\n| `usd_to_eur_rate` | **0.92** | USD → EUR |\n| `usd_to_tnd_rate` | **3.10** | USD → TND (Tunisian Dinar) |\n\n### ⚙️ System Configuration\n| Setting | Value | Notes |\n| :--- | :--- | :--- |\n| `ai_provider` | `qwen` | Default AI provider |\n| `ai_multi_agent_enabled` | `0` (Disabled) | Multi-agent mode status |\n| `ollama_url` | `http:\/\/localhost:11434` | Local Ollama endpoint |\n| `lmstudio_url` | `http:\/\/localhost:1234\/v1` | Local LM Studio endpoint |\n| `rag_embedding_provider` | `lmstudio` | Provider for RAG embeddings |\n| `qwen_api_key` | *(Configured)* | Qwen API credentials present |\n\n### 👥 SOC Role Default Salaries\nThese defaults apply unless overridden in specific client scenarios:\n| Role ID | Role Name | Default Salary (Monthly) |\n| :--- | :--- | :--- |\n| 1 | Analyst Level 1 (L1) | $4,000.00 |\n| 2 | Analyst Level 2 (L2) | $6,000.00 |\n| 3 | Analyst Level 3 (L3) | $8,500.00 |\n| 4 | SOC Engineer | $7,000.00 |\n| 5 | SOC Manager | $10,000.00 |",
+    "response_length": 1844,
+    "success": true,
+    "errors": []
+}

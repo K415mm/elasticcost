@@ -13,4 +13,9 @@ class Client extends Model
     {
         return $this->hasMany(ClientAsset::class);
     }
+
+    public function clientScenarioMsspDetails(): HasMany
+    {
+        return $this->hasMany(ClientScenarioMsspDetail::class);
+    }
 }

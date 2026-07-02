@@ -1,0 +1,49 @@
+{
+    "test_mode": "A2-loop-no-features",
+    "request_index": 8,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-shards",
+    "description": "Shard sizing best practices explanation",
+    "model": "qwen3.5-27b",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 11020,
+        "start_time": "2026-06-27T23:22:29+00:00",
+        "end_time": "2026-06-27T23:22:40+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 325,
+        "completion_tokens": 702,
+        "total_tokens": 1027
+    },
+    "prompts": {
+        "raw_user_prompt": "What shard size do you recommend for optimal Elasticsearch performance? Explain why 30-50GB is the sweet spot.",
+        "effective_user_prompt": "What shard size do you recommend for optimal Elasticsearch performance? Explain why 30-50GB is the sweet spot.",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "For optimal Elasticsearch performance, I recommend targeting a primary shard size between **30 GB and 50 GB**. This range is widely considered the industry \"sweet spot\" for balancing query latency, indexing throughput, and resource efficiency.\n\nHere is why this specific range delivers the best results:\n\n### 🎯 Why 30–50 GB is the Sweet Spot\n\n| Factor | Impact of Small Shards (<10 GB) | Impact of Large Shards (>50 GB) | **Optimal Range (30–50 GB)** |\n| :--- | :--- | :--- | :--- |\n| **Query Performance** | Queries must open many files across many shards, increasing CPU overhead and network chatter. | A single large shard can become a bottleneck; scanning massive segments takes longer during complex aggregations. | Balances file handle usage with segment scan time, allowing efficient parallelization without excessive coordination. |\n| **Index Management** | High risk of hitting `max_shard_count` limits on nodes quickly. Difficult to manage thousands of small indices. | Harder to rebalance. Moving a 100GB+ shard causes significant node downtime or high I\/O spikes during recovery. | Easy to move\/rebalance during scaling events. Fits well within standard SSD\/NVMe write speeds. |\n| **JVM Heap Usage** | Metadata per shard consumes heap memory unnecessarily when multiplied by hundreds\/thousands of shards. | While metadata is lower, the sheer data volume requires more aggressive caching strategies that may evict hot data too soon. | Minimizes metadata bloat while ensuring Lucene segments fit efficiently in OS page cache. |\n| **Recovery Speed** | Fast individual recovery, but slow total cluster recovery due to massive coordination overhead. | Slow recovery times if a node fails, potentially causing prolonged unavailability for critical services. | Predictable recovery windows suitable for SLA compliance in SOC environments. |\n\n### ⚠️ Critical Constraints & Best Practices\n\n*   **Maximum Shard Count:** Ensure your cluster does not exceed roughly **20k shards per node** before adding new hardware. Staying at 40GB average helps keep this count manageable even with terabytes of data.\n*   **Metadata Expansion:** Remember that index metadata adds approximately **1.25x** to the actual storage footprint. When sizing disks, always calculate:  \n    $$ \\text{Required Disk} = (\\text{Raw Data Size}) \\times 1.25 \\times (1 + \\text{Replica Ratio}) $$\n*   **Sharding Strategy:** Avoid creating fixed numbers of shards based on guesswork. Instead, use the **ElasticCost Sizing Dashboard** to dynamically calculate the ideal number of shards based on your projected daily ingestion rate and retention policy.\n\nWould you like me to run a quick calculation for your current environment? Please provide your **daily log volume**, **retention period**, and preferred **replication factor**.",
+    "response_length": 2807,
+    "success": true,
+    "errors": []
+}

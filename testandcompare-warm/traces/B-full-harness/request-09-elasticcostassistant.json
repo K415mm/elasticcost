@@ -1,0 +1,49 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 8,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-shards",
+    "description": "Shard sizing best practices explanation",
+    "model": "qwen3.5-omni-flash-2026-03-15",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 55617,
+        "start_time": "2026-06-29T16:37:51+00:00",
+        "end_time": "2026-06-29T16:38:46+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 325,
+        "completion_tokens": 413,
+        "total_tokens": 738
+    },
+    "prompts": {
+        "raw_user_prompt": "What shard size do you recommend for optimal Elasticsearch performance? Explain why 30-50GB is the sweet spot.",
+        "effective_user_prompt": "What shard size do you recommend for optimal Elasticsearch performance? Explain why 30-50GB is the sweet spot.",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "For optimal Elasticsearch performance, I strongly recommend targeting a **shard size between 30 GB and 50 GB**, with an ideal average of around **40 GB**.\n\nHere is why this range represents the \"sweet spot\" for production clusters:\n\n### 🚀 Performance Benefits\n\n| Factor | Why 30–50 GB Works Best |\n|--------|-------------------------|\n| **Metadata Overhead** | Smaller shards (<20 GB) create excessive management overhead. The cluster spends more CPU cycles tracking metadata than processing data. |\n| **Recovery Time** | Larger shards (>70 GB) lead to prolonged recovery times during node failures, potentially taking hours to rebuild and risking extended downtime. |\n| **GC Pauses** | Moderate shard sizes help keep Garbage Collection (GC) pauses manageable by avoiding heap pressure spikes from oversized segments. |\n| **I\/O & Network Balance** | Allows efficient parallelism across nodes without overwhelming disk I\/O or network bandwidth during searches and writes. |\n| **Rebalancing Stability** | Moving ~40 GB shards during node addition\/removal ensures smooth rolling upgrades and minimizes cluster instability. |\n\n### ⚙️ Practical Guidelines\n\n- **Target Average**: Aim for **~40 GB per shard**.\n- **Replica Strategy**: Typically use **1 replica** unless high availability demands otherwise.\n- **Shard Count Calculation**:  \n  ```text\n  Total Shards ≈ Total Data Size (GB) \/ 40\n  ```\n- **Heap Rule**: Ensure JVM Heap (`-Xms` and `-Xmx`) is set to **50% of physical RAM** per node.\n\nWould you like me to calculate recommended shard counts based on your current daily log volume or retention requirements? Just provide those details!",
+    "response_length": 1650,
+    "success": true,
+    "errors": []
+}

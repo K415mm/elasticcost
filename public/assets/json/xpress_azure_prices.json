@@ -1,0 +1,546 @@
+{
+    "Dataxion": {
+        "vms": [
+            {
+                "name": "DS1 v2",
+                "vcpu": 1,
+                "ram_gb": 3.5,
+                "price_windows_tnd": 219.09,
+                "price_linux_tnd": 144.09
+            },
+            {
+                "name": "DS2 v2",
+                "vcpu": 2,
+                "ram_gb": 7.0,
+                "price_windows_tnd": 309.33,
+                "price_linux_tnd": 234.33
+            },
+            {
+                "name": "DS3 v2",
+                "vcpu": 4,
+                "ram_gb": 14.0,
+                "price_windows_tnd": 543.66,
+                "price_linux_tnd": 468.66
+            },
+            {
+                "name": "DS4 v2",
+                "vcpu": 8,
+                "ram_gb": 28.0,
+                "price_windows_tnd": 1012.32,
+                "price_linux_tnd": 937.32
+            },
+            {
+                "name": "DS5 v2",
+                "vcpu": 16,
+                "ram_gb": 56.0,
+                "price_windows_tnd": 2024.6399999999999,
+                "price_linux_tnd": 1874.64
+            },
+            {
+                "name": "DS11 v2",
+                "vcpu": 2,
+                "ram_gb": 14.0,
+                "price_windows_tnd": 383.79,
+                "price_linux_tnd": 308.79
+            },
+            {
+                "name": "DS12 v2",
+                "vcpu": 4,
+                "ram_gb": 28.0,
+                "price_windows_tnd": 692.58,
+                "price_linux_tnd": 617.58
+            },
+            {
+                "name": "DS13 v2",
+                "vcpu": 8,
+                "ram_gb": 56.0,
+                "price_windows_tnd": 1310.16,
+                "price_linux_tnd": 1235.16
+            },
+            {
+                "name": "DS14 v2",
+                "vcpu": 16,
+                "ram_gb": 112.0,
+                "price_windows_tnd": 2620.32,
+                "price_linux_tnd": 2470.32
+            },
+            {
+                "name": "DS11-1 v2",
+                "vcpu": 1,
+                "ram_gb": 14.0,
+                "price_windows_tnd": 303.85,
+                "price_linux_tnd": 228.85
+            },
+            {
+                "name": "DS12-1 v2",
+                "vcpu": 1,
+                "ram_gb": 28.0,
+                "price_windows_tnd": 452.77,
+                "price_linux_tnd": 377.77
+            },
+            {
+                "name": "DS12-2 v2",
+                "vcpu": 2,
+                "ram_gb": 28.0,
+                "price_windows_tnd": 532.71,
+                "price_linux_tnd": 457.71000000000004
+            },
+            {
+                "name": "DS13-2 v2",
+                "vcpu": 2,
+                "ram_gb": 56.0,
+                "price_windows_tnd": 830.5500000000001,
+                "price_linux_tnd": 755.5500000000001
+            },
+            {
+                "name": "DS13-4 v2",
+                "vcpu": 4,
+                "ram_gb": 56.0,
+                "price_windows_tnd": 990.4200000000001,
+                "price_linux_tnd": 915.4200000000001
+            },
+            {
+                "name": "DS14-4 v2",
+                "vcpu": 4,
+                "ram_gb": 112.0,
+                "price_windows_tnd": 1586.1000000000001,
+                "price_linux_tnd": 1511.1000000000001
+            },
+            {
+                "name": "DS14-8 v2",
+                "vcpu": 8,
+                "ram_gb": 112.0,
+                "price_windows_tnd": 1905.8400000000001,
+                "price_linux_tnd": 1830.8400000000001
+            },
+            {
+                "name": "D2 v3",
+                "vcpu": 2,
+                "ram_gb": 8.0,
+                "price_windows_tnd": 309.33,
+                "price_linux_tnd": 234.33
+            },
+            {
+                "name": "D4 v3",
+                "vcpu": 4,
+                "ram_gb": 16.0,
+                "price_windows_tnd": 543.66,
+                "price_linux_tnd": 468.66
+            },
+            {
+                "name": "D8 v3",
+                "vcpu": 8,
+                "ram_gb": 32.0,
+                "price_windows_tnd": 1012.3199999999999,
+                "price_linux_tnd": 937.32
+            },
+            {
+                "name": "D16 v3",
+                "vcpu": 16,
+                "ram_gb": 64.0,
+                "price_windows_tnd": 2024.6399999999999,
+                "price_linux_tnd": 1874.64
+            },
+            {
+                "name": "D32 v3",
+                "vcpu": 32,
+                "ram_gb": 128.0,
+                "price_windows_tnd": 4049.28,
+                "price_linux_tnd": 3749.28
+            },
+            {
+                "name": "E2 v3",
+                "vcpu": 2,
+                "ram_gb": 16.0,
+                "price_windows_tnd": 383.79,
+                "price_linux_tnd": 308.79
+            },
+            {
+                "name": "E4 v3",
+                "vcpu": 4,
+                "ram_gb": 32.0,
+                "price_windows_tnd": 692.58,
+                "price_linux_tnd": 617.58
+            },
+            {
+                "name": "E8 v3",
+                "vcpu": 8,
+                "ram_gb": 64.0,
+                "price_windows_tnd": 1310.16,
+                "price_linux_tnd": 1235.16
+            },
+            {
+                "name": "E16 v3",
+                "vcpu": 16,
+                "ram_gb": 128.0,
+                "price_windows_tnd": 2620.32,
+                "price_linux_tnd": 2470.32
+            },
+            {
+                "name": "F1s",
+                "vcpu": 1,
+                "ram_gb": 2.0,
+                "price_windows_tnd": 198.95999999999998,
+                "price_linux_tnd": 123.96
+            },
+            {
+                "name": "F2s v2",
+                "vcpu": 2,
+                "ram_gb": 4.0,
+                "price_windows_tnd": 285.24,
+                "price_linux_tnd": 210.24
+            },
+            {
+                "name": "F4s v2",
+                "vcpu": 4,
+                "ram_gb": 8.0,
+                "price_windows_tnd": 495.48,
+                "price_linux_tnd": 420.48
+            },
+            {
+                "name": "F8s v2",
+                "vcpu": 8,
+                "ram_gb": 16.0,
+                "price_windows_tnd": 915.96,
+                "price_linux_tnd": 840.96
+            },
+            {
+                "name": "F16s v2",
+                "vcpu": 16,
+                "ram_gb": 32.0,
+                "price_windows_tnd": 1831.92,
+                "price_linux_tnd": 1681.92
+            },
+            {
+                "name": "F32s v2",
+                "vcpu": 32,
+                "ram_gb": 64.0,
+                "price_windows_tnd": 3663.84,
+                "price_linux_tnd": 3363.84
+            },
+            {
+                "name": "F64s v2",
+                "vcpu": 64,
+                "ram_gb": 128.0,
+                "price_windows_tnd": 7327.68,
+                "price_linux_tnd": 6727.68
+            }
+        ],
+        "disks": [
+            {
+                "name": "Unit\u00e9",
+                "size_gb": 1.0,
+                "type": "SSD",
+                "price_tnd": 0.396
+            },
+            {
+                "name": "P4",
+                "size_gb": 32.0,
+                "type": "SSD",
+                "price_tnd": 12.672
+            },
+            {
+                "name": "P6",
+                "size_gb": 64.0,
+                "type": "SSD",
+                "price_tnd": 25.344
+            },
+            {
+                "name": "P10",
+                "size_gb": 128.0,
+                "type": "SSD",
+                "price_tnd": 50.688
+            },
+            {
+                "name": "P15",
+                "size_gb": 256.0,
+                "type": "SSD",
+                "price_tnd": 101.376
+            },
+            {
+                "name": "P20",
+                "size_gb": 512.0,
+                "type": "SSD",
+                "price_tnd": 202.752
+            },
+            {
+                "name": "P30",
+                "size_gb": 1024.0,
+                "type": "SSD",
+                "price_tnd": 405.504
+            }
+        ]
+    },
+    "TT": {
+        "vms": [
+            {
+                "name": "DS1 v2",
+                "vcpu": 1,
+                "ram_gb": 3.5,
+                "price_windows_tnd": 208.13,
+                "price_linux_tnd": 136.88
+            },
+            {
+                "name": "DS2 v2",
+                "vcpu": 2,
+                "ram_gb": 7.0,
+                "price_windows_tnd": 293.86,
+                "price_linux_tnd": 222.61
+            },
+            {
+                "name": "DS3 v2",
+                "vcpu": 4,
+                "ram_gb": 14.0,
+                "price_windows_tnd": 516.47,
+                "price_linux_tnd": 445.22
+            },
+            {
+                "name": "DS4 v2",
+                "vcpu": 8,
+                "ram_gb": 28.0,
+                "price_windows_tnd": 961.7,
+                "price_linux_tnd": 890.45
+            },
+            {
+                "name": "DS5 v2",
+                "vcpu": 16,
+                "ram_gb": 56.0,
+                "price_windows_tnd": 1923.4,
+                "price_linux_tnd": 1780.9
+            },
+            {
+                "name": "DS11 v2",
+                "vcpu": 2,
+                "ram_gb": 14.0,
+                "price_windows_tnd": 364.6,
+                "price_linux_tnd": 293.35
+            },
+            {
+                "name": "DS12 v2",
+                "vcpu": 4,
+                "ram_gb": 28.0,
+                "price_windows_tnd": 657.95,
+                "price_linux_tnd": 586.7
+            },
+            {
+                "name": "DS13 v2",
+                "vcpu": 8,
+                "ram_gb": 56.0,
+                "price_windows_tnd": 1244.65,
+                "price_linux_tnd": 1173.4
+            },
+            {
+                "name": "DS14 v2",
+                "vcpu": 16,
+                "ram_gb": 112.0,
+                "price_windows_tnd": 2489.3,
+                "price_linux_tnd": 2346.8
+            },
+            {
+                "name": "DS11-1 v2",
+                "vcpu": 1,
+                "ram_gb": 14.0,
+                "price_windows_tnd": 288.66,
+                "price_linux_tnd": 217.41
+            },
+            {
+                "name": "DS12-1 v2",
+                "vcpu": 1,
+                "ram_gb": 28.0,
+                "price_windows_tnd": 430.13,
+                "price_linux_tnd": 358.88
+            },
+            {
+                "name": "DS12-2 v2",
+                "vcpu": 2,
+                "ram_gb": 28.0,
+                "price_windows_tnd": 506.07,
+                "price_linux_tnd": 434.82
+            },
+            {
+                "name": "DS13-2 v2",
+                "vcpu": 2,
+                "ram_gb": 56.0,
+                "price_windows_tnd": 789.02,
+                "price_linux_tnd": 717.77
+            },
+            {
+                "name": "DS13-4 v2",
+                "vcpu": 4,
+                "ram_gb": 56.0,
+                "price_windows_tnd": 940.89,
+                "price_linux_tnd": 869.64
+            },
+            {
+                "name": "DS14-4 v2",
+                "vcpu": 4,
+                "ram_gb": 112.0,
+                "price_windows_tnd": 1506.79,
+                "price_linux_tnd": 1435.54
+            },
+            {
+                "name": "DS14-8 v2",
+                "vcpu": 8,
+                "ram_gb": 112.0,
+                "price_windows_tnd": 1810.54,
+                "price_linux_tnd": 1739.29
+            },
+            {
+                "name": "D2 v3",
+                "vcpu": 2,
+                "ram_gb": 8.0,
+                "price_windows_tnd": 293.86,
+                "price_linux_tnd": 222.61
+            },
+            {
+                "name": "D4 v3",
+                "vcpu": 4,
+                "ram_gb": 16.0,
+                "price_windows_tnd": 516.47,
+                "price_linux_tnd": 445.22
+            },
+            {
+                "name": "D8 v3",
+                "vcpu": 8,
+                "ram_gb": 32.0,
+                "price_windows_tnd": 961.7,
+                "price_linux_tnd": 890.45
+            },
+            {
+                "name": "D16 v3",
+                "vcpu": 16,
+                "ram_gb": 64.0,
+                "price_windows_tnd": 1923.4,
+                "price_linux_tnd": 1780.9
+            },
+            {
+                "name": "D32 v3",
+                "vcpu": 32,
+                "ram_gb": 128.0,
+                "price_windows_tnd": 3846.81,
+                "price_linux_tnd": 3561.81
+            },
+            {
+                "name": "E2 v3",
+                "vcpu": 2,
+                "ram_gb": 16.0,
+                "price_windows_tnd": 364.6,
+                "price_linux_tnd": 293.35
+            },
+            {
+                "name": "E4 v3",
+                "vcpu": 4,
+                "ram_gb": 32.0,
+                "price_windows_tnd": 657.95,
+                "price_linux_tnd": 586.7
+            },
+            {
+                "name": "E8 v3",
+                "vcpu": 8,
+                "ram_gb": 64.0,
+                "price_windows_tnd": 1244.65,
+                "price_linux_tnd": 1173.4
+            },
+            {
+                "name": "E16 v3",
+                "vcpu": 16,
+                "ram_gb": 128.0,
+                "price_windows_tnd": 2489.3,
+                "price_linux_tnd": 2346.8
+            },
+            {
+                "name": "F1s",
+                "vcpu": 1,
+                "ram_gb": 2.0,
+                "price_windows_tnd": 189.01,
+                "price_linux_tnd": 117.76
+            },
+            {
+                "name": "F2s v2",
+                "vcpu": 2,
+                "ram_gb": 4.0,
+                "price_windows_tnd": 270.97,
+                "price_linux_tnd": 199.72
+            },
+            {
+                "name": "F4s v2",
+                "vcpu": 4,
+                "ram_gb": 8.0,
+                "price_windows_tnd": 470.7,
+                "price_linux_tnd": 399.45
+            },
+            {
+                "name": "F8s v2",
+                "vcpu": 8,
+                "ram_gb": 16.0,
+                "price_windows_tnd": 870.16,
+                "price_linux_tnd": 798.91
+            },
+            {
+                "name": "F16s v2",
+                "vcpu": 16,
+                "ram_gb": 32.0,
+                "price_windows_tnd": 1740.32,
+                "price_linux_tnd": 1597.82
+            },
+            {
+                "name": "F32s v2",
+                "vcpu": 32,
+                "ram_gb": 64.0,
+                "price_windows_tnd": 3480.64,
+                "price_linux_tnd": 3195.64
+            },
+            {
+                "name": "F64s v2",
+                "vcpu": 64,
+                "ram_gb": 128.0,
+                "price_windows_tnd": 6991.28,
+                "price_linux_tnd": 6391.28
+            }
+        ],
+        "disks": [
+            {
+                "name": "Unit\u00e9",
+                "size_gb": 1.0,
+                "type": "Hybrid",
+                "price_tnd": 0.198
+            },
+            {
+                "name": "P4",
+                "size_gb": 32.0,
+                "type": "Hybrid",
+                "price_tnd": 6.336
+            },
+            {
+                "name": "P6",
+                "size_gb": 64.0,
+                "type": "Hybrid",
+                "price_tnd": 12.672
+            },
+            {
+                "name": "P10",
+                "size_gb": 128.0,
+                "type": "Hybrid",
+                "price_tnd": 25.344
+            },
+            {
+                "name": "P15",
+                "size_gb": 256.0,
+                "type": "Hybrid",
+                "price_tnd": 50.688
+            },
+            {
+                "name": "P20",
+                "size_gb": 512.0,
+                "type": "Hybrid",
+                "price_tnd": 101.376
+            },
+            {
+                "name": "P30",
+                "size_gb": 1024.0,
+                "type": "Hybrid",
+                "price_tnd": 202.752
+            }
+        ]
+    }
+}

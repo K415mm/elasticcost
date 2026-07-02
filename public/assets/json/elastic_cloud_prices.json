@@ -1,0 +1,124 @@
+{
+  "azure-eastus2": {
+    "azure.apm.e32sv3": {
+      "standard": 0.0252,
+      "gold": 0.0289,
+      "platinum": 0.0328,
+      "enterprise": 0.0580
+    },
+    "azure.apm.fsv2": {
+      "standard": 0.0348,
+      "gold": 0.0393,
+      "platinum": 0.0462,
+      "enterprise": 0.0627
+    },
+    "azure.es.datacold.edsv4": {
+      "standard": 0.0558,
+      "gold": 0.0603,
+      "platinum": 0.0674,
+      "enterprise": 0.0837
+    },
+    "azure.es.datafrozen.edsv4": {
+      "standard": 0.0510,
+      "gold": 0.0555,
+      "platinum": 0.0625,
+      "enterprise": 0.0788
+    },
+    "azure.es.datafrozen.esv3": {
+      "standard": 0.0373,
+      "gold": 0.0413,
+      "platinum": 0.0476,
+      "enterprise": 0.0621
+    },
+    "azure.es.datafrozen.lsv2": {
+      "standard": 0.0244,
+      "gold": 0.0288,
+      "platinum": 0.0334,
+      "enterprise": 0.0466
+    },
+    "azure.es.datahot.ddv4": {
+      "standard": 0.0390,
+      "gold": 0.0435,
+      "platinum": 0.0506,
+      "enterprise": 0.0670
+    },
+    "azure.es.datahot.dpldusv6": {
+      "standard": 0.0336,
+      "gold": 0.0381,
+      "platinum": 0.0452,
+      "enterprise": 0.0616
+    },
+    "azure.es.datahot.edsv4": {
+      "standard": 0.0328,
+      "gold": 0.0372,
+      "platinum": 0.0444,
+      "enterprise": 0.0607
+    },
+    "azure.es.datahot.fsv2": {
+      "standard": 0.0466,
+      "gold": 0.0510,
+      "platinum": 0.0581,
+      "enterprise": 0.0744
+    },
+    "azure.es.datahot.lsv3": {
+      "standard": 0.0260,
+      "gold": 0.0305,
+      "platinum": 0.0375,
+      "enterprise": 0.0539
+    },
+    "azure.es.datawarm.edsv4": {
+      "standard": 0.0558,
+      "gold": 0.0603,
+      "platinum": 0.0674,
+      "enterprise": 0.0837
+    },
+    "azure.es.master.fsv2": {
+      "standard": 0.0348,
+      "gold": 0.0393,
+      "platinum": 0.0462,
+      "enterprise": 0.0627
+    },
+    "azure.es.ml.fsv2": {
+      "standard": 0.0348,
+      "gold": 0.0393,
+      "platinum": 0.0462,
+      "enterprise": 0.0627
+    },
+    "azure.coordinator.e32sv3": {
+      "standard": 0.0186,
+      "gold": 0.0219,
+      "platinum": 0.0252,
+      "enterprise": 0.0
+    },
+    "azure.coordinating.d64sv3": {
+      "standard": 0.0299,
+      "gold": 0.0359,
+      "platinum": 0.0419,
+      "enterprise": 0.0574
+    },
+    "azure.ccs.e32sv3": {
+      "standard": 0.0209,
+      "gold": 0.0246,
+      "platinum": 0.0283,
+      "enterprise": 0.0504
+    },
+    "azure.data.highmem.e32sv3": {
+      "standard": 0.0209,
+      "gold": 0.0246,
+      "platinum": 0.0283,
+      "enterprise": 0.0504
+    },
+    "azure.data.highio.l32sv2": {
+      "standard": 0.0244,
+      "gold": 0.0288,
+      "platinum": 0.0334,
+      "enterprise": 0.0466
+    },
+    "azure.data.highstorage.e16sv3": {
+      "standard": 0.0349,
+      "gold": 0.0394,
+      "platinum": 0.0467,
+      "enterprise": 0.0628
+    }
+  }
+}

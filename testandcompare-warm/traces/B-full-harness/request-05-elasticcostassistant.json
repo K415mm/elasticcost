@@ -1,0 +1,49 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 4,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-tunisian",
+    "description": "Tunisian Arabic dialect — sizing 1TB\/day 90-day retention",
+    "model": "qwen3.5-omni-flash-2026-03-15",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 66269,
+        "start_time": "2026-06-29T16:34:00+00:00",
+        "end_time": "2026-06-29T16:35:07+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 323,
+        "completion_tokens": 1389,
+        "total_tokens": 1712
+    },
+    "prompts": {
+        "raw_user_prompt": "3andi cluster ES ken n7eb 1TB log nhar w 90 jour retention, chnou lazem men hardware? hot w warm tiers",
+        "effective_user_prompt": "3andi cluster ES ken n7eb 1TB log nhar w 90 jour retention, chnou lazem men hardware? hot w warm tiers",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "أهلاً بك. بناءً على متطلباتك لاستقبال **1 تيرابايت من السجلات يومياً** مع فترة احتفاظ (**Retention**) تبلغ **90 يوماً**، وإرادتك لفصل البيانات إلى طبقتين (Hot و Warm)، إليك التوصيات التقنية والمعدنية الدقيقة:\n\n### 📊 حسابات السعة والبيانات\nقبل تحديد الأجهزة، يجب فهم حجم التخزين الفعلي المطلوب:\n*   **الحجم اليومي الخام:** 1 TB\/يوم.\n*   **عامل الضغط (Compression):** افتراضاً بنسبة 3x للبيانات المهيكلة (JSON\/logs). الحجم الفعال ≈ **333 جيجابايت\/يوم**.\n*   **حجم الاحتفاظ (90 يوماً):** $333 \\text{ GB} \\times 90 \\approx 30 \\text{ TB}$ (للبيانات الأساسية فقط).\n*   **نسخة النسخ (Replicas):** الافتراضي في Elastic هو نسخة واحدة لكل مؤشر لزيادة التوفرية ($R=1$). هذا يضاعف سعة التخزين المطلوبة.\n    *   الإجمالي المادي = $30 \\text{ TB} \\times 2 (\\text{Primary} + \\text{Replica}) = \\mathbf{60 \\text{ TB}}$.\n*   **الهوامش الإضافية:** إضافة 20% لهامش للأداء والملفات النظامية $\\rightarrow$ **الهدف النهائي: 72 تيرابايت من المساحة الصافية.**\n\n---\n\n###  توصيات العتاد (Hardware) للطبقات (Hot & Warm)\n\nلضمان سرعة الكتابة العالية (Ingestion) وسرعة الاستعلام، يُفضل استخدام محركات **NVMe SSD** فقط لهذه الطبقات الحساسة زمنياً. لا تستخدم HDD أو SATA للنطاق العالي هذا.\n\n#### **التكوين المقترح (Cluster Architecture)**\nلتغطية 72 تيرابايت بأقل عدد ممكن من العقد لضمان الكفاءة وتجنب اختناق الشبكة، نوصي بـ **4 عقد (Nodes)**.\n\n| المكون | المواصفات الموصى بها (لكل عقدة) | الكمية | ملاحظات تقنية |\n| :--- | :--- | :--- | :--- |\n| **المعالج (CPU)** | 16 نواة عالية السرعة (Intel Xeon Gold \/ AMD EPYC) | 4 وحدات | تجنب المشاركة (Shared) لتجنب تأخير الذاكرة المؤقتة (JVM Garbage Collection). |\n| **الرامات (RAM)** | 64 جيجابايت DDR4 ECC | 4 وحدات | تخصيص **32 جيجابايت** للخادم الجافما (Heap)، والباقي لنظام التشغيل وكاش الملفات. |\n| **التخزين (Disk)** | **Enterprise NVMe SSD** (مثال: Samsung PM9a3 أو Solidigm P53xx) | 16 تيرابايت صافي | توزيع RAID 0 داخلي بين 4 محركات بسعة 4TB كل منها.<br>*بدون RAIDs:* تحتاج 18 محركاً منفصلاً ليغطي السعة والأمان. |\n| **الشبكة (Network)** | كارت شبكة **25 GbE** (أو 10GbE كحد أدنى) | 4 وحدات | ضروري جداً لنقل شاردات البيانات بسرعة دون عنق زجاجة. |\n| **النوع العام للعقد** | Compute-Optimized Servers | 4 units | للتأكد من توازن الحمل بين Hot (كتابة سريعة) و Warm (استرجاع بيانات). |\n\n---\n\n### ⚙️ إعدادات البرمجية والإدارة (Software Configuration)\n\nلتطبيق استراتيجية **\"Hot\" ثم \"Warm\"** بشكل صحيح:\n\n1.  **سياسة ILM (Index Lifecycle Management):**\n    *   قم بإنشاء سياسة تلقائية تنقل المؤشر من **Hot** إلى **Warm** بعد أيام قليلة (مثلاً 3 أيام) عندما يتجاوز حجمه عتبة معينة (< 50GB للشارد).\n    *   في مرحلة **Warm**: اجعل المؤشرات **Read-Only** وقم بتقليل عدد النسخ (Replicas) إلى 0 إذا أمكن لتحسين الأداء وتخفيض التكلفة، أو اتركها عند 1 للحماية القصوى.\n    *   في مرحلة **Cold\/Frozen**: انتقل للملفات الباردة بعد انتهاء فترة الـ 90 يوماً وحذف المؤشر نهائياً للحفاظ على السعة.\n\n2.  **تحديد الشوارد (Shards):**\n    *   حافظ على حجم الشارد الواحد بين **30 إلى 50 جيجابايت** لتحقيق أفضل أداء بحثي.\n    *   بما أن حجم اليوم واحد تقريباً 333 جيجا فعال، سنحتاج إلى حوالي 7-10 مؤشرات جديدة يومياً مقسمة على عدة عقد.\n\n3.  **علاوة التوسع (Metadata Expansion):**\n    *   تذكر دائماً تضرب الحاجة للسعات بمعامل **1.25x** لحساب الهياكل الفرعية (Index Metadata, Translog, etc.). الحساب أعلاه أخذ ذلك بعين الاعتبار ضمن هامش الأمان.\n\n### ✅ ملخص الخطوات التالية\n1.  شراء **4 خوادم** بمواصفات NVMe قوية وشبكة 25Gbps.\n2.  تثبيت نظام تشغيل Linux (Ubuntu\/CentOS\/RHEL) مع تفعيل خيارات FS مثل `noatime`.\n3.  ضبط ملف `jvm.options` ليكون Heap بحوالي 32GB لكل عقدة.\n4.  تطبيق سياسات ILM فور البدء لضمان حذف البيانات القديمة تلقائياً بعد 90 يوماً وعدم امتلاء الأقراص.\n\nهل تريد مساعدة في تقدير تكلفة المشروع (MSP Pricing) بناءً على هذه المواصفات؟",
+    "response_length": 5554,
+    "success": true,
+    "errors": []
+}

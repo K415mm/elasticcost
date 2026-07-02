@@ -1,0 +1,49 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 9,
+    "agent": "ElasticCostAssistant",
+    "category": "costing-tunisian",
+    "description": "Tunisian Arabic — SOC cost calculation for a new client",
+    "model": "qwen3.5-omni-flash-2026-03-15",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 59729,
+        "start_time": "2026-06-29T16:38:46+00:00",
+        "end_time": "2026-06-29T16:39:46+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 330,
+        "completion_tokens": 688,
+        "total_tokens": 1018
+    },
+    "prompts": {
+        "raw_user_prompt": "knwa 3andi client jdid w n7eb na7seb el SOC cost mt3ou. 3andou 150 device Active Directory w 50 FortiGate. chnou el cout mensuel?",
+        "effective_user_prompt": "knwa 3andi client jdid w n7eb na7seb el SOC cost mt3ou. 3andou 150 device Active Directory w 50 FortiGate. chnou el cout mensuel?",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "Ahlan bik! عشان نعطيك تقدير دقيق لـ **SOC Cost** الشهري، لازم نتأكد من بعض التفاصيل الدقيقة قبل ما نحسب المبلغ النهائي. المعطيات اللي عطيتني إياها (150 Active Directory و 50 FortiGate) هي نقطة انطلاق ممتازة، بس السعر بيختلف حسب:\n\n1.  **نوع الخدمة المطلوبة:** هل هم محتاجين فقط مراقبة (Monitoring) ولا احتياج للتدخل الفوري في الحوادث (Incident Response - IR)?\n2.  **مستوى التغطية الزمنية:** هل يحتاجون مراقبة على مدار الساعة (24\/7) مع محللين بشريين؟\n3.  **حجم البيانات التقديري:** كم حجم السجلات اليومية المتوقعة؟ (هذا يؤثر على تكلفة التخزين والسعة الحسابية للـ SIEM).\n4.  **متطلبات الاسترجاع (Retention):** مدة الاحتفاظ بالسجلات (مثلاً 3 أشهر، سنة، أو أكثر).\n\nومع ذلك، وبناءً على الأرقام الحالية ونموذج عمل MSSP القياسي (MDR + SIEM)، إليك **تقدير مبدئي تقريبي** لنفترض أن الخدمة تشمل مراقبة شاملة ومحللين بشريين:\n\n### 📊 تقدير تكاليف شهرية أولي (Pre-Qualified Estimate)\n\n| عنصر التكلفة | الكمية | سعر الوحدة المقترح | الإجمالي الشهرى (USD) |\n| :--- | :---: | :---: | :---: |\n| **أجهزة AD (Endpoints)** | 150 جهاز | $4.50 \/جهاز | $675.00 |\n| **إدارة الجدران النارية (Firewalls)** | 50 جهاز | $3.00 \/جهاز (Bundle) | $150.00 |\n| **رسوم المنصة والتحليل الأساسي** | 1 مشروع | Flat Fee | $200.00 |\n| **المجموع التقديري** | | | **$1,025.00 \/ شهرياً** |\n\n*> **ملاحظة هامة:** هذا الرقم لا يشمل رسوم الإعداد الأولي (Onboarding Fee) التي عادة ما تتراوح بين $1,500 - $3,000 مرة واحدة.*\n\n---\n\n### ❓ أسئلة لتأكيد العرض الدقيق:\nلو تفضل تجاوب علي الأسئلة دي تحت، أقدر أخرج لك عرض رسمي (Quote) جاهز للإرسال للعميل فوراً:\n\n1.  هل الخدمة تتطلب تدخل فوري عند حدوث تهديد (IR) أم مجرد تنبيهات وتحليل؟\n2.  هل هناك حاجة لحفظ سجلات لأكثر من 90 يوماً؟\n3.  هل العميل يفضل الدفع بالعملة المحلية (TND) بالدولار الأمريكي (USD)؟\n\nانتظر ردك عشان أضبطلك الـ Final Calculation بدقة! 💼🔒",
+    "response_length": 2749,
+    "success": true,
+    "errors": []
+}

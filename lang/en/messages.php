@@ -193,4 +193,8 @@ return [
     'ai_analysis' => 'AI Cost & Logic Analysis',
     'ai_thinking' => 'AI is analyzing the proposal...',
     'ai_error' => 'AI analysis failed. Please check your Ollama server configuration or try again.',
+    'dashboard' => 'Dashboard',
+    'ai_chat' => 'AI Chat Assistant',
+    'ai_agents' => 'AI Agents',
+    'agent_registry' => 'AI Agent Registry',
 ];

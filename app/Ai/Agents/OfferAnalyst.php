@@ -2,19 +2,38 @@
 
 namespace App\Ai\Agents;
 
+use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Ai\Attributes\Model;
 use Laravel\Ai\Attributes\Provider;
 use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Contracts\HasStructuredOutput;
 use Laravel\Ai\Enums\Lab;
-use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Promptable;
 use Stringable;
 
 #[Provider(Lab::Ollama)]
 #[Model('gemma4:e2b')]
-class OfferAnalyst implements Agent
+class OfferAnalyst implements Agent, HasStructuredOutput
 {
     use Promptable;
+
+    public ?string $phpSessionId = null;
+
+    /**
+     * Get the agent's structured output schema definition.
+     */
+    public function schema(JsonSchema $schema): array
+    {
+        return [
+            'health_score' => $schema->integer()->description('Overall proposal health score from 1 to 10.')->required(),
+            'margin_status' => $schema->string()->description('Margin assessment: Low, Optimal, or High.')->required(),
+            'sanity_checks' => $schema->array()->description('Status of checks: ingestion check, staffing check, etc.')->required(),
+            'staffing_status' => $schema->string()->description('Analyst allocation feedback: Over-allocated, Under-allocated, or Balanced.')->required(),
+            'infrastructure_status' => $schema->string()->description('Infrastructure feedback: Wasteful, Imbalanced, or Optimal.')->required(),
+            'recommendations' => $schema->array()->description('List of specific, numbered recommendations.')->required(),
+            'full_critique' => $schema->string()->description('The detailed markdown analysis covering all sections: pricing, staffing, infrastructure, risks.')->required(),
+        ];
+    }
 
     /**
      * Get the instructions that the agent should follow.
@@ -40,7 +59,7 @@ Before everything else, you MUST validate the following:
 
 ## STRUCTURED ANALYSIS SECTIONS
 
-After sanity checks, provide the following sections in clean Markdown:
+After sanity checks, analyze and review the proposal. Organize your detailed analysis inside the 'full_critique' field using the following sections in clean Markdown:
 
 ### 1. 🔍 Executive Summary & Health Score (1–10)
 Summarize the overall health of the proposal in 3–5 sentences. End with: `**Health Score: X/10**` with a brief justification. Be strict — a proposal with 0 GB ingestion should not score above 4/10 unless explicitly labeled as a template.
@@ -68,13 +87,8 @@ List specific, numbered, actionable risks and recommendations. Prioritize critic
 - Commercial risks (margin sustainability, client budget fit)
 - Operational risks (staffing gaps, SLA risks)
 
-## OUTPUT RULES
-- Use clean Markdown with emoji section headers
-- Never output raw JSON
-- Be concise but thorough — aim for 400–700 words
-- Use **bold** for critical findings
-- Use ⚠️ for critical flags and ✅ for positive findings
-- Respond in the same language as the input data (default English)
+## OUTPUT SCHEMA GUIDELINES
+Populate all fields in the JSON schema. For the 'full_critique' field, provide the detailed critique organized in Markdown sections 1 through 5.
 INSTRUCTIONS;
     }
 }

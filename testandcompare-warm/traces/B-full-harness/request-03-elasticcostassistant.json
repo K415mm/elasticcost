@@ -1,0 +1,49 @@
+{
+    "test_mode": "B-full-harness",
+    "request_index": 2,
+    "agent": "ElasticCostAssistant",
+    "category": "sizing-french",
+    "description": "French language question about ES tier differences",
+    "model": "qwen3.5-omni-flash-2026-03-15",
+    "provider": "qwen",
+    "timing": {
+        "latency_ms": 56922,
+        "start_time": "2026-06-29T16:32:01+00:00",
+        "end_time": "2026-06-29T16:32:58+00:00"
+    },
+    "tokens": {
+        "prompt_tokens": 322,
+        "completion_tokens": 536,
+        "total_tokens": 858
+    },
+    "prompts": {
+        "raw_user_prompt": "Quelle est la différence entre les tiers Hot, Warm, Cold et Frozen en termes de ratio RAM-disque?",
+        "effective_user_prompt": "Quelle est la différence entre les tiers Hot, Warm, Cold et Frozen en termes de ratio RAM-disque?",
+        "original_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such ",
+        "optimized_system_prompt": "You are the \"ElasticCost Assistant\", an elite AI chatbot built into the ElasticCost Sizing & Costing Calculator.\n\nYour goal is to answer queries from systems architects, SOC managers, and financial analysts regarding:\n1. **Elasticsearch Sizing**: RAM-to-disk ratios (Hot 1:30, Warm 1:80, Cold 1:100, Frozen 1:160), index metadata expansion (1.25x), replicas, shard sizes (30-50GB), and JVM Heap constraints.\n2. **MSSP SOC Costing**: Staffing pricing (L1, L2, L3, Engineer, Manager), hosting cards (RAM\/SSD unit prices), assurance markup benefits, and offered Client MRC calculation.\n3. **Application Features**: Sizing Dashboard, MSSP Cost Proposal dashboard, excel\/word\/markdown exports, currency conversions (USD\/EUR\/TND), and translation overrides.\n\n---\n\n## CONVERSATIONAL RULES\n- Keep your answers concise, structured, and professional.\n- Use Markdown formatting (bold, tables, lists, code blocks) to make information readable.\n- If the user asks you to size a cluster, ask them for details such "
+    },
+    "pipeline_stages": [],
+    "context_injected": [],
+    "quantum_memory": {
+        "nodes_retrieved": 0,
+        "nodes": []
+    },
+    "tool_calls": {
+        "count": 0,
+        "calls": []
+    },
+    "cache": {
+        "hit": false,
+        "key": null
+    },
+    "iterations": 2,
+    "llm_calls": 1,
+    "draft_verification": {
+        "draft": null,
+        "evidence": null
+    },
+    "response": "Dans l'architecture Elasticsearch et les systèmes de stockage distribués modernes, les niveaux **Hot**, **Warm**, **Cold** et **Frozen** ne sont pas des catégories matérielles fixes avec des ratios rigides. Ce sont des **niveaux d'accès aux données (tiers)** définis par leur fréquence d'utilisation et leurs exigences de performance.\n\nCependant, pour optimiser le rapport coût\/performance dans un déploiement type MSSP ou entreprise, nous utilisons des recommandations standards basées sur la densité mémoire vs capacité disque :\n\n### Recommandations Standards de Ratio RAM\/Disk\n\n| Niveau | Usage Principal | Type de Stockage Typique | Ratio RAM \/ Disk Standard | Objectif |\n| :--- | :--- | :--- | :--- | :--- |\n| **🔥 Hot** | Données récentes (< 7 jours), requêtes fréquentes | Disques NVMe haute vitesse + SSD RAID | **1:30** | Maximiser la latence faible et le débit. |\n| **⚡ Warm** | Données intermédiaires (7-30 jours) | SSD SATA ou Enterprise HDD rapides | **1:80** | Équilibre entre accès rapide et réduction des coûts. |\n| **❄️ Cold** | Données anciennes (> 30 jours), consultation rare | HDD standard ou NAS performant | **1:100** | Réduire le coût par Go tout en gardant une récupération possible. |\n| **🧊 Frozen** | Historiques très anciens (> 90 jours), archivage long terme | Stockage Objet (S3, Glacier) ou Tape | **1:160+** | Minimisation extrême du coût de stockage. |\n\n### Points Clés à Retenir\n\n*   **JVM Heap Limit :** Quel que soit le tier, assurez-vous que la pile JVM reste sous **50% de la RAM totale disponible** sur les nœuds chauds\/tièdes pour éviter les pauses GC.\n*   **Expansion Metadata :** N'oubliez jamais qu'une fois indexée, les métadonnées peuvent augmenter la taille réelle des indices jusqu'à **1.25x**. Appliquez ce facteur lors du dimensionnement initial.\n*   **Taille des Shards :** Pour maintenir de bonnes performances, visez toujours une taille de shard comprise entre **30 GB et 50 GB**. Au-delà, cela peut dégrader les temps de recherche.\n\nSouhaitez-vous que je génère une estimation précise basée sur vos volumes journaliers actuels ?",
+    "response_length": 2141,
+    "success": true,
+    "errors": []
+}

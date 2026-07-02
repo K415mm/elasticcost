@@ -50,6 +50,7 @@ class CurrencyHelper
     public static function convertBack(float $foreignAmount): float
     {
         $rate = self::rate();
+
         return $rate > 0 ? ($foreignAmount / $rate) : $foreignAmount;
     }
 
@@ -77,14 +78,14 @@ class CurrencyHelper
 
         if ($currency === 'TND') {
             // Tunisian Dinars use 3 decimal places (millimes)
-            return number_format($converted, 3, '.', ',') . ' TND';
+            return number_format($converted, 3, '.', ',').' TND';
         }
 
         if ($currency === 'EUR') {
-            return '€' . number_format($converted, 2, '.', ',');
+            return '€'.number_format($converted, 2, '.', ',');
         }
 
-        return '$' . number_format($converted, 2, '.', ',');
+        return '$'.number_format($converted, 2, '.', ',');
     }
 
     /**
