@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Ai\Agents\ElasticCostAssistant;
+use App\Ai\Agents\MarketBuyingSimulatorAgent;
 use App\Ai\Agents\OfferAnalyst;
 use App\Ai\Agents\RgSocEngineer;
 use App\Ai\Agents\SizingRegulator;
@@ -126,6 +127,22 @@ class AiAgentController extends Controller
                 ],
                 'tools' => [],
                 'middleware' => ['InjectDocumentation'],
+            ],
+            [
+                'id' => 'MarketBuyingSimulatorAgent',
+                'name' => 'Market Buying Simulator',
+                'class' => MarketBuyingSimulatorAgent::class,
+                'role' => 'Market Buying & Profit Optimization AI Agent',
+                'description' => 'Simulates buyer purchasing behavior over 1, 3, 6, 12, 36 months for enterprise partners and direct clients. Evaluates wholesale vs retail margins, compares custom service packs vs per-agent purchases, and provides profit optimization recommendations.',
+                'backend' => $activeModelInfo,
+                'capabilities' => [
+                    'Market purchasing persona simulation',
+                    'Partner Wholesale vs Client Retail margin evaluation',
+                    'Custom pack vs per-agent demand comparison',
+                    '36-month cumulative profit optimization strategies',
+                ],
+                'tools' => [],
+                'middleware' => [],
             ],
         ];
 
