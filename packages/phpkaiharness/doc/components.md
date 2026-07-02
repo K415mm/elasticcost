@@ -66,6 +66,7 @@ interface LlmClientInterface {
 classDiagram
     class LlmClientInterface { <<interface>> }
 
+    class QwenClient { +apiKey +baseUrl +defaultModel }
     class OllamaClient { +url +defaultModel }
     class LmStudioClient { +url +defaultModel }
     class OpenRouterClient { +apiKey +defaultModel }
@@ -91,6 +92,7 @@ classDiagram
         Prepends think→act→observe scaffold
     }
 
+    LlmClientInterface <|.. QwenClient
     LlmClientInterface <|.. OllamaClient
     LlmClientInterface <|.. LmStudioClient
     LlmClientInterface <|.. OpenRouterClient
@@ -101,6 +103,23 @@ classDiagram
     LlmClientInterface <|.. ThinkingBudgetLlmClient
 ```
 
+### `QwenClient` (`Llm\QwenClient`) — Default Provider
+
+Dedicated HTTP client for **Qwen Cloud (DashScope API)**. Implements the OpenAI-compatible `/chat/completions` endpoint with Qwen-specific enhancements:
+
+- **Hybrid credential resolution** (priority: constructor args > host app `global_settings` > AI SDK config > harness config > env vars)
+- **qwen3/qwq support**: automatically sends `enable_thinking=false` for `qwen3*` and `qwq*` models to prevent hanging on non-streaming calls
+- **Structured output**: `response_format: { type: 'json_object' }` when `harness.qwen_provider.structured_output = 'json_object'`
+- **Thinking response parsing**: strips `>"..."` artifacts, `<thought>` tags, and prefers `content` over `reasoning_content`
+- **Streaming**: SSE chunk-by-chunk via `onChunk` callback
+- **SSL verify**: disabled in `local` environment for development with self-signed certs
+
+```php
+// Reads credentials from global_settings → harness config → env vars
+$client = new QwenClient(defaultModel: 'qwen-plus');
+$response = $client->chat($systemPrompt, $messages, $tools, 'qwen-plus', $sessionId, $collector);
+```
+
 ### Decorator Composition Example
 
 ```php
@@ -108,8 +127,8 @@ $llm = new PiiMaskingLlmClient(
     new RateLimitedLlmClient(
         new ThinkingBudgetLlmClient(
             new FailoverLlmClient([
-                new OllamaClient('http://localhost:11434', 'hermes-3-llama-3-8b'),
-                new OpenRouterClient($apiKey, 'meta-llama/llama-3-8b-instruct'),
+                new QwenClient(defaultModel: 'qwen-plus'),
+                new OllamaClient('http://localhost:11434', 'llama3'),
             ]),
             maxThinkingTokens: 8000
         ),
@@ -203,7 +222,7 @@ Rewrites system prompts for specific model architectures to maximize instruction
 
 | Profile | Target Models |
 |---|---|
-| `qwen` | Qwen 2.5, Qwen 3, Qwen 3.5 |
+| `qwen` | Qwen 2.5, Qwen 3, Qwen 3.5, Qwen Plus, Qwen Turbo, QwQ |
 | `gemma` | Gemma 2, Gemma 4 |
 | `llama` | Llama 3, Llama 3.1, Hermes 3 |
 | `auto` | Auto-detected from `ModelCatalog` |

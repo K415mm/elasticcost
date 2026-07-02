@@ -193,7 +193,7 @@ Auto-rewrites system prompts for specific model architectures to improve tool-ca
 
 | Profile | Optimizations Applied |
 |---|---|
-| `qwen` | Uses `<|im_start|>` / `<|im_end|>` chat format markers, concise tool descriptions |
+| `qwen` | Uses `<|im_start|>` / `<|im_end|>` chat format markers, concise tool descriptions, optimized for Qwen 2.5/3/3.5/Plus/Turbo/QwQ |
 | `gemma` | Strips markdown formatting, uses plain-text system blocks |
 | `llama` | Adds `<s>` BOS tokens, Hermes-style function call templates |
 | `auto` | Queries `ModelCatalog` to select profile from model name |
@@ -320,3 +320,74 @@ The built-in web UI accessible at `/harness/dashboard` and `/harness/config`:
 - **Live status badges** — `[ACTIVE]` and `[DEACTIVATED]` badges update instantly on toggle
 - **Persistent saves** — configuration changes write through to `config/harness.php` immediately
 - **Visual feedback** — deactivated feature cards rendered in muted red tones; active cards in teal
+
+---
+
+## 15. Qwen Cloud Provider (`Llm\QwenClient`)
+
+The default LLM provider — a dedicated HTTP client for the **Qwen Cloud (DashScope)** API with OpenAI-compatible endpoints.
+
+### Hybrid Credential Resolution
+
+`QwenClient` resolves API key, URL, and model using a 5-level priority chain:
+
+| Priority | Source | Example |
+|---|---|---|
+| 1 (highest) | Constructor arguments | `new QwenClient(apiKey: 'sk-...')` |
+| 2 | Host app `global_settings` | `GlobalSetting::getValue('qwen_api_key')` |
+| 3 | Laravel AI SDK config | `config('ai.providers.qwen.key')` |
+| 4 | Harness config | `config('harness.qwen_provider.api_key')` |
+| 5 (lowest) | Environment variables | `PHPKAIHARNESS_QWEN_KEY`, `QWEN_API_KEY`, `DASHSCOPE_API_KEY` |
+
+When integrated with a host Laravel app that has `ai_provider = qwen` in System Settings, the harness automatically uses the same credentials — no duplicate configuration needed.
+
+### Qwen3/Qwq Thinking Model Support
+
+Qwen3 and QwQ models output reasoning tokens by default, which can cause hangs on non-streaming calls. `QwenClient` automatically sends `enable_thinking=false` for any model starting with `qwen3` or `qwq`:
+
+```php
+// Automatically handled — no manual config needed
+if (str_starts_with($resolvedModel, 'qwen3') || str_starts_with($resolvedModel, 'qwq')) {
+    $payload['enable_thinking'] = false;
+}
+```
+
+### Structured Output
+
+When `harness.qwen_provider.structured_output = 'json_object'`, the client:
+1. Sets `response_format: { type: 'json_object' }` in the payload
+2. Scans all messages for the keyword "json"
+3. If not found, appends `"\nIMPORTANT: You must respond strictly in JSON format."` to the first message
+
+### Thinking Response Parsing
+
+Qwen3.5+ models may return:
+- A short numeric artifact as `content` with the real answer in `reasoning_content`
+- `>"..."` wrapping artifacts
+- `<thought>...</thought>` tags
+
+The `parseThinkingResponse()` method strips these and returns only the final answer.
+
+### Configuration
+
+```php
+'qwen_provider' => [
+    'enabled'           => true,
+    'api_key'           => '',     // Read from global_settings in production
+    'url'               => 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+    'model'             => 'qwen-plus',
+    'light_model'       => 'qwen-turbo',  // For multi-agent mode
+    'structured_output' => 'json_object',  // json_object | json_schema | none
+    'max_tokens'        => 4096,
+],
+```
+
+### Available Models
+
+| Model | Use Case |
+|---|---|
+| `qwen-plus` | Default — best balance of quality and speed |
+| `qwen-turbo` | Light model — fast responses for multi-agent mode |
+| `qwen-max` | Highest quality — complex reasoning tasks |
+| `qwen3-235b-a22b` | Qwen3 thinking model (auto-disables thinking) |
+| `qwq-32b-preview` | QwQ reasoning model (auto-disables thinking) |

@@ -31,6 +31,7 @@ flowchart TD
     end
 
     subgraph LLM Providers
+        Thinking <-->|HTTP POST| QwenCloud[Qwen Cloud - DashScope]
         Thinking <-->|HTTP POST| Ollama[Ollama - Local]
         Thinking <-->|HTTP POST| LMStudio[LM Studio - Local]
         Thinking <-->|HTTP POST| OpenRouter[OpenRouter - Cloud]

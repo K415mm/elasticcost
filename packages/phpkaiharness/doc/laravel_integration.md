@@ -58,11 +58,23 @@ This publishes the HUD telemetry dashboard styles and script resources to `publi
 
 ```php
 return [
-    // Default LLM provider
+    // Default LLM provider — Qwen Cloud is the default
     'default' => [
-        'provider'       => env('PHPKAIHARNESS_PROVIDER', 'ollama'),
-        'model'          => env('PHPKAIHARNESS_MODEL', 'hermes-3-llama-3-8b'),
+        'provider'       => env('PHPKAIHARNESS_PROVIDER', 'qwen'),
+        'model'          => env('PHPKAIHARNESS_MODEL', 'qwen-plus'),
         'max_iterations' => 10,
+    ],
+
+    // Qwen Cloud provider — hybrid credential resolution
+    // Reads from host app global_settings first, then harness config, then env vars
+    'qwen_provider' => [
+        'enabled'           => env('PHPKAIHARNESS_QWEN_ENABLED', true),
+        'api_key'           => env('PHPKAIHARNESS_QWEN_KEY') ?: (env('QWEN_API_KEY') ?: env('DASHSCOPE_API_KEY', '')),
+        'url'               => env('PHPKAIHARNESS_QWEN_URL') ?: (env('QWEN_URL') ?: env('DASHSCOPE_URL', 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1')),
+        'model'             => env('PHPKAIHARNESS_QWEN_MODEL', 'qwen-plus'),
+        'light_model'       => env('PHPKAIHARNESS_QWEN_LIGHT_MODEL', 'qwen-turbo'),
+        'structured_output' => env('PHPKAIHARNESS_QWEN_STRUCTURED', 'json_object'),
+        'max_tokens'        => env('PHPKAIHARNESS_QWEN_MAX_TOKENS', 4096),
     ],
 
     // SQLite telemetry store path
@@ -154,11 +166,22 @@ return [
 Add the following configuration parameters to your host application's `.env` file to customize connections:
 
 ```ini
-# Selected provider (ollama, lmstudio, openrouter, laravel_ai)
-PHPKAIHARNESS_PROVIDER=ollama
-PHPKAIHARNESS_MODEL=hermes-3-llama-3-8b
+# Selected provider (qwen, ollama, lmstudio, openrouter, laravel_ai)
+PHPKAIHARNESS_PROVIDER=qwen
+PHPKAIHARNESS_MODEL=qwen-plus
 
-# Ollama Endpoint URL
+# Qwen Cloud (DashScope) credentials
+# NOTE: When integrated with a host Laravel app, these are read from
+# the host's global_settings table (qwen_api_key, qwen_url, qwen_model)
+# via AiConfigHelper. These env vars serve as fallback for standalone usage.
+PHPKAIHARNESS_QWEN_KEY=your-dashscope-api-key
+PHPKAIHARNESS_QWEN_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+PHPKAIHARNESS_QWEN_MODEL=qwen-plus
+PHPKAIHARNESS_QWEN_LIGHT_MODEL=qwen-turbo
+PHPKAIHARNESS_QWEN_STRUCTURED=json_object
+PHPKAIHARNESS_QWEN_MAX_TOKENS=4096
+
+# Ollama Endpoint URL (if used as fallback)
 PHPKAIHARNESS_URL=http://localhost:11434
 
 # LM Studio Endpoint URL (if used)
@@ -170,6 +193,14 @@ OPENROUTER_API_KEY=your-openrouter-api-key-here
 # SQLite standalone telemetry store location
 PHPKAIHARNESS_DB_PATH=database/harness.sqlite
 ```
+
+> [!TIP]
+> **Hybrid Credential Resolution:** When the host Laravel app has `ai_provider = qwen` in its `global_settings` table, `QwenClient` automatically reads `qwen_api_key`, `qwen_url`, and `qwen_model` from the database — no env vars or harness config needed. The resolution priority is:
+> 1. Constructor arguments (highest)
+> 2. Host app `global_settings` (via `GlobalSetting::getValue()`)
+> 3. Laravel AI SDK config (`ai.providers.qwen.*`)
+> 4. Harness config (`harness.qwen_provider.*`)
+> 5. Environment variables (lowest)
 
 > [!IMPORTANT]
 > The database path directory must exist and be writeable by the web server process (e.g., `storage/` or `database/`). The SQLite database file will be automatically created on the first write.
@@ -201,7 +232,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Phpkaiharness\Core\AgentLoop;
 use Phpkaiharness\Core\Registry\ToolRegistry;
-use Phpkaiharness\Llm\OllamaClient;
+use Phpkaiharness\Llm\QwenClient;
 use Phpkaiharness\Monitor\SqliteMonitorStore;
 use Phpkaiharness\Tools\WslCommandTool;
 
@@ -211,10 +242,10 @@ class AgentRunController extends Controller
     {
         $prompt = $request->input('prompt', 'Check the status of localhost');
 
-        // 1. Resolve LLM client (can also resolve from config/service container)
-        $llmClient = new OllamaClient(
-            getenv('PHPKAIHARNESS_URL') ?: 'http://localhost:11434',
-            config('harness.default.model')
+        // 1. Resolve LLM client — QwenClient reads credentials from
+        //    global_settings → harness config → env vars (hybrid mode)
+        $llmClient = new QwenClient(
+            defaultModel: config('harness.default.model', 'qwen-plus')
         );
 
         // 2. Setup Tool Registry

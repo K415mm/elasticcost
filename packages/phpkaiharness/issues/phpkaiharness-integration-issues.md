@@ -271,6 +271,8 @@ When integrated into a host Laravel application, the `phpkaiharness` package def
 **Resolution:**
 Refactored `LaravelAiClient` to check if the `PHPKAIHARNESS_PROVIDER` environment variable is set. If not, it dynamically attempts to resolve the AI provider and model from the host application. It first checks if the host's `App\Services\AiConfigHelper` exists to query active database settings, and falls back to `config('ai.default')` and standard driver-specific default models.
 
+**Updated (v2.1):** The default provider is now `qwen` (Qwen Cloud) instead of `ollama`. `QwenClient` implements a full hybrid credential resolution chain: constructor args > host app `global_settings` (via `GlobalSetting::getValue('qwen_api_key')`, `qwen_url`, `qwen_model`) > Laravel AI SDK config (`ai.providers.qwen.*`) > harness config (`harness.qwen_provider.*`) > environment variables. This means when the host app's System Settings → AI Provider is set to `qwen`, the harness automatically uses the same API key, URL, and model without any duplicate configuration.
+
 ---
 
 ### 22. [RESOLVED] SQLite database must be manually initialized before starting phpkaiharness

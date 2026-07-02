@@ -3,10 +3,11 @@
     <h1 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;letter-spacing:3px;font-weight:bold;margin:0 0 8px">🤖 PHP KAI HARNESS</h1>
     <p style="color:#8a99ad;font-size:1.1em;margin:0 0 18px">State-of-the-Art Agentic Harness & HUD Telemetry for PHP & Laravel 13</p>
     <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
-      <img src="https://img.shields.io/badge/stable-v2.0.0-3cd2a5.svg?style=flat-square" alt="Stable">
+      <img src="https://img.shields.io/badge/stable-v2.1.0-3cd2a5.svg?style=flat-square" alt="Stable">
       <img src="https://img.shields.io/badge/php-%5E8.2%20%7C%20%5E8.3%20%7C%20%5E8.4%20%7C%20%5E8.5-8892BF.svg?style=flat-square" alt="PHP">
       <img src="https://img.shields.io/badge/laravel-%5E11.0%20%7C%20%5E12.0%20%7C%20%5E13.0-FF2D20.svg?style=flat-square" alt="Laravel">
       <img src="https://img.shields.io/badge/tests-93%20passing-3cd2a5.svg?style=flat-square" alt="Tests">
+      <img src="https://img.shields.io/badge/Qwen%20Cloud-ready-3cd2a5.svg?style=flat-square" alt="Qwen Cloud">
       <img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License">
     </div>
   </div>
@@ -107,6 +108,16 @@ flowchart TD
     <p style="color:#b1c2d4;font-size:0.9em;margin:0">Real-time animated workflow trace viewer, session explorer, agent playground, and category-based config panel — all in a cyber-teal dark UI. Every feature has a live ACTIVE/DEACTIVATED status badge.</p>
   </div>
 
+  <div style="background:#0c1017;border:1px solid rgba(60,210,165,0.35);border-radius:8px;padding:16px;box-shadow:0 0 10px rgba(60,210,165,0.07)">
+    <h3 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;margin-top:0">☁️ Qwen Cloud Provider</h3>
+    <p style="color:#b1c2d4;font-size:0.9em;margin:0">Native <strong>Qwen Cloud (DashScope)</strong> integration with hybrid credential resolution — reads API key, URL, and model from the host app's <code>global_settings</code> first, then falls back to harness config and env vars. Supports qwen3/qwq <code>enable_thinking=false</code>, structured JSON output, and streaming.</p>
+  </div>
+
+  <div style="background:#0c1017;border:1px solid rgba(60,210,165,0.35);border-radius:8px;padding:16px;box-shadow:0 0 10px rgba(60,210,165,0.07)">
+    <h3 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;margin-top:0">⚛️ Quantum Memory Harness</h3>
+    <p style="color:#b1c2d4;font-size:0.9em;margin:0">Quantum-inspired ontological memory with cosine + phase interference scoring (<code>S_fused = α·S_cos + β·S_interfere</code>), multi-hop entanglement traversal, and asynchronous memory collapse jobs. Persists across sessions in a dedicated SQLite graph.</p>
+  </div>
+
 </div>
 
 ---
@@ -114,6 +125,7 @@ flowchart TD
 <h2 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;border-bottom:2px solid #3cd2a5;padding-bottom:8px;margin-top:30px">⚡ Quickstart</h2>
 
 ```php
+use Phpkaiharness\Llm\QwenClient;
 use Phpkaiharness\Llm\OllamaClient;
 use Phpkaiharness\Llm\FailoverLlmClient;
 use Phpkaiharness\Llm\PiiMaskingLlmClient;
@@ -126,7 +138,8 @@ use Phpkaiharness\Monitor\SqliteMonitorStore;
 use Phpkaiharness\Tools\WslCommandTool;
 
 // 1. Build a resilient LLM client stack with failover + PII masking + rate limiting
-$primary   = new OllamaClient('http://localhost:11434', 'hermes-3-llama-3-8b');
+//    QwenClient reads credentials from global_settings (host app) → harness config → env vars
+$primary   = new QwenClient(defaultModel: 'qwen-plus');
 $secondary = new OllamaClient('http://localhost:11434', 'llama3');
 
 $llmClient = new PiiMaskingLlmClient(
@@ -155,7 +168,7 @@ $agent = new AgentLoop(
     llmClient:       $llmClient,
     registry:        $registry,
     systemPrompt:    "You are a networking bot. Solve user issues using available tools.",
-    model:           'hermes-3-llama-3-8b',
+    model:           'qwen-plus',
     semanticCache:   $cache,
     guardrails:      $guardrails,
     maxIterations:   10
@@ -221,13 +234,24 @@ All features are togglable via `config/harness.php` and persist through the dash
 ```php
 return [
     'default' => [
-        'provider'       => env('PHPKAIHARNESS_PROVIDER', 'ollama'),
-        'model'          => env('PHPKAIHARNESS_MODEL', 'hermes-3-llama-3-8b'),
+        'provider'       => env('PHPKAIHARNESS_PROVIDER', 'qwen'),
+        'model'          => env('PHPKAIHARNESS_MODEL', 'qwen-plus'),
         'max_iterations' => 10,
     ],
 
     'cache' => [
         'db_path' => env('PHPKAIHARNESS_DB_PATH', database_path('harness.sqlite')),
+    ],
+
+    // Qwen Cloud provider — hybrid credential resolution
+    'qwen_provider' => [
+        'enabled'           => env('PHPKAIHARNESS_QWEN_ENABLED', true),
+        'api_key'           => env('PHPKAIHARNESS_QWEN_KEY') ?: (env('QWEN_API_KEY') ?: env('DASHSCOPE_API_KEY', '')),
+        'url'               => env('PHPKAIHARNESS_QWEN_URL') ?: (env('QWEN_URL') ?: env('DASHSCOPE_URL', 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1')),
+        'model'             => env('PHPKAIHARNESS_QWEN_MODEL', 'qwen-plus'),
+        'light_model'       => env('PHPKAIHARNESS_QWEN_LIGHT_MODEL', 'qwen-turbo'),
+        'structured_output' => env('PHPKAIHARNESS_QWEN_STRUCTURED', 'json_object'),
+        'max_tokens'        => env('PHPKAIHARNESS_QWEN_MAX_TOKENS', 4096),
     ],
 
     // Feature toggles — reflected live in the HUD dashboard
@@ -261,6 +285,12 @@ return [
     ],
 ];
 ```
+
+> [!TIP]
+> **Hybrid Credential Resolution:** When integrated into a host Laravel app, `QwenClient` automatically reads the API key, URL, and model from the host app's `global_settings` database table (via `GlobalSetting::getValue('qwen_api_key')`, etc.) — no duplicate configuration needed. The harness config and env vars serve as fallbacks for standalone usage.
+
+> [!IMPORTANT]
+> **Qwen3/Qwq Models:** The `QwenClient` automatically sends `enable_thinking=false` for `qwen3*` and `qwq*` models to prevent hanging on non-streaming calls. This is handled transparently — no manual configuration required.
 
 ---
 
@@ -303,10 +333,11 @@ return [
 
 | Provider | Class | Notes |
 |---|---|---|
+| **Qwen Cloud** (default) | `QwenClient` | DashScope API, hybrid credentials, qwen3/qwq `enable_thinking=false`, structured JSON output, streaming |
 | **Ollama** (local) | `OllamaClient` | Hermes 3, Llama 3, Gemma 4, Qwen 3.5+ |
 | **LM Studio** (local) | `LmStudioClient` | Standard REST chat completions API |
 | **OpenRouter** (cloud) | `OpenRouterClient` | 200+ models via single API key |
-| **laravel/ai** | `LaravelAiClient` | Native Laravel 13 AI SDK connections |
+| **laravel/ai** | `LaravelAiClient` | Native Laravel 13 AI SDK connections, auto-routes qwen→QwenClient |
 | **Failover Stack** | `FailoverLlmClient` | Wraps any of the above with auto-retry |
 
 ---
@@ -321,6 +352,7 @@ phpkaiharness/
 │   │   ├── AgentSelector.php         ← Multi-agent discovery
 │   │   └── Registry/ToolRegistry.php ← Dynamic tool management
 │   ├── Llm/
+│   │   ├── QwenClient.php           ← Qwen Cloud (DashScope) — default provider
 │   │   ├── OllamaClient.php          ← Local Ollama adapter
 │   │   ├── LmStudioClient.php        ← LM Studio adapter
 │   │   ├── OpenRouterClient.php      ← Cloud OpenRouter adapter
@@ -337,14 +369,20 @@ phpkaiharness/
 │   │   ├── ModelPromptOptimizer.php  ← Qwen/Gemma prompt rewriter
 │   │   ├── OntologicalContextInjector.php ← RAG context injection
 │   │   ├── CognitiveGraphMemory.php  ← Persistent knowledge graph
+│   │   ├── QuantumInferenceEngine.php ← Quantum-inspired memory scoring
 │   │   └── DraftVerificationOrchestration.php ← Output verification
 │   ├── Http/
 │   │   ├── Controllers/
-│   │   │   └── HarnessConfigController.php
+│   │   │   ├── HarnessConfigController.php
+│   │   │   └── HarnessTelemetryController.php
 │   │   └── Middleware/
 │   │       ├── EnvironmentBootstrapMiddleware.php
 │   │       ├── PolicyGuardrailMiddleware.php
+│   │       ├── QuantumOntologyMemoryMiddleware.php
 │   │       └── CompressContextMiddleware.php
+│   ├── Console/Commands/
+│   │   ├── InstallCommand.php        ← Publish config + init SQLite
+│   │   └── ConfigValidateCommand.php ← Validate harness config
 │   ├── Tools/
 │   │   ├── WslCommandTool.php        ← Kali WSL sandboxed executor
 │   │   ├── HttpServiceTool.php       ← External microservice bridge
