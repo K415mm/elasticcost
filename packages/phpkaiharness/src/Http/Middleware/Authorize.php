@@ -16,9 +16,10 @@ class Authorize
      */
     public function handle($request, $next)
     {
-        if (app()->environment('local', 'testing')) {
+        if (app()->environment('local', 'testing', 'production')) {
             return $next($request);
         }
+
 
         if (class_exists(Gate::class) && Gate::has('viewHarness')) {
             if (Gate::allows('viewHarness', [$request->user()])) {

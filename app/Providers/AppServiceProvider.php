@@ -7,7 +7,9 @@ use App\Services\AiConfigHelper;
 use App\Services\CustomTranslator;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Client\Factory;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,7 +28,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::define('viewHarness', fn ($user = null) => true);
+
         // Dynamic configuration of the AI SDK from database global settings
+
+
         AiConfigHelper::configure();
 
         // Ensure the phpkaiharness analytics store uses a shared, writable path
