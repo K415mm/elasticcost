@@ -106,16 +106,18 @@ class SessionManager
     {
         $path = $this->getSessionPath($sessionId);
 
-        if (! File::isDirectory($path)) {
-            File::makeDirectory($path, 0755, true, true);
+        if (! is_dir($path)) {
+            @mkdir($path, 0777, true);
         }
 
         // 1. Monitor DB — initialize schema via SqliteMonitorStore
         $monitorDb = $this->getMonitorDbPath($sessionId);
-        if (! File::exists($monitorDb) || (int) File::size($monitorDb) === 0) {
-            File::put($monitorDb, '');
+        if (! file_exists($monitorDb) || (int) @filesize($monitorDb) === 0) {
+            @mkdir(dirname($monitorDb), 0777, true);
+            @file_put_contents($monitorDb, '');
             new SqliteMonitorStore($monitorDb);
         }
+
 
         // 2. Quantum memory DB — bootstrap schema via QuantumInferenceEngine
         $quantumDb = $this->getQuantumDbPath($sessionId);
