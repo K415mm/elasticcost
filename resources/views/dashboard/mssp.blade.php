@@ -952,12 +952,10 @@
                         <button type="submit" form="mssp-costing-form" name="tab" value="simulator" class="btn btn-success btn-sm fw-bold shadow-sm d-inline-flex align-items-center gap-1">
                             <i class="bi bi-play-circle-fill"></i> Update & Recalculate Simulation
                         </button>
-                        <form action="{{ route('mssp.reset-simulation', [$client->id, $scenario->id]) }}" method="POST" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-outline-info btn-sm">
-                                <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Defaults
-                            </button>
-                        </form>
+                        <button type="submit" form="mssp-costing-form" name="reset_defaults" value="1" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset to Scenario Defaults
+                        </button>
+
                     </div>
                 </div>
             </div>

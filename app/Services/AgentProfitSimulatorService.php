@@ -22,6 +22,17 @@ class AgentProfitSimulatorService
         $mdrBase = (float) ($msspDetail->mdr_agent_monthly_cost_per_device ?? 90.0);
         $siemBase = (float) ($msspDetail->siem_agent_monthly_cost_per_device ?? 60.0);
 
+        // Auto-heal legacy settings if stored values contain invalid hardcoded defaults below base cost
+        if (isset($saved['mdr_partner_price']) && (float) $saved['mdr_partner_price'] < $mdrBase) {
+            unset($saved['mdr_partner_price'], $saved['mdr_client_price'], $saved['mdr_purchased_limit']);
+        }
+        if (isset($saved['siem_partner_price']) && (float) $saved['siem_partner_price'] < $siemBase) {
+            unset($saved['siem_partner_price'], $saved['siem_client_price'], $saved['siem_purchased_limit']);
+        }
+        if (isset($saved['edr_purchased_limit']) && (int) $saved['edr_purchased_limit'] > 800) {
+            unset($saved['edr_purchased_limit']);
+        }
+
         $edrLimit = (int) ($saved['edr_purchased_limit'] ?? ($inventoryBaseline['edr'] > 0 ? $inventoryBaseline['edr'] : 300));
         $mdrLimit = (int) ($saved['mdr_purchased_limit'] ?? ($inventoryBaseline['mdr'] > 0 ? $inventoryBaseline['mdr'] : 40));
         $siemLimit = (int) ($saved['siem_purchased_limit'] ?? ($inventoryBaseline['siem'] > 0 ? $inventoryBaseline['siem'] : 20));
