@@ -124,8 +124,8 @@ Route::middleware('auth')->group(function () {
 
     // phpkaiharness Diagnostics & Diagnostics Dashboard
     Route::middleware('permission:harness_analytics')->group(function () {
-        Route::get('admin/harness-analytics', [HarnessAnalyticsController::class, 'index'])->name('harness.analytics.index');
-        Route::get('admin/harness-analytics/{id}', [HarnessAnalyticsController::class, 'showDetails'])->name('harness.analytics.show');
+        Route::get('harness/dashboard', [HarnessAnalyticsController::class, 'index'])->name('harness.analytics.index');
+        Route::get('harness/dashboard/{id}', [HarnessAnalyticsController::class, 'showDetails'])->name('harness.analytics.show');
     });
 
     // phpkaiharness Test Compare Suite
