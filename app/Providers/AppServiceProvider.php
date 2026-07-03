@@ -9,7 +9,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
-
+use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,8 +30,26 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('viewHarness', fn ($user = null) => true);
 
-        // Dynamic configuration of the AI SDK from database global settings
+        // Passport scopes mapped to user roles
+        Passport::tokensCan([
+            'client' => 'Client role — view own sizing reports and data',
+            'manager' => 'Manager role — manage clients, scenarios, and assets',
+            'sales_manager' => 'Sales Manager role — manage sales pipeline and partners',
+            'partner' => 'Partner role — limited external partner access',
+            'ceo' => 'CEO role — full access to all resources',
+        ]);
 
+        Passport::defaultScopes(['client']);
+
+        // Role-based authorization Gates
+        Gate::define('manage-clients', fn ($user) => $user->hasAnyRole(['manager', 'sales_manager', 'ceo']));
+        Gate::define('manage-scenarios', fn ($user) => $user->hasAnyRole(['manager', 'ceo']));
+        Gate::define('manage-partners', fn ($user) => $user->hasAnyRole(['sales_manager', 'ceo']));
+        Gate::define('manage-settings', fn ($user) => $user->isCeo());
+        Gate::define('view-all-reports', fn ($user) => $user->hasAnyRole(['manager', 'sales_manager', 'ceo']));
+        Gate::define('view-financials', fn ($user) => $user->hasAnyRole(['sales_manager', 'ceo']));
+
+        // Dynamic configuration of the AI SDK from database global settings
 
         AiConfigHelper::configure();
 

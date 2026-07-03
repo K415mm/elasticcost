@@ -216,6 +216,32 @@
                         <div class="menu-text d-sm-block d-none">{{ __('messages.enterprise_ingest_planner') }}</div>
                     </a>
                 </div>
+
+                @auth
+                <!-- User Profile Dropdown -->
+                <div class="menu-item dropdown">
+                    <a href="#" class="menu-link" data-bs-toggle="dropdown">
+                        <div class="menu-text d-flex align-items-center gap-2">
+                            <span class="badge bg-theme text-theme-color fw-bold text-uppercase" style="font-size: 0.65rem;">{{ auth()->user()->role }}</span>
+                            <span class="fw-bold d-none d-sm-inline">{{ auth()->user()->name }}</span>
+                            <i class="fa fa-chevron-down small opacity-50"></i>
+                        </div>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end">
+                        <div class="dropdown-header py-2">
+                            <div class="fw-bold">{{ auth()->user()->name }}</div>
+                            <div class="small text-muted">{{ auth()->user()->email }}</div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="dropdown-item d-flex align-items-center text-danger">
+                                <i class="fa fa-sign-out-alt me-2"></i> Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                @endauth
             </div>
             <!-- END menu -->
         </div>
@@ -229,69 +255,133 @@
                 <div class="menu">
                     <div class="menu-header">{{ __('messages.navigation') }}</div>
                     
+                    @if(auth()->user()?->hasPermission('dashboard'))
                     <div class="menu-item {{ Request::is('dashboard') ? 'active' : '' }}">
                         <a href="{{ route('dashboard') }}" class="menu-link">
                             <span class="menu-icon"><i class="bi bi-house"></i></span>
                             <span class="menu-text">{{ __('messages.dashboard') }}</span>
                         </a>
                     </div>
+                    @endif
                     
+                    @if(auth()->user()?->hasPermission('clients'))
                     <div class="menu-item {{ Request::is('clients*') ? 'active' : '' }}">
                         <a href="{{ route('clients.index') }}" class="menu-link">
                             <span class="menu-icon"><i class="bi bi-people"></i></span>
                             <span class="menu-text">{{ __('messages.clients_sizing') }}</span>
                         </a>
                     </div>
+                    @endif
 
+                    @if(auth()->user()?->hasPermission('profit_simulator'))
                     <div class="menu-item {{ Request::is('simulator*') ? 'active' : '' }}">
                         <a href="{{ route('simulator.index') }}" class="menu-link">
                             <span class="menu-icon"><i class="bi bi-graph-up-arrow text-success"></i></span>
                             <span class="menu-text">Profit Simulator</span>
                         </a>
                     </div>
+                    @endif
 
-
+                    @if(auth()->user()?->hasPermission('ai_chat'))
                     <div class="menu-item {{ Request::is('ai-chat*') ? 'active' : '' }}">
                         <a href="{{ route('ai-chat.index') }}" class="menu-link">
                             <span class="menu-icon"><i class="bi bi-chat-dots"></i></span>
                             <span class="menu-text">{{ __('messages.ai_chat') }}</span>
                         </a>
                     </div>
+                    @endif
                     
+                    @if(auth()->user()?->hasPermission('asset_types'))
                     <div class="menu-item {{ Request::is('settings/asset-types*') ? 'active' : '' }}">
                         <a href="{{ route('asset-types.index') }}" class="menu-link">
                             <span class="menu-icon"><i class="bi bi-sliders"></i></span>
                             <span class="menu-text">{{ __('messages.ingest_benchmarks') }}</span>
                         </a>
                     </div>
+                    @endif
                     
+                    @if(auth()->user()?->hasPermission('scenarios'))
                     <div class="menu-item {{ Request::is('settings/scenarios*') ? 'active' : '' }}">
                         <a href="{{ route('scenarios.index') }}" class="menu-link">
                             <span class="menu-icon"><i class="bi bi-gear"></i></span>
                             <span class="menu-text">{{ __('messages.scenario_templates') }}</span>
                         </a>
                     </div>
+                    @endif
 
+                    @if(auth()->user()?->hasPermission('system_settings'))
                     <div class="menu-item {{ Request::is('settings/system*') ? 'active' : '' }}">
                         <a href="{{ route('settings.system') }}" class="menu-link">
                             <span class="menu-icon"><i class="bi bi-cpu"></i></span>
                             <span class="menu-text">{{ __('messages.system_settings') }}</span>
                         </a>
                     </div>
+                    @endif
 
+                    @if(auth()->user()?->hasPermission('ai_agents'))
                     <div class="menu-item {{ Request::is('settings/agents*') ? 'active' : '' }}">
                         <a href="{{ route('settings.agents') }}" class="menu-link">
                             <span class="menu-icon"><i class="bi bi-robot text-theme"></i></span>
                             <span class="menu-text">{{ __('messages.ai_agents') ?: 'AI Agents' }}</span>
                         </a>
                     </div>
+                    @endif
 
+                    @if(auth()->user()?->hasPermission('file_manager'))
                     <div class="menu-item {{ Request::is('settings/files*') ? 'active' : '' }}">
                         <a href="{{ route('settings.files') }}" class="menu-link">
                             <span class="menu-icon"><i class="bi bi-folder2-open"></i></span>
                             <span class="menu-text">File Manager (RAG)</span>
                         </a>
                     </div>
+                    @endif
+
+                    @if(auth()->user()?->hasPermission('harness_analytics'))
+                    <div class="menu-item {{ Request::is('admin/harness-analytics*') ? 'active' : '' }}">
+                        <a href="{{ route('harness.analytics.index') }}" class="menu-link">
+                            <span class="menu-icon"><i class="bi bi-activity"></i></span>
+                            <span class="menu-text">Harness Analytics</span>
+                        </a>
+                    </div>
+                    @endif
+
+                    @if(auth()->user()?->hasPermission('test_compare'))
+                    <div class="menu-item {{ Request::is('test-compare*') ? 'active' : '' }}">
+                        <a href="{{ route('test-compare.index') }}" class="menu-link">
+                            <span class="menu-icon"><i class="bi bi-bug"></i></span>
+                            <span class="menu-text">Test Compare</span>
+                        </a>
+                    </div>
+                    @endif
+
+                    @if(auth()->user()?->hasPermission('user_management') || auth()->user()?->hasPermission('token_management'))
+                    <div class="menu-divider"></div>
+                    <div class="menu-header">Administration</div>
+                    @endif
+
+                    @if(auth()->user()?->hasPermission('user_management'))
+                    <div class="menu-item {{ Request::is('users*') ? 'active' : '' }}">
+                        <a href="{{ route('users.index') }}" class="menu-link">
+                            <span class="menu-icon"><i class="bi bi-person-gear"></i></span>
+                            <span class="menu-text">User Management</span>
+                        </a>
+                    </div>
+                    <div class="menu-item {{ Request::is('roles*') ? 'active' : '' }}">
+                        <a href="{{ route('roles.permissions') }}" class="menu-link">
+                            <span class="menu-icon"><i class="bi bi-shield-check"></i></span>
+                            <span class="menu-text">Permission Matrix</span>
+                        </a>
+                    </div>
+                    @endif
+
+                    @if(auth()->user()?->hasPermission('token_management'))
+                    <div class="menu-item {{ Request::is('tokens*') ? 'active' : '' }}">
+                        <a href="{{ route('tokens.index') }}" class="menu-link">
+                            <span class="menu-icon"><i class="bi bi-key"></i></span>
+                            <span class="menu-text">Token Management</span>
+                        </a>
+                    </div>
+                    @endif
                 </div>
                 <!-- END menu -->
                 
