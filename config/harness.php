@@ -145,7 +145,9 @@ return [
         'enabled' => true,
         'route_prefix' => 'harness',
         'middleware' => [
-            0 => 'web',
+            'web',
+            'auth',
+            'permission:harness_analytics',
         ],
     ],
 ];

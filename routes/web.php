@@ -9,7 +9,6 @@ use App\Http\Controllers\ClientAssetController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FileManagerController;
-use App\Http\Controllers\HarnessAnalyticsController;
 use App\Http\Controllers\MsspCostingController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\ScenarioController;
@@ -121,12 +120,6 @@ Route::middleware('auth')->group(function () {
 
     // Agent job status polling (for SweetAlert2 notification banner)
     Route::get('api/agent-job-status/{jobId}', [AgentJobStatusController::class, 'show'])->name('agent.job.status');
-
-    // phpkaiharness Diagnostics & Diagnostics Dashboard
-    Route::middleware('permission:harness_analytics')->group(function () {
-        Route::get('harness/dashboard', [HarnessAnalyticsController::class, 'index'])->name('harness.analytics.index');
-        Route::get('harness/dashboard/{id}', [HarnessAnalyticsController::class, 'showDetails'])->name('harness.analytics.show');
-    });
 
     // phpkaiharness Test Compare Suite
     Route::middleware('permission:test_compare')->group(function () {

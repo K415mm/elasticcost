@@ -338,7 +338,7 @@
 
                     @if(auth()->user()?->hasPermission('harness_analytics'))
                     <div class="menu-item {{ Request::is('harness/dashboard*') ? 'active' : '' }}">
-                        <a href="{{ route('harness.analytics.index') }}" class="menu-link">
+                        <a href="{{ route('harness.dashboard') }}" class="menu-link">
                             <span class="menu-icon"><i class="bi bi-activity"></i></span>
                             <span class="menu-text">Harness Analytics</span>
                         </a>
