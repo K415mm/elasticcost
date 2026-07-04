@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Ai\Agents\ElasticCostAssistant;
 use App\Ai\Agents\RgSocEngineer;
 use App\Ai\Analytics\LaravelAnalyticsCollector;
+use App\Jobs\ProcessSocEngineerJob;
 use App\Models\AgentConversation;
-use App\Models\AgentConversationMessage;
 use App\Services\AiConfigHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -153,30 +153,21 @@ class AiChatController extends Controller
             ]);
 
             $messageId = $pendingMessage->id;
+            $phpSessionId = 'phpsess_'.session()->getId();
 
-            // Queue the agent on the Light Model as the router entrypoint
-            $agent = new RgSocEngineer;
-            $agent->phpSessionId = 'phpsess_'.session()->getId();
-            $agent->queue($prompt, provider: $multiConfig['light']['provider'], model: $multiConfig['light']['model'])
-                ->then(function ($response) use ($messageId, $conversation) {
-                    $message = AgentConversationMessage::find($messageId);
-                    if ($message) {
-                        $message->update([
-                            'content' => $response->text,
-                            'meta' => ['status' => 'completed', 'job_id' => $message->meta['job_id'] ?? null],
-                        ]);
-                        $conversation->touch();
-                    }
-                })
-                ->catch(function (\Throwable $e) use ($messageId) {
-                    $message = AgentConversationMessage::find($messageId);
-                    if ($message) {
-                        $message->update([
-                            'content' => '⚠️ Agent encountered an error: '.$e->getMessage(),
-                            'meta' => ['status' => 'failed', 'job_id' => $message->meta['job_id'] ?? null],
-                        ]);
-                    }
-                });
+            $providerStr = $multiConfig['light']['provider'] instanceof \BackedEnum
+                ? $multiConfig['light']['provider']->value
+                : (string) $multiConfig['light']['provider'];
+
+            // Dispatch the job class — no closures, no SerializableClosure issues
+            ProcessSocEngineerJob::dispatch(
+                $messageId,
+                $conversation->id,
+                $prompt,
+                $providerStr,
+                $multiConfig['light']['model'],
+                $phpSessionId,
+            );
 
             // Capture the latest dispatched job ID from the queue
             $latestJob = DB::table('jobs')->orderByDesc('id')->first();
