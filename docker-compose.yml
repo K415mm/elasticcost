@@ -83,7 +83,7 @@ services:
       dockerfile: Dockerfile
     container_name: elasticcost-worker
     restart: unless-stopped
-    command: php artisan queue:work --tries=3 --timeout=90
+    command: php artisan horizon
     env_file:
       - .env
     volumes:
