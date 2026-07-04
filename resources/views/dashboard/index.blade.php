@@ -195,9 +195,9 @@
                                 @foreach($clientSummaries as $summary)
                                     <tr>
                                         <td>
-                                            <div class="fw-bold text-white">{{ $summary['client']->name }}</div>
+                                            <div class="fw-bold text-white">{{ $summary['client_name'] }}</div>
                                             <small class="text-muted text-truncate d-block" style="max-width: 250px;">
-                                                {{ $summary['client']->description ?: 'No scope description provided' }}
+                                                {{ $summary['client_description'] ?: 'No scope description provided' }}
                                             </small>
                                         </td>
                                         <td class="text-center mono-cell">{{ number_format($summary['device_count']) }}</td>
@@ -218,11 +218,11 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="btn-group">
-                                                <a href="{{ route('sizing.show', [$summary['client']->id, $summary['default_scenario']->id ?? 2]) }}" 
+                                                <a href="{{ route('sizing.show', [$summary['client_id'], $summary['default_scenario_id'] ?? 2]) }}" 
                                                    class="btn btn-sm btn-outline-theme">
                                                     <i class="bi bi-calculator me-1"></i> Sizing
                                                 </a>
-                                                <a href="{{ route('mssp.show', [$summary['client']->id, $summary['default_scenario']->id ?? 2]) }}" 
+                                                <a href="{{ route('mssp.show', [$summary['client_id'], $summary['default_scenario_id'] ?? 2]) }}" 
                                                    class="btn btn-sm btn-outline-info">
                                                     <i class="bi bi-wallet2 me-1"></i> Costing
                                                 </a>

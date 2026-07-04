@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\PermissionChanged;
 use App\Models\Permission;
 use App\Models\RolePermission;
 use Illuminate\Http\Request;
@@ -60,6 +61,12 @@ class RolePermissionController extends Controller
                     ]
                 );
             }
+        }
+
+        RolePermission::flushAllCache();
+
+        foreach ($roles as $role) {
+            broadcast(new PermissionChanged($role))->toOthers();
         }
 
         return redirect()->route('roles.permissions')->with('success', 'Permission matrix updated successfully.');

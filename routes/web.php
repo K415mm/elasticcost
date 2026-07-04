@@ -140,8 +140,8 @@ Route::middleware('auth')->group(function () {
     // User Management (RBAC)
     Route::middleware('permission:user_management')->group(function () {
         Route::get('users', [UserManagementController::class, 'index'])->name('users.index');
-        Route::post('users', [UserManagementController::class, 'store'])->name('users.store');
-        Route::put('users/{user}', [UserManagementController::class, 'update'])->name('users.update');
+        Route::post('users', [UserManagementController::class, 'store'])->middleware(['precognitive'])->name('users.store');
+        Route::put('users/{user}', [UserManagementController::class, 'update'])->middleware(['precognitive'])->name('users.update');
         Route::delete('users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
     });
 

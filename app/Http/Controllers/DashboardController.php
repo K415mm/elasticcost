@@ -8,6 +8,7 @@ use App\Models\GlobalSetting;
 use App\Models\Scenario;
 use App\Services\CurrencyHelper;
 use App\Services\SizingEngine;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
@@ -23,41 +24,38 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        $clients = Client::with('clientAssets')->get();
-        $scenarios = Scenario::all();
+        $clientSummaries = Cache::remember('dashboard:client_summaries', now()->addMinutes(10), function () {
+            $clients = Client::with('clientAssets')->get();
+            $summaries = [];
 
-        $totalClients = $clients->count();
-        $totalDevices = ClientAsset::sum('device_count');
+            foreach ($clients as $client) {
+                $defaultScenario = Scenario::find(2) ?? Scenario::first();
+                $sizing = $defaultScenario ? $this->sizingEngine->calculate($client, $defaultScenario) : null;
 
-        // Calculate overall system-wide Daily Ingested GB (under Average workload profile)
-        $totalDailyRawGb = 0.0;
-        $totalClusterRamGb = 0;
-        $totalRequiredErus = 0;
+                $summaries[] = [
+                    'client_id' => $client->id,
+                    'client_name' => $client->name,
+                    'client_description' => $client->description,
+                    'device_count' => $client->clientAssets()->sum('device_count'),
+                    'daily_raw_gb' => $sizing ? $sizing['totals']['daily_raw_gb'] : 0.0,
+                    'cluster_ram_gb' => $sizing ? $sizing['licensing']['total_ram_gb'] : 0,
+                    'required_erus' => $sizing ? $sizing['licensing']['required_erus'] : 0,
+                    'default_scenario_id' => $defaultScenario?->id,
+                    'default_scenario_name' => $defaultScenario?->name,
+                ];
+            }
 
-        $clientSummaries = [];
+            return $summaries;
+        });
 
-        foreach ($clients as $client) {
-            // Run sizing calculation using Scenario 2 (Average / standard Multi-Tier) as default for landing stats
-            $defaultScenario = Scenario::find(2) ?? Scenario::first();
-            $sizing = $defaultScenario ? $this->sizingEngine->calculate($client, $defaultScenario) : null;
+        $totalClients = Cache::remember('dashboard:total_clients', now()->addMinutes(10), fn () => Client::count());
+        $totalDevices = Cache::remember('dashboard:total_devices', now()->addMinutes(10), fn () => ClientAsset::sum('device_count'));
 
-            $clientDailyRaw = $sizing ? $sizing['totals']['daily_raw_gb'] : 0.0;
-            $clientRam = $sizing ? $sizing['licensing']['total_ram_gb'] : 0;
-            $clientErus = $sizing ? $sizing['licensing']['required_erus'] : 0;
+        $totalDailyRawGb = collect($clientSummaries)->sum('daily_raw_gb');
+        $totalClusterRamGb = collect($clientSummaries)->sum('cluster_ram_gb');
+        $totalRequiredErus = collect($clientSummaries)->sum('required_erus');
 
-            $totalDailyRawGb += $clientDailyRaw;
-            $totalClusterRamGb += $clientRam;
-            $totalRequiredErus += $clientErus;
-
-            $clientSummaries[] = [
-                'client' => $client,
-                'device_count' => $client->clientAssets()->sum('device_count'),
-                'daily_raw_gb' => $clientDailyRaw,
-                'cluster_ram_gb' => $clientRam,
-                'required_erus' => $clientErus,
-                'default_scenario' => $defaultScenario,
-            ];
-        }
+        $scenarios = Cache::remember('dashboard:scenarios', now()->addMinutes(10), fn () => Scenario::all());
 
         // Active exchange rates
         $eurRate = CurrencyHelper::rate('EUR');

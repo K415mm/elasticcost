@@ -30,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('viewHarness', fn ($user = null) => true);
 
+        // Pulse dashboard access — managers and CEO only
+        Gate::define('viewPulse', fn ($user) => $user->hasAnyRole(['manager', 'ceo']));
+
         // Passport scopes mapped to user roles
         Passport::tokensCan([
             'client' => 'Client role — view own sizing reports and data',

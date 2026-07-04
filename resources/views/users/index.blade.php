@@ -272,7 +272,7 @@
                 <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Create New User</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ route('users.store') }}">
+            <form method="POST" action="{{ route('users.store') }}" @precognition>
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
@@ -317,7 +317,7 @@
                 <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Edit User</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="" id="editUserForm">
+            <form method="POST" action="" id="editUserForm" @precognition>
                 @csrf
                 @method('PUT')
                 <div class="modal-body">

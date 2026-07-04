@@ -83,3 +83,7 @@ key/
 *.pem
 *.dump
 
+
+**/caddy
+frankenphp
+frankenphp-worker.php

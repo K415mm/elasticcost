@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\TokenRevoked;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Laravel\Passport\Token;
@@ -33,6 +34,8 @@ class TokenManagementController extends Controller
         $token = Token::findOrFail($tokenId);
         $token->revoke();
 
+        broadcast(new TokenRevoked($token->user))->toOthers();
+
         return redirect()->route('tokens.index')->with('success', 'Token revoked successfully.');
     }
 
@@ -42,6 +45,8 @@ class TokenManagementController extends Controller
     public function revokeAllForUser(Request $request, User $user)
     {
         $user->tokens()->update(['revoked' => true]);
+
+        broadcast(new TokenRevoked($user))->toOthers();
 
         return redirect()->route('tokens.index')->with('success', "All tokens for {$user->name} revoked successfully.");
     }

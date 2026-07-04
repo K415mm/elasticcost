@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\UserUpdated;
+use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserRequest;
 use App\Models\Permission;
+use App\Models\RolePermission;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class UserManagementController extends Controller
 {
@@ -46,21 +49,18 @@ class UserManagementController extends Controller
     /**
      * Store a newly created user.
      */
-    public function store(Request $request)
+    public function store(StoreUserRequest $request)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role' => ['required', 'string', Rule::in(['client', 'manager', 'sales_manager', 'partner', 'ceo'])],
-        ]);
+        $validated = $request->validated();
 
-        User::create([
+        $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => $validated['password'],
             'role' => $validated['role'],
         ]);
+
+        broadcast(new UserUpdated($user))->toOthers();
 
         return redirect()->route('users.index')->with('success', 'User created successfully.');
     }
@@ -68,17 +68,14 @@ class UserManagementController extends Controller
     /**
      * Update the specified user.
      */
-    public function update(Request $request, User $user)
+    public function update(UpdateUserRequest $request, User $user)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'role' => ['required', 'string', Rule::in(['client', 'manager', 'sales_manager', 'partner', 'ceo'])],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
-        ]);
+        $validated = $request->validated();
 
         $user->name = $validated['name'];
         $user->email = $validated['email'];
+
+        $oldRole = $user->getOriginal('role');
         $user->role = $validated['role'];
 
         if (! empty($validated['password'])) {
@@ -86,6 +83,14 @@ class UserManagementController extends Controller
         }
 
         $user->save();
+
+        // Flush permission cache if role changed
+        if ($oldRole !== $validated['role']) {
+            RolePermission::flushRoleCache($oldRole);
+            RolePermission::flushRoleCache($validated['role']);
+        }
+
+        broadcast(new UserUpdated($user))->toOthers();
 
         return redirect()->route('users.index')->with('success', 'User updated successfully.');
     }
