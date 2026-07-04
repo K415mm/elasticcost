@@ -48,6 +48,11 @@ COPY . /var/www
 # Copy compiled assets from frontend stage
 COPY --from=frontend /app/public/build /var/www/public/build
 
+# Create required directories before composer install
+RUN mkdir -p storage/framework/views storage/framework/sessions storage/framework/cache/data \
+    && mkdir -p bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
