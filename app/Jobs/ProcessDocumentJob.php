@@ -55,6 +55,7 @@ class ProcessDocumentJob implements ShouldQueue
             // Configure embeddings model dynamically
             $embeddingConfig = AiConfigHelper::configureEmbeddings();
             $provider = $embeddingConfig['provider'];
+            $embModel = $embeddingConfig['model'];
 
             $totalChunks = 0;
 
@@ -64,7 +65,7 @@ class ProcessDocumentJob implements ShouldQueue
                 }
 
                 // Call Laravel AI SDK Embeddings
-                $response = Embeddings::for([$chunk])->generate($provider);
+                $response = Embeddings::for([$chunk])->generate($provider, $embModel);
                 $vector = $response->first();
 
                 DocumentationChunk::create([

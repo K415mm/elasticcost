@@ -36,9 +36,10 @@ class InjectDocumentation
 
             $embeddingConfig = AiConfigHelper::configureEmbeddings();
             $provider = $embeddingConfig['provider'];
+            $embModel = $embeddingConfig['model'];
 
             // Generate query embedding vector using the SDK
-            $response = Embeddings::for([$query])->generate($provider);
+            $response = Embeddings::for([$query])->generate($provider, $embModel);
             $queryVector = $response->first();
 
             $isSqlite = DB::connection()->getDriverName() === 'sqlite';

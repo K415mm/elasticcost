@@ -33,8 +33,9 @@ class IndexDocumentationCommand extends Command
         // Configure AI provider dynamically
         $embeddingConfig = AiConfigHelper::configureEmbeddings();
         $provider = $embeddingConfig['provider'];
+        $embModel = $embeddingConfig['model'];
 
-        $this->info("Using embeddings provider: {$provider}");
+        $this->info("Using embeddings provider: {$provider}, model: {$embModel}");
 
         // Clear existing chunks
         DocumentationChunk::truncate();
@@ -74,7 +75,7 @@ class IndexDocumentationCommand extends Command
 
                 try {
                     // Call Laravel AI SDK Embeddings
-                    $response = Embeddings::for([$chunk])->generate($provider);
+                    $response = Embeddings::for([$chunk])->generate($provider, $embModel);
                     $vector = $response->first();
 
                     DocumentationChunk::create([
