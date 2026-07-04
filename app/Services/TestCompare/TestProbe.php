@@ -68,6 +68,8 @@ class TestProbe
 
     public ?string $evidenceContent = null;
 
+    public ?string $runId = null;
+
     public function __construct(string $testMode, int $requestIndex, array $dataset)
     {
         $this->testMode = $testMode;
@@ -164,6 +166,7 @@ class TestProbe
         return [
             'test_mode' => $this->testMode,
             'request_index' => $this->requestIndex,
+            'run_id' => $this->runId,
             'agent' => $this->agent,
             'category' => $this->category,
             'description' => $this->description,

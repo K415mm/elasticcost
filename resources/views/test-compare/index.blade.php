@@ -19,6 +19,39 @@
         color: #a0a0b0;
         margin: 8px 0 0 0;
     }
+    .analytics-card {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+    .analytics-card h3 {
+        color: #e94560;
+        font-size: 1rem;
+        margin: 0 0 12px 0;
+    }
+    .insight-banner {
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+    }
+    .insight-positive { background: rgba(74,222,128,0.1); border-left: 3px solid #4ade80; }
+    .insight-negative { background: rgba(248,113,113,0.1); border-left: 3px solid #f87171; }
+    .insight-neutral  { background: rgba(96,165,250,0.1); border-left: 3px solid #60a5fa; }
+    .delta-badge {
+        font-size: 0.75rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    .delta-up   { background: rgba(248,113,113,0.2); color: #f87171; }
+    .delta-down { background: rgba(74,222,128,0.2); color: #4ade80; }
+    .delta-flat { background: rgba(160,160,176,0.2); color: #a0a0b0; }
+    .freshness-ok { color: #4ade80; }
+    .freshness-warn { color: #fbbf24; }
+    .freshness-bad { color: #f87171; }
     .mode-card {
         background: rgba(255,255,255,0.05);
         border: 1px solid rgba(255,255,255,0.1);
@@ -141,8 +174,52 @@
 
 <div class="test-compare-header">
     <h1>phpkaiharness Test Compare Suite</h1>
-    <p>Compare direct Qwen Cloud API calls vs AgentLoop (no features) vs Full phpkaiharness (cold & warm cache) across 17 test requests</p>
+    <p>A1 (Direct API) vs A2 (Loop, no features) vs B-cold (Full Harness, cold cache) vs B-warm (Full Harness, warm cache) — 17 requests × 4 modes = 68 executions</p>
+    @if($runMeta ?? null)
+    <p class="text-muted small mt-1">Run ID: <code>{{ $runMeta['run_id'] }}</code> | Started: {{ $runMeta['run_start'] }} | Ended: {{ $runMeta['run_end'] }}</p>
+    @endif
 </div>
+
+@if($hasResults && !empty($traceFreshness))
+<div class="row mb-3">
+    <div class="col-md-12">
+        <div class="analytics-card">
+            <h3>📋 Trace Freshness & Integrity</h3>
+            <div class="row">
+                <div class="col-md-3">
+                    <span class="text-muted">Total Traces:</span>
+                    <span class="metric-value">{{ $traceFreshness['trace_count'] }}</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="text-muted">Single Run:</span>
+                    @if($traceFreshness['is_single_run'])
+                    <span class="freshness-ok">✓ Yes ({{ count($traceFreshness['unique_run_ids']) }} run ID)</span>
+                    @else
+                    <span class="freshness-bad">✗ No ({{ count($traceFreshness['unique_run_ids']) }} run IDs)</span>
+                    @endif
+                </div>
+                <div class="col-md-3">
+                    <span class="text-muted">Oldest:</span>
+                    <span class="metric-value">{{ $traceFreshness['oldest_trace'] ?? 'N/A' }}</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="text-muted">Newest:</span>
+                    <span class="metric-value">{{ $traceFreshness['newest_trace'] ?? 'N/A' }}</span>
+                </div>
+            </div>
+            @if(!$traceFreshness['is_single_run'] && $traceFreshness['span_minutes'] > 30)
+            <div class="insight-banner insight-negative mt-2">
+                ⚠ Traces span {{ $traceFreshness['span_minutes'] }} minutes across multiple run IDs — data may be stale or mixed. Run a fresh test for accurate comparison.
+            </div>
+            @elseif($traceFreshness['span_minutes'] > 0)
+            <div class="insight-banner insight-neutral mt-2">
+                ℹ Traces span {{ $traceFreshness['span_minutes'] }} min — @if($traceFreshness['span_minutes'] < 60) consistent with a single run @else may include old data @endif
+            </div>
+            @endif
+        </div>
+    </div>
+</div>
+@endif
 
 <div class="row">
     <div class="col-md-12">
@@ -177,6 +254,7 @@
             <p class="text-muted small">Raw Qwen Cloud API, no harness</p>
             @if(isset($summary['A1-direct-api']))
             <div class="metric-row"><span class="metric-label">Avg Latency</span><span class="metric-value">{{ $summary['A1-direct-api']['avg_latency_ms'] }}ms</span></div>
+            <div class="metric-row"><span class="metric-label">Min / Max</span><span class="metric-value">{{ $summary['A1-direct-api']['min_latency_ms'] }} / {{ $summary['A1-direct-api']['max_latency_ms'] }}ms</span></div>
             <div class="metric-row"><span class="metric-label">Avg Tokens</span><span class="metric-value">{{ $summary['A1-direct-api']['avg_total_tokens'] }}</span></div>
             <div class="metric-row"><span class="metric-label">Tool Calls</span><span class="metric-value">0</span></div>
             <div class="metric-row"><span class="metric-label">Success Rate</span><span class="metric-value">{{ $summary['A1-direct-api']['successful'] }}/{{ $summary['A1-direct-api']['total_requests'] }}</span></div>
@@ -188,7 +266,9 @@
             <h3>A2 — Loop (no features) <span class="badge bg-info">Overhead</span></h3>
             <p class="text-muted small">AgentLoop with all features disabled</p>
             @if(isset($summary['A2-loop-no-features']))
-            <div class="metric-row"><span class="metric-label">Avg Latency</span><span class="metric-value">{{ $summary['A2-loop-no-features']['avg_latency_ms'] }}ms</span></div>
+            @php $a2VsA1 = $analytics['latency_comparison']['A2-loop-no-features']['vs_a1'] ?? null; @endphp
+            <div class="metric-row"><span class="metric-label">Avg Latency</span><span class="metric-value">{{ $summary['A2-loop-no-features']['avg_latency_ms'] }}ms @if($a2VsA1 !== null)<span class="delta-badge {{ $a2VsA1 > 0 ? 'delta-up' : 'delta-down' }}">{{ $a2VsA1 > 0 ? '+' : '' }}{{ $a2VsA1 }}% vs A1</span>@endif</span></div>
+            <div class="metric-row"><span class="metric-label">Min / Max</span><span class="metric-value">{{ $summary['A2-loop-no-features']['min_latency_ms'] }} / {{ $summary['A2-loop-no-features']['max_latency_ms'] }}ms</span></div>
             <div class="metric-row"><span class="metric-label">Avg Tokens</span><span class="metric-value">{{ $summary['A2-loop-no-features']['avg_total_tokens'] }}</span></div>
             <div class="metric-row"><span class="metric-label">Tool Calls</span><span class="metric-value">{{ $summary['A2-loop-no-features']['avg_tool_calls'] }}</span></div>
             <div class="metric-row"><span class="metric-label">Success Rate</span><span class="metric-value">{{ $summary['A2-loop-no-features']['successful'] }}/{{ $summary['A2-loop-no-features']['total_requests'] }}</span></div>
@@ -200,7 +280,9 @@
             <h3>B — Full Harness (Cold) <span class="badge bg-danger">Cold Cache</span></h3>
             <p class="text-muted small">All features enabled, first run</p>
             @if(isset($summary['B-full-harness']))
-            <div class="metric-row"><span class="metric-label">Avg Latency</span><span class="metric-value">{{ $summary['B-full-harness']['avg_latency_ms'] }}ms</span></div>
+            @php $bcVsA1 = $analytics['latency_comparison']['B-full-harness']['vs_a1'] ?? null; @endphp
+            <div class="metric-row"><span class="metric-label">Avg Latency</span><span class="metric-value">{{ $summary['B-full-harness']['avg_latency_ms'] }}ms @if($bcVsA1 !== null)<span class="delta-badge {{ $bcVsA1 > 0 ? 'delta-up' : 'delta-down' }}">{{ $bcVsA1 > 0 ? '+' : '' }}{{ $bcVsA1 }}% vs A1</span>@endif</span></div>
+            <div class="metric-row"><span class="metric-label">Min / Max</span><span class="metric-value">{{ $summary['B-full-harness']['min_latency_ms'] }} / {{ $summary['B-full-harness']['max_latency_ms'] }}ms</span></div>
             <div class="metric-row"><span class="metric-label">Avg Tokens</span><span class="metric-value">{{ $summary['B-full-harness']['avg_total_tokens'] }}</span></div>
             <div class="metric-row"><span class="metric-label">Tool Calls</span><span class="metric-value good">{{ $summary['B-full-harness']['avg_tool_calls'] }}</span></div>
             <div class="metric-row"><span class="metric-label">Pipeline Stages</span><span class="metric-value good">{{ $summary['B-full-harness']['pipeline_stages_avg'] }}</span></div>
@@ -213,16 +295,101 @@
             <h3>B — Full Harness (Warm) <span class="badge bg-success">Warm Cache</span></h3>
             <p class="text-muted small">Same as B-cold, but cache pre-warmed</p>
             @if(isset($summary['B-warm-harness']))
-            <div class="metric-row"><span class="metric-label">Avg Latency</span><span class="metric-value good">{{ $summary['B-warm-harness']['avg_latency_ms'] }}ms</span></div>
+            @php $bwVsA1 = $analytics['latency_comparison']['B-warm-harness']['vs_a1'] ?? null; @endphp
+            <div class="metric-row"><span class="metric-label">Avg Latency</span><span class="metric-value good">{{ $summary['B-warm-harness']['avg_latency_ms'] }}ms @if($bwVsA1 !== null)<span class="delta-badge {{ $bwVsA1 > 0 ? 'delta-up' : 'delta-down' }}">{{ $bwVsA1 > 0 ? '+' : '' }}{{ $bwVsA1 }}% vs A1</span>@endif</span></div>
+            <div class="metric-row"><span class="metric-label">Min / Max</span><span class="metric-value">{{ $summary['B-warm-harness']['min_latency_ms'] }} / {{ $summary['B-warm-harness']['max_latency_ms'] }}ms</span></div>
             <div class="metric-row"><span class="metric-label">Avg Tokens</span><span class="metric-value">{{ $summary['B-warm-harness']['avg_total_tokens'] }}</span></div>
             <div class="metric-row"><span class="metric-label">Tool Calls</span><span class="metric-value good">{{ $summary['B-warm-harness']['avg_tool_calls'] }}</span></div>
             <div class="metric-row"><span class="metric-label">Pipeline Stages</span><span class="metric-value good">{{ $summary['B-warm-harness']['pipeline_stages_avg'] }}</span></div>
             <div class="metric-row"><span class="metric-label">Success Rate</span><span class="metric-value">{{ $summary['B-warm-harness']['successful'] }}/{{ $summary['B-warm-harness']['total_requests'] }}</span></div>
-            @elseif($hasWarmResults ?? false)
-            <p class="text-muted small">Warm results loading...</p>
             @else
             <p class="text-muted small">No warm run yet. Run test suite to generate.</p>
             @endif
+        </div>
+    </div>
+</div>
+@endif
+
+@if($hasResults && !empty($analytics['overhead_breakdown']))
+<div class="row mt-2">
+    <div class="col-md-6">
+        <div class="analytics-card">
+            <h3>🔍 Overhead Breakdown (A1 → A2 → B-cold → B-warm)</h3>
+            @php $ob = $analytics['overhead_breakdown']; @endphp
+            <div class="metric-row"><span class="metric-label">A1 Baseline Latency</span><span class="metric-value">{{ $ob['a1_baseline'] }}ms</span></div>
+            <div class="metric-row"><span class="metric-label">A2 Loop Overhead</span><span class="metric-value">{{ $ob['a2_loop_overhead_ms'] > 0 ? '+' : '' }}{{ $ob['a2_loop_overhead_ms'] }}ms ({{ $ob['a2_loop_overhead_pct'] > 0 ? '+' : '' }}{{ $ob['a2_loop_overhead_pct'] }}%)</span></div>
+            <div class="metric-row"><span class="metric-label">B-cold Harness Overhead</span><span class="metric-value">{{ $ob['b_cold_harness_overhead_ms'] > 0 ? '+' : '' }}{{ $ob['b_cold_harness_overhead_ms'] }}ms ({{ $ob['b_cold_harness_overhead_pct'] > 0 ? '+' : '' }}{{ $ob['b_cold_harness_overhead_pct'] }}%)</span></div>
+            <div class="metric-row"><span class="metric-label">B-warm vs B-cold</span><span class="metric-value {{ $ob['b_warm_vs_cold_ms'] < 0 ? 'good' : '' }}">{{ $ob['b_warm_vs_cold_ms'] > 0 ? '+' : '' }}{{ $ob['b_warm_vs_cold_ms'] }}ms ({{ $ob['b_warm_vs_cold_pct'] > 0 ? '+' : '' }}{{ $ob['b_warm_vs_cold_pct'] }}%)</span></div>
+            <div class="metric-row"><span class="metric-label">Total A1 → B-cold</span><span class="metric-value">{{ $ob['total_overhead_a1_to_b_cold_ms'] > 0 ? '+' : '' }}{{ $ob['total_overhead_a1_to_b_cold_ms'] }}ms ({{ $ob['total_overhead_a1_to_b_cold_pct'] > 0 ? '+' : '' }}{{ $ob['total_overhead_a1_to_b_cold_pct'] }}%)</span></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="analytics-card">
+            <h3>⚡ Cache Impact (B-cold vs B-warm)</h3>
+            @if(!empty($analytics['cache_impact']))
+            @php $ci = $analytics['cache_impact']; @endphp
+            <div class="metric-row"><span class="metric-label">Cold Avg Latency</span><span class="metric-value">{{ $ci['cold_avg_latency'] }}ms</span></div>
+            <div class="metric-row"><span class="metric-label">Warm Avg Latency</span><span class="metric-value good">{{ $ci['warm_avg_latency'] }}ms</span></div>
+            <div class="metric-row"><span class="metric-label">Latency Saved</span><span class="metric-value {{ $ci['latency_saved_ms'] > 0 ? 'good' : 'bad' }}">{{ $ci['latency_saved_ms'] }}ms ({{ $ci['latency_saved_pct'] }}%)</span></div>
+            <div class="metric-row"><span class="metric-label">Cold Avg Tokens</span><span class="metric-value">{{ $ci['cold_avg_tokens'] }}</span></div>
+            <div class="metric-row"><span class="metric-label">Warm Avg Tokens</span><span class="metric-value">{{ $ci['warm_avg_tokens'] }}</span></div>
+            <div class="metric-row"><span class="metric-label">Token Delta</span><span class="metric-value">{{ $ci['token_delta'] > 0 ? '+' : '' }}{{ $ci['token_delta'] }}</span></div>
+            @else
+            <p class="text-muted small">No warm data available — run full test suite to generate.</p>
+            @endif
+        </div>
+    </div>
+</div>
+
+<div class="row mt-2">
+    <div class="col-md-12">
+        <div class="analytics-card">
+            <h3>📊 Key Insights</h3>
+            @php $ob = $analytics['overhead_breakdown']; @endphp
+            @if($ob['a2_loop_overhead_ms'] > 0)
+            <div class="insight-banner insight-negative">AgentLoop overhead: +{{ $ob['a2_loop_overhead_ms'] }}ms ({{ $ob['a2_loop_overhead_pct'] }}%) — the loop itself adds latency even without features.</div>
+            @elseif($ob['a2_loop_overhead_ms'] < 0)
+            <div class="insight-banner insight-positive">AgentLoop is faster than direct API by {{ abs($ob['a2_loop_overhead_ms']) }}ms — the loop may batch requests more efficiently.</div>
+            @endif
+            @if($ob['b_cold_harness_overhead_ms'] > 0)
+            <div class="insight-banner insight-neutral">Full harness adds +{{ $ob['b_cold_harness_overhead_ms'] }}ms ({{ $ob['b_cold_harness_overhead_pct'] }}%) over A2 — this is the cost of pipeline stages, RAG, cache, and guardrails.</div>
+            @endif
+            @if(!empty($analytics['cache_impact']) && $analytics['cache_impact']['latency_saved_ms'] > 0)
+            <div class="insight-banner insight-positive">Warm cache saves {{ $analytics['cache_impact']['latency_saved_ms'] }}ms ({{ $analytics['cache_impact']['latency_saved_pct'] }}%) over cold cache — semantic cache is effective.</div>
+            @elseif(!empty($analytics['cache_impact']) && $analytics['cache_impact']['latency_saved_ms'] <= 0)
+            <div class="insight-banner insight-negative">Warm cache is NOT faster than cold ({{ $analytics['cache_impact']['latency_saved_ms'] }}ms) — cache may not be hitting or is adding overhead.</div>
+            @endif
+            @if(isset($summary['B-full-harness']) && $summary['B-full-harness']['failed'] > 0)
+            <div class="insight-banner insight-negative">B-cold has {{ $summary['B-full-harness']['failed'] }} failed requests — investigate errors in trace details.</div>
+            @endif
+            @if(isset($summary['B-warm-harness']) && $summary['B-warm-harness']['failed'] > 0)
+            <div class="insight-banner insight-negative">B-warm has {{ $summary['B-warm-harness']['failed'] }} failed requests — warm cache may not resolve all issues.</div>
+            @endif
+        </div>
+    </div>
+</div>
+
+<div class="row mt-2">
+    <div class="col-md-12">
+        <div class="analytics-card">
+            <h3>📈 Efficiency Ratios</h3>
+            <table class="table table-sm">
+                <thead>
+                    <tr><th>Mode</th><th>Tokens/ms</th><th>Chars/ms</th><th>ms/Token</th></tr>
+                </thead>
+                <tbody>
+                    @foreach(['A1-direct-api' => 'A1 (Direct API)', 'A2-loop-no-features' => 'A2 (Loop)', 'B-full-harness' => 'B-cold', 'B-warm-harness' => 'B-warm'] as $mode => $label)
+                    @if(isset($analytics['efficiency_ratios'][$mode]))
+                    <tr>
+                        <td>{{ $label }}</td>
+                        <td>{{ $analytics['efficiency_ratios'][$mode]['tokens_per_ms'] }}</td>
+                        <td>{{ $analytics['efficiency_ratios'][$mode]['chars_per_ms'] }}</td>
+                        <td>{{ $analytics['efficiency_ratios'][$mode]['ms_per_token'] }}</td>
+                    </tr>
+                    @endif
+                    @endforeach
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -274,11 +441,11 @@
     </div>
 </div>
 
-@if($hasResults && !empty($traces))
+@if($hasResults && !empty($analytics['per_request_deltas']))
 <div class="row mt-4">
     <div class="col-md-12">
         <div class="mode-card">
-            <h3>Per-Request Comparison</h3>
+            <h3>Per-Request Comparison (A1 vs A2 vs B-cold vs B-warm)</h3>
             <table class="table table-sm">
                 <thead>
                     <tr>
@@ -287,42 +454,52 @@
                         <th>Category</th>
                         <th>A1 Lat</th>
                         <th>A2 Lat</th>
-                        <th>B-Cold Lat</th>
-                        <th>B-Warm Lat</th>
-                        <th>B-Cold Tok</th>
-                        <th>B-Warm Tok</th>
-                        <th>B-Cold Tools</th>
-                        <th>B-Warm Tools</th>
-                        <th>Δ Latency</th>
+                        <th>B-cold Lat</th>
+                        <th>B-warm Lat</th>
+                        <th>A2 vs A1</th>
+                        <th>B-cold vs A1</th>
+                        <th>B-warm vs B-cold</th>
+                        <th>A1 Tok</th>
+                        <th>B-cold Tok</th>
+                        <th>B-warm Tok</th>
+                        <th>B-cold Tools</th>
+                        <th>B-warm Tools</th>
+                        <th>Cache</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @for($i = 0; $i < max(count($traces['A1-direct-api'] ?? []), count($traces['B-full-harness'] ?? []), count($traces['B-warm-harness'] ?? [])); $i++)
-                    @php
-                        $a1 = $traces['A1-direct-api'][$i] ?? [];
-                        $a2 = $traces['A2-loop-no-features'][$i] ?? [];
-                        $bc = $traces['B-full-harness'][$i] ?? [];
-                        $bw = $traces['B-warm-harness'][$i] ?? [];
-                        $coldLat = $bc['timing']['latency_ms'] ?? 0;
-                        $warmLat = $bw['timing']['latency_ms'] ?? 0;
-                        $delta = $coldLat > 0 ? round(($warmLat - $coldLat) / $coldLat * 100) : 0;
-                        $deltaClass = $delta < 0 ? 'good' : ($delta > 10 ? 'bad' : '');
-                    @endphp
+                    @foreach($analytics['per_request_deltas'] as $row)
                     <tr>
-                        <td>{{ $i + 1 }}</td>
-                        <td>{{ $a1['agent'] ?? $bc['agent'] ?? 'N/A' }}</td>
-                        <td><code>{{ $a1['category'] ?? $bc['category'] ?? 'N/A' }}</code></td>
-                        <td>{{ $coldLat }}ms</td>
-                        <td>{{ ($a2['timing']['latency_ms'] ?? 0) }}ms</td>
-                        <td>{{ $coldLat }}ms</td>
-                        <td>{{ $warmLat > 0 ? $warmLat.'ms' : '—' }}</td>
-                        <td>{{ $bc['tokens']['total_tokens'] ?? 0 }}</td>
-                        <td>{{ $bw['tokens']['total_tokens'] ?? '—' }}</td>
-                        <td>{{ $bc['tool_calls']['count'] ?? 0 }}</td>
-                        <td>{{ $bw['tool_calls']['count'] ?? '—' }}</td>
-                        <td>@if($warmLat > 0)<span class="metric-value {{ $deltaClass }}">{{ $delta > 0 ? '+' : '' }}{{ $delta }}%</span>@else — @endif</td>
+                        <td>{{ $row['index'] + 1 }}</td>
+                        <td>{{ $row['agent'] }}</td>
+                        <td><code>{{ $row['category'] }}</code></td>
+                        <td>{{ $row['a1_latency'] }}ms</td>
+                        <td>{{ $row['a2_latency'] }}ms</td>
+                        <td>{{ $row['b_cold_latency'] }}ms</td>
+                        <td>{{ $row['b_warm_latency'] > 0 ? $row['b_warm_latency'].'ms' : '—' }}</td>
+                        <td>@if($row['a2_vs_a1_pct'] !== null)<span class="delta-badge {{ $row['a2_vs_a1_pct'] > 0 ? 'delta-up' : 'delta-down' }}">{{ $row['a2_vs_a1_pct'] > 0 ? '+' : '' }}{{ $row['a2_vs_a1_pct'] }}%</span>@else — @endif</td>
+                        <td>@if($row['b_cold_vs_a1_pct'] !== null)<span class="delta-badge {{ $row['b_cold_vs_a1_pct'] > 0 ? 'delta-up' : 'delta-down' }}">{{ $row['b_cold_vs_a1_pct'] > 0 ? '+' : '' }}{{ $row['b_cold_vs_a1_pct'] }}%</span>@else — @endif</td>
+                        <td>@if($row['b_warm_vs_b_cold_pct'] !== null)<span class="delta-badge {{ $row['b_warm_vs_b_cold_pct'] > 0 ? 'delta-up' : 'delta-down' }}">{{ $row['b_warm_vs_b_cold_pct'] > 0 ? '+' : '' }}{{ $row['b_warm_vs_b_cold_pct'] }}%</span>@else — @endif</td>
+                        <td>{{ $row['a1_tokens'] }}</td>
+                        <td>{{ $row['b_cold_tokens'] }}</td>
+                        <td>{{ $row['b_warm_tokens'] > 0 ? $row['b_warm_tokens'] : '—' }}</td>
+                        <td>{{ $row['b_cold_tools'] }}</td>
+                        <td>{{ $row['b_warm_tools'] > 0 ? $row['b_warm_tools'] : '—' }}</td>
+                        <td>
+                            @if($row['b_warm_cache_hit']) <span class="delta-badge delta-down">HIT</span>
+                            @elseif($row['b_cold_cache_hit']) <span class="delta-badge delta-flat">COLD HIT</span>
+                            @else <span class="text-muted">—</span> @endif
+                        </td>
+                        <td>
+                            @if($row['a1_success'] && $row['a2_success'] && $row['b_cold_success'] && ($row['b_warm_success'] || $row['b_warm_latency'] === 0))
+                            <span class="freshness-ok">✓</span>
+                            @else
+                            <span class="freshness-bad">✗</span>
+                            @endif
+                        </td>
                     </tr>
-                    @endfor
+                    @endforeach
                 </tbody>
             </table>
         </div>

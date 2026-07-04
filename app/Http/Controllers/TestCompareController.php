@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Services\TestCompare\TestDataset;
-use App\Services\TestCompare\TestRunner;
 use Illuminate\Http\Request;
 
 class TestCompareController extends Controller
@@ -15,68 +14,230 @@ class TestCompareController extends Controller
     {
         $dataset = TestDataset::all();
         $outputDir = base_path('testandcompare');
-        $warmOutputDir = base_path('testandcompare-warm');
 
-        // Load cold results
+        // Load summary from single directory
         $hasResults = file_exists($outputDir.'/comparison-summary.json');
         $summary = $hasResults
             ? json_decode(file_get_contents($outputDir.'/comparison-summary.json'), true)
             : null;
 
-        // Load warm results and merge into summary
-        // Existing warm data may use 'B-full-harness' key — rename to 'B-warm-harness'
-        $hasWarmResults = file_exists($warmOutputDir.'/comparison-summary.json');
-        if ($hasWarmResults) {
-            $warmSummary = json_decode(file_get_contents($warmOutputDir.'/comparison-summary.json'), true);
-            if ($warmSummary) {
-                // Rename B-full-harness to B-warm-harness if present (old format)
-                if (isset($warmSummary['B-full-harness']) && ! isset($warmSummary['B-warm-harness'])) {
-                    $warmSummary['B-warm-harness'] = $warmSummary['B-full-harness'];
-                    unset($warmSummary['B-full-harness']);
-                }
-                $summary = array_merge($summary ?? [], $warmSummary);
-                $hasResults = true;
-            }
-        }
+        // Extract run metadata
+        $runMeta = $summary['_meta'] ?? null;
+        unset($summary['_meta']);
 
+        // Load all traces from single directory
         $traces = [];
+        $traceFreshness = [];
+        $allModes = ['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'];
+
         if ($hasResults) {
-            // Load cold traces
-            foreach (['A1-direct-api', 'A2-loop-no-features', 'B-full-harness'] as $mode) {
+            foreach ($allModes as $mode) {
                 $dir = $outputDir.'/traces/'.$mode;
                 if (is_dir($dir)) {
                     $files = glob($dir.'/request-*.json');
                     foreach ($files as $file) {
-                        $traces[$mode][] = json_decode(file_get_contents($file), true);
+                        $data = json_decode(file_get_contents($file), true);
+                        if (is_array($data)) {
+                            $traces[$mode][] = $data;
+                        }
                     }
-                    $modeTraces = $traces[$mode] ?? [];
-                    usort($modeTraces, fn ($a, $b) => $a['request_index'] <=> $b['request_index']);
-                    $traces[$mode] = $modeTraces;
+                    if (isset($traces[$mode])) {
+                        usort($traces[$mode], fn ($a, $b) => ($a['request_index'] ?? 0) <=> ($b['request_index'] ?? 0));
+                    }
                 }
             }
 
-            // Load warm traces — check both B-warm-harness (new) and B-full-harness (old format)
-            $warmMode = 'B-warm-harness';
-            $warmDir = $warmOutputDir.'/traces/'.$warmMode;
-            if (! is_dir($warmDir)) {
-                // Fallback: old format stored warm traces under B-full-harness
-                $warmDir = $warmOutputDir.'/traces/B-full-harness';
-            }
-            if (is_dir($warmDir)) {
-                $files = glob($warmDir.'/request-*.json');
-                foreach ($files as $file) {
-                    $traces[$warmMode][] = json_decode(file_get_contents($file), true);
+            // Check trace freshness — are all traces from the same run?
+            $runIds = [];
+            foreach ($traces as $modeTraces) {
+                foreach ($modeTraces as $t) {
+                    if (isset($t['run_id'])) {
+                        $runIds[$t['run_id']] = true;
+                    }
                 }
-                $modeTraces = $traces[$warmMode] ?? [];
-                usort($modeTraces, fn ($a, $b) => $a['request_index'] <=> $b['request_index']);
-                $traces[$warmMode] = $modeTraces;
             }
+            $traceFreshness['unique_run_ids'] = array_keys($runIds);
+            $traceFreshness['is_single_run'] = count($runIds) <= 1;
+            $traceFreshness['trace_count'] = array_sum(array_map('count', $traces));
+
+            // Check file modification times for staleness
+            $newestMtime = 0;
+            $oldestMtime = PHP_INT_MAX;
+            foreach ($allModes as $mode) {
+                $dir = $outputDir.'/traces/'.$mode;
+                if (is_dir($dir)) {
+                    $files = glob($dir.'/request-*.json');
+                    foreach ($files as $file) {
+                        $mtime = filemtime($file);
+                        $newestMtime = max($newestMtime, $mtime);
+                        $oldestMtime = min($oldestMtime, $mtime);
+                    }
+                }
+            }
+            $traceFreshness['newest_trace'] = $newestMtime > 0 ? date('Y-m-d H:i:s', $newestMtime) : null;
+            $traceFreshness['oldest_trace'] = $oldestMtime < PHP_INT_MAX ? date('Y-m-d H:i:s', $oldestMtime) : null;
+            $traceFreshness['span_minutes'] = $newestMtime > 0 && $oldestMtime < PHP_INT_MAX
+                ? round(($newestMtime - $oldestMtime) / 60, 1)
+                : 0;
         }
+
+        // Compute cross-mode analytics
+        $analytics = $this->computeAnalytics($summary, $traces);
 
         $reportPath = $outputDir.'/comparison-report.md';
         $reportContent = file_exists($reportPath) ? file_get_contents($reportPath) : null;
 
-        return view('test-compare.index', compact('dataset', 'summary', 'traces', 'hasResults', 'reportContent', 'hasWarmResults'));
+        return view('test-compare.index', compact(
+            'dataset',
+            'summary',
+            'traces',
+            'hasResults',
+            'reportContent',
+            'runMeta',
+            'traceFreshness',
+            'analytics',
+        ));
+    }
+
+    /**
+     * Compute cross-mode analytics for the dashboard.
+     */
+    private function computeAnalytics(?array $summary, array $traces): array
+    {
+        if (! $summary) {
+            return [];
+        }
+
+        $modes = ['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'];
+        $result = [
+            'latency_comparison' => [],
+            'token_comparison' => [],
+            'overhead_breakdown' => [],
+            'cache_impact' => [],
+            'efficiency_ratios' => [],
+            'per_request_deltas' => [],
+        ];
+
+        // Latency comparison
+        foreach ($modes as $mode) {
+            if (isset($summary[$mode])) {
+                $result['latency_comparison'][$mode] = [
+                    'avg' => $summary[$mode]['avg_latency_ms'],
+                    'min' => $summary[$mode]['min_latency_ms'],
+                    'max' => $summary[$mode]['max_latency_ms'],
+                    'vs_a1' => isset($summary['A1-direct-api'])
+                        ? round($summary[$mode]['avg_latency_ms'] / max($summary['A1-direct-api']['avg_latency_ms'], 1) * 100) - 100
+                        : null,
+                ];
+            }
+        }
+
+        // Token comparison
+        foreach ($modes as $mode) {
+            if (isset($summary[$mode])) {
+                $result['token_comparison'][$mode] = [
+                    'avg_total' => $summary[$mode]['avg_total_tokens'],
+                    'vs_a1' => isset($summary['A1-direct-api'])
+                        ? round($summary[$mode]['avg_total_tokens'] / max($summary['A1-direct-api']['avg_total_tokens'], 1) * 100) - 100
+                        : null,
+                ];
+            }
+        }
+
+        // Overhead breakdown: A1 → A2 (loop overhead), A2 → B-cold (harness overhead)
+        $a1Lat = $summary['A1-direct-api']['avg_latency_ms'] ?? 0;
+        $a2Lat = $summary['A2-loop-no-features']['avg_latency_ms'] ?? 0;
+        $bcLat = $summary['B-full-harness']['avg_latency_ms'] ?? 0;
+        $bwLat = $summary['B-warm-harness']['avg_latency_ms'] ?? 0;
+
+        $result['overhead_breakdown'] = [
+            'a1_baseline' => $a1Lat,
+            'a2_loop_overhead_ms' => $a2Lat - $a1Lat,
+            'a2_loop_overhead_pct' => $a1Lat > 0 ? round(($a2Lat - $a1Lat) / $a1Lat * 100) : 0,
+            'b_cold_harness_overhead_ms' => $bcLat - $a2Lat,
+            'b_cold_harness_overhead_pct' => $a2Lat > 0 ? round(($bcLat - $a2Lat) / $a2Lat * 100) : 0,
+            'b_warm_vs_cold_ms' => $bwLat - $bcLat,
+            'b_warm_vs_cold_pct' => $bcLat > 0 ? round(($bwLat - $bcLat) / $bcLat * 100) : 0,
+            'total_overhead_a1_to_b_cold_ms' => $bcLat - $a1Lat,
+            'total_overhead_a1_to_b_cold_pct' => $a1Lat > 0 ? round(($bcLat - $a1Lat) / $a1Lat * 100) : 0,
+        ];
+
+        // Cache impact: B-cold vs B-warm
+        if (isset($summary['B-full-harness']) && isset($summary['B-warm-harness'])) {
+            $result['cache_impact'] = [
+                'cold_avg_latency' => $bcLat,
+                'warm_avg_latency' => $bwLat,
+                'latency_saved_ms' => $bcLat - $bwLat,
+                'latency_saved_pct' => $bcLat > 0 ? round(($bcLat - $bwLat) / $bcLat * 100) : 0,
+                'cold_avg_tokens' => $summary['B-full-harness']['avg_total_tokens'],
+                'warm_avg_tokens' => $summary['B-warm-harness']['avg_total_tokens'],
+                'token_delta' => $summary['B-warm-harness']['avg_total_tokens'] - $summary['B-full-harness']['avg_total_tokens'],
+                'cold_tool_calls' => $summary['B-full-harness']['avg_tool_calls'],
+                'warm_tool_calls' => $summary['B-warm-harness']['avg_tool_calls'],
+            ];
+        }
+
+        // Efficiency ratios
+        foreach ($modes as $mode) {
+            if (isset($summary[$mode]) && $summary[$mode]['avg_latency_ms'] > 0) {
+                $result['efficiency_ratios'][$mode] = [
+                    'tokens_per_ms' => round($summary[$mode]['avg_total_tokens'] / $summary[$mode]['avg_latency_ms'], 3),
+                    'chars_per_ms' => round($summary[$mode]['avg_response_length'] / $summary[$mode]['avg_latency_ms'], 3),
+                    'ms_per_token' => round($summary[$mode]['avg_latency_ms'] / max($summary[$mode]['avg_total_tokens'], 1), 1),
+                ];
+            }
+        }
+
+        // Per-request deltas (A1 vs A2 vs B-cold vs B-warm)
+        $maxRequests = max(
+            count($traces['A1-direct-api'] ?? []),
+            count($traces['A2-loop-no-features'] ?? []),
+            count($traces['B-full-harness'] ?? []),
+            count($traces['B-warm-harness'] ?? []),
+        );
+
+        for ($i = 0; $i < $maxRequests; $i++) {
+            $a1 = $traces['A1-direct-api'][$i] ?? null;
+            $a2 = $traces['A2-loop-no-features'][$i] ?? null;
+            $bc = $traces['B-full-harness'][$i] ?? null;
+            $bw = $traces['B-warm-harness'][$i] ?? null;
+
+            $a1Lat = $a1['timing']['latency_ms'] ?? 0;
+            $a2Lat = $a2['timing']['latency_ms'] ?? 0;
+            $bcLat = $bc['timing']['latency_ms'] ?? 0;
+            $bwLat = $bw['timing']['latency_ms'] ?? 0;
+
+            $result['per_request_deltas'][] = [
+                'index' => $i,
+                'agent' => $a1['agent'] ?? $bc['agent'] ?? 'N/A',
+                'category' => $a1['category'] ?? $bc['category'] ?? 'N/A',
+                'a1_latency' => $a1Lat,
+                'a2_latency' => $a2Lat,
+                'b_cold_latency' => $bcLat,
+                'b_warm_latency' => $bwLat,
+                'a2_vs_a1_pct' => $a1Lat > 0 ? round(($a2Lat - $a1Lat) / $a1Lat * 100) : null,
+                'b_cold_vs_a1_pct' => $a1Lat > 0 ? round(($bcLat - $a1Lat) / $a1Lat * 100) : null,
+                'b_warm_vs_b_cold_pct' => $bcLat > 0 ? round(($bwLat - $bcLat) / $bcLat * 100) : null,
+                'a1_tokens' => $a1['tokens']['total_tokens'] ?? 0,
+                'a2_tokens' => $a2['tokens']['total_tokens'] ?? 0,
+                'b_cold_tokens' => $bc['tokens']['total_tokens'] ?? 0,
+                'b_warm_tokens' => $bw['tokens']['total_tokens'] ?? 0,
+                'a1_tools' => $a1['tool_calls']['count'] ?? 0,
+                'a2_tools' => $a2['tool_calls']['count'] ?? 0,
+                'b_cold_tools' => $bc['tool_calls']['count'] ?? 0,
+                'b_warm_tools' => $bw['tool_calls']['count'] ?? 0,
+                'b_cold_stages' => count($bc['pipeline_stages'] ?? []),
+                'b_warm_stages' => count($bw['pipeline_stages'] ?? []),
+                'b_cold_cache_hit' => $bc['cache']['hit'] ?? false,
+                'b_warm_cache_hit' => $bw['cache']['hit'] ?? false,
+                'a1_success' => $a1['success'] ?? false,
+                'a2_success' => $a2['success'] ?? false,
+                'b_cold_success' => $bc['success'] ?? false,
+                'b_warm_success' => $bw['success'] ?? false,
+            ];
+        }
+
+        return $result;
     }
 
     /**
@@ -84,10 +245,6 @@ class TestCompareController extends Controller
      */
     public function run(Request $request)
     {
-        $runner = new TestRunner;
-        $outputDir = $runner->getOutputDir();
-
-        // Run the test suite via Artisan in the background to avoid HTTP timeout
         $logFile = storage_path('logs/test-compare-run.log');
         $pidFile = storage_path('logs/test-compare-run.pid');
 
@@ -142,19 +299,13 @@ class TestCompareController extends Controller
             }
         }
 
-        // Check current trace counts
+        // Check current trace counts from single directory
         $outputDir = base_path('testandcompare');
-        $warmOutputDir = base_path('testandcompare-warm');
         $traceCounts = [];
-        foreach (['A1-direct-api', 'A2-loop-no-features', 'B-full-harness'] as $mode) {
+        foreach (['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'] as $mode) {
             $dir = $outputDir.'/traces/'.$mode;
             $traceCounts[$mode] = is_dir($dir) ? count(glob($dir.'/request-*.json')) : 0;
         }
-        $warmDir = $warmOutputDir.'/traces/B-warm-harness';
-        if (! is_dir($warmDir)) {
-            $warmDir = $warmOutputDir.'/traces/B-full-harness';
-        }
-        $traceCounts['B-warm-harness'] = is_dir($warmDir) ? count(glob($warmDir.'/request-*.json')) : 0;
 
         // Clean up PID file if process finished
         if (! $running && file_exists($pidFile)) {
@@ -185,20 +336,8 @@ class TestCompareController extends Controller
     public function trace(string $mode, int $index)
     {
         $outputDir = base_path('testandcompare');
-        $warmOutputDir = base_path('testandcompare-warm');
-
-        // Warm traces are stored in the warm output directory
-        // Check both B-warm-harness (new) and B-full-harness (old format) for warm mode
-        if ($mode === 'B-warm-harness') {
-            $searchDir = $warmOutputDir;
-            $files = glob($searchDir.'/traces/B-warm-harness/request-*.json');
-            if (empty($files)) {
-                $files = glob($searchDir.'/traces/B-full-harness/request-*.json');
-            }
-        } else {
-            $searchDir = $outputDir;
-            $files = glob($searchDir."/traces/{$mode}/request-*.json");
-        }
+        $dir = $outputDir.'/traces/'.$mode;
+        $files = is_dir($dir) ? glob($dir.'/request-*.json') : [];
 
         if (empty($files)) {
             abort(404, 'Trace not found');

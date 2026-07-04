@@ -41,17 +41,25 @@ class TestRunner
 {
     private string $outputDir;
 
-    private string $warmOutputDir;
+    private string $runId;
+
+    private float $runStartTime;
 
     public function __construct(?string $outputDir = null)
     {
         $this->outputDir = $outputDir ?? base_path('testandcompare');
-        $this->warmOutputDir = base_path('testandcompare-warm');
+        $this->runId = date('Ymd-His');
+        $this->runStartTime = microtime(true);
     }
 
     public function getOutputDir(): string
     {
         return $this->outputDir;
+    }
+
+    public function getRunId(): string
+    {
+        return $this->runId;
     }
 
     /**
@@ -66,8 +74,8 @@ class TestRunner
         $total = count($dataset);
         $allTraces = [];
 
-        // Run order: B-cold first (full harness, cold cache), then B-warm (warm cache), then A2, then A1
-        $allModes = ['B-full-harness', 'B-warm-harness', 'A2-loop-no-features', 'A1-direct-api'];
+        // Run order: A1 (baseline) → A2 (loop overhead) → B-cold (full harness, cold cache) → B-warm (warm cache)
+        $allModes = ['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'];
         $modes = $filterMode ? [$filterMode] : $allModes;
 
         // Load existing traces for modes not being re-run
@@ -85,6 +93,7 @@ class TestRunner
             if ($mode !== 'B-warm-harness') {
                 $this->clearCacheAndReconfigure();
             } else {
+                // Re-configure AI but do NOT clear cache — warm cache from B-cold run
                 AiConfigHelper::configure();
             }
 
@@ -101,6 +110,7 @@ class TestRunner
                         'A2-loop-no-features' => $this->runLoopNoFeatures($i, $dataset[$i]),
                         'A1-direct-api' => $this->runDirectApi($i, $dataset[$i]),
                     };
+                    $probe->runId = $this->runId;
                     $traces[] = $probe->toArray();
                     if ($onProgress) {
                         $onProgress($mode, $i, $total, 'done');
@@ -120,13 +130,21 @@ class TestRunner
             $allTraces[$mode] = $traces;
             $this->saveTraces($mode, $traces);
 
-            // Clear cache after each mode to start fresh (except B-warm which already ran with warm cache)
+            // Clear cache after each mode to start fresh — EXCEPT B-warm which needs the warm cache from B-cold
             if ($mode !== 'B-warm-harness') {
                 $this->clearCacheAndReconfigure();
             }
         }
 
         $summary = $this->computeSummary($allTraces);
+        $summary['_meta'] = [
+            'run_id' => $this->runId,
+            'run_start' => date('c', (int) $this->runStartTime),
+            'run_end' => date('c'),
+            'total_modes' => count($allModes),
+            'total_executions' => count($allModes) * $total,
+            'modes_run' => $modes,
+        ];
         $this->saveSummary($summary);
 
         return ['summary' => $summary, 'traces' => $allTraces];
@@ -788,8 +806,7 @@ class TestRunner
      */
     private function loadExistingTraces(string $mode): array
     {
-        $outputDir = $mode === 'B-warm-harness' ? $this->warmOutputDir : $this->outputDir;
-        $dir = $outputDir.'/traces/'.$mode;
+        $dir = $this->outputDir.'/traces/'.$mode;
         if (! is_dir($dir)) {
             return [];
         }
@@ -812,13 +829,13 @@ class TestRunner
      */
     private function saveTraces(string $mode, array $traces): void
     {
-        $outputDir = $mode === 'B-warm-harness' ? $this->warmOutputDir : $this->outputDir;
-        $dir = $outputDir.'/traces/'.$mode;
+        $dir = $this->outputDir.'/traces/'.$mode;
         if (! is_dir($dir)) {
-            mkdir($dir, 0755, true);
+            mkdir($dir, 0775, true);
         }
 
         foreach ($traces as $trace) {
+            $trace['run_id'] = $this->runId;
             $filename = sprintf('%s/request-%02d-%s.json', $dir, $trace['request_index'] + 1, strtolower($trace['agent']));
             file_put_contents($filename, json_encode($trace, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         }
@@ -862,16 +879,8 @@ class TestRunner
     private function saveSummary(array $summary): void
     {
         if (! is_dir($this->outputDir)) {
-            mkdir($this->outputDir, 0755, true);
+            mkdir($this->outputDir, 0775, true);
         }
         file_put_contents($this->outputDir.'/comparison-summary.json', json_encode($summary, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-
-        // Also save warm-only summary to the warm output directory
-        if (isset($summary['B-warm-harness'])) {
-            if (! is_dir($this->warmOutputDir)) {
-                mkdir($this->warmOutputDir, 0755, true);
-            }
-            file_put_contents($this->warmOutputDir.'/comparison-summary.json', json_encode(['B-warm-harness' => $summary['B-warm-harness']], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        }
     }
 }

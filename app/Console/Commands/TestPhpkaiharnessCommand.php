@@ -35,10 +35,11 @@ class TestPhpkaiharnessCommand extends Command
         }
 
         $this->info('Starting phpkaiharness comparison test suite...');
-        $this->info('Mode B-cold:  Full phpkaiharness (all features, cold cache) — runs first');
-        $this->info('Mode B-warm:  Full phpkaiharness (warm cache) — runs second');
-        $this->info('Mode A2:      AgentLoop with all features disabled — runs third');
-        $this->info('Mode A1:      Direct Qwen Cloud API (no harness) — runs last');
+        $this->info('Execution order: A1 → A2 → B-cold → B-warm');
+        $this->info('Mode A1:      Direct Qwen Cloud API (no harness) — runs first');
+        $this->info('Mode A2:      AgentLoop with all features disabled — runs second');
+        $this->info('Mode B-cold:  Full phpkaiharness (all features, cold cache) — runs third');
+        $this->info('Mode B-warm:  Full phpkaiharness (warm cache) — runs fourth (no cache clear)');
         $this->info('');
 
         $dirName = $this->option('dir') ?: 'testandcompare';
@@ -72,7 +73,7 @@ class TestPhpkaiharnessCommand extends Command
 
         // Print summary table
         $this->table(
-            ['Metric', 'B-cold', 'B-warm', 'A2 (Loop)', 'A1 (Direct API)'],
+            ['Metric', 'A1 (Direct API)', 'A2 (Loop)', 'B-cold', 'B-warm'],
             $this->buildSummaryTable($result['summary'])
         );
 
@@ -111,9 +112,6 @@ class TestPhpkaiharnessCommand extends Command
 
         foreach (['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'] as $mode) {
             $dir = $outputDir.'/traces/'.$mode;
-            if (! is_dir($dir)) {
-                $dir = base_path('testandcompare-warm').'/traces/'.$mode;
-            }
             if (is_dir($dir)) {
                 $files = glob($dir.'/request-*.json');
                 foreach ($files as $file) {
@@ -149,10 +147,10 @@ class TestPhpkaiharnessCommand extends Command
         foreach ($metrics as $key => $label) {
             $rows[] = [
                 $label,
+                $summary['A1-direct-api'][$key] ?? 'N/A',
+                $summary['A2-loop-no-features'][$key] ?? 'N/A',
                 $summary['B-full-harness'][$key] ?? 'N/A',
                 $summary['B-warm-harness'][$key] ?? 'N/A',
-                $summary['A2-loop-no-features'][$key] ?? 'N/A',
-                $summary['A1-direct-api'][$key] ?? 'N/A',
             ];
         }
 
