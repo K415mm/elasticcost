@@ -59,10 +59,21 @@ class FileManagerController extends Controller
         $embeddingProvider = GlobalSetting::getValue('rag_embedding_provider', 'ollama');
         $embeddingModel = GlobalSetting::getValue('rag_embedding_model', 'nomic-embed-text');
 
+        // Provider connection settings for the scan-models functionality
+        $providerSettings = [
+            'ollama_url' => GlobalSetting::getValue('ollama_url', 'http://localhost:11434'),
+            'lmstudio_url' => GlobalSetting::getValue('lmstudio_url', 'http://localhost:1234/v1'),
+            'gemini_api_key' => GlobalSetting::getValue('gemini_api_key', ''),
+            'openrouter_api_key' => GlobalSetting::getValue('openrouter_api_key', ''),
+            'qwen_url' => GlobalSetting::getValue('qwen_url', 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1'),
+            'qwen_api_key' => GlobalSetting::getValue('qwen_api_key', ''),
+        ];
+
         return view('settings.file_manager', compact(
             'documents', 'totalBytes', 'totalChunks',
             'freeSpaceGb', 'totalDiskGb', 'usedPercentage',
-            'agentConfigs', 'embeddingProvider', 'embeddingModel'
+            'agentConfigs', 'embeddingProvider', 'embeddingModel',
+            'providerSettings'
         ));
     }
 

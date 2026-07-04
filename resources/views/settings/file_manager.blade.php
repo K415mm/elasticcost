@@ -281,9 +281,25 @@
                         </select>
                     </div>
 
+                    <!-- Provider connection settings (hidden, used by scan) -->
+                    <input type="hidden" id="emb_ollama_url" value="{{ $providerSettings['ollama_url'] ?? '' }}">
+                    <input type="hidden" id="emb_lmstudio_url" value="{{ $providerSettings['lmstudio_url'] ?? '' }}">
+                    <input type="hidden" id="emb_gemini_api_key" value="{{ $providerSettings['gemini_api_key'] ?? '' }}">
+                    <input type="hidden" id="emb_openrouter_api_key" value="{{ $providerSettings['openrouter_api_key'] ?? '' }}">
+                    <input type="hidden" id="emb_qwen_url" value="{{ $providerSettings['qwen_url'] ?? '' }}">
+                    <input type="hidden" id="emb_qwen_api_key" value="{{ $providerSettings['qwen_api_key'] ?? '' }}">
+
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Embedding Model Name</label>
-                        <input type="text" name="rag_embedding_model" class="form-control form-control-sm font-monospace text-white" id="embModelInput" value="{{ $embeddingModel }}" placeholder="nomic-embed-text" style="background-color: #1a2035; border-color: rgba(255,255,255,0.15);">
+                        <label class="form-label text-muted small">Embedding Model</label>
+                        <div class="input-group">
+                            <select name="rag_embedding_model" class="form-select form-select-sm mono-cell" id="embModelSelect" style="background-color: #1a2035; color: #fff; border-color: rgba(255,255,255,0.15);">
+                                <option value="{{ $embeddingModel }}" selected>{{ $embeddingModel }}</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-theme btn-sm" id="btnEmbScanModels">
+                                <i class="bi bi-arrow-repeat me-1"></i> Scan
+                            </button>
+                        </div>
+                        <div id="emb-scan-status" class="mt-1 small"></div>
                         <div class="form-text text-muted" style="font-size: 10px;" id="modelHelpText">
                             Ollama: <code>nomic-embed-text</code>, <code>mxbai-embed-large</code><br>
                             LM Studio: <code>text-embedding-embeddinggemma-300m</code>
@@ -633,7 +649,7 @@
                 btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Saving...';
 
                 const provider = document.getElementById('embProviderSelect').value;
-                const model = document.getElementById('embModelInput').value;
+                const model = document.getElementById('embModelSelect').value;
 
                 const formData = new FormData();
                 formData.append('_token', '{{ csrf_token() }}');
@@ -687,12 +703,100 @@
             });
         }
 
+        // Scan models for embedding provider
+        function scanEmbModels() {
+            var provider = document.getElementById('embProviderSelect').value;
+            var selectEl = document.getElementById('embModelSelect');
+            var statusDiv = document.getElementById('emb-scan-status');
+            var btn = document.getElementById('btnEmbScanModels');
+
+            if (!statusDiv || !selectEl) return;
+
+            var params = new URLSearchParams();
+            params.append('provider', provider);
+
+            if (provider === 'ollama') {
+                var urlEl = document.getElementById('emb_ollama_url');
+                if (urlEl) params.append('url', urlEl.value.trim());
+            } else if (provider === 'lmstudio') {
+                var urlEl = document.getElementById('emb_lmstudio_url');
+                if (urlEl) params.append('url', urlEl.value.trim());
+            } else if (provider === 'gemini') {
+                var keyEl = document.getElementById('emb_gemini_api_key');
+                if (keyEl) params.append('api_key', keyEl.value.trim());
+            } else if (provider === 'openrouter') {
+                var keyEl = document.getElementById('emb_openrouter_api_key');
+                if (keyEl) params.append('api_key', keyEl.value.trim());
+            } else if (provider === 'qwen') {
+                var keyEl = document.getElementById('emb_qwen_api_key');
+                var urlEl = document.getElementById('emb_qwen_url');
+                if (keyEl) params.append('api_key', keyEl.value.trim());
+                if (urlEl) params.append('url', urlEl.value.trim());
+            }
+
+            if (selectEl) {
+                params.append('target_model', selectEl.value);
+            }
+
+            statusDiv.innerHTML = '<span class="text-warning small"><i class="spinner-border spinner-border-sm me-1"></i> Scanning models...</span>';
+            if (btn) {
+                btn.disabled = true;
+                var origText = btn.innerHTML;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            }
+
+            fetch("{{ route('ollama.ping') }}?" + params.toString())
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.status === 'ok') {
+                        statusDiv.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle-fill me-1"></i> Connected! Found ' + data.available_models.length + ' models.</span>';
+
+                        var currentValue = selectEl.value;
+                        selectEl.innerHTML = '';
+
+                        data.available_models.forEach(function(model) {
+                            var opt = document.createElement('option');
+                            opt.value = model;
+                            opt.textContent = model;
+                            if (model === currentValue) {
+                                opt.selected = true;
+                            }
+                            selectEl.appendChild(opt);
+                        });
+
+                        if (currentValue && !data.available_models.includes(currentValue)) {
+                            var customOpt = document.createElement('option');
+                            customOpt.value = currentValue;
+                            customOpt.textContent = currentValue + " (saved)";
+                            customOpt.selected = true;
+                            selectEl.insertBefore(customOpt, selectEl.firstChild);
+                        }
+                    } else {
+                        statusDiv.innerHTML = '<span class="text-danger small"><i class="bi bi-exclamation-triangle-fill me-1"></i> ' + (data.message || 'Connection failed') + '</span>';
+                    }
+                })
+                .catch(function(err) {
+                    statusDiv.innerHTML = '<span class="text-danger small"><i class="bi bi-x-circle-fill me-1"></i> Error: ' + (err.message || err) + '</span>';
+                })
+                .finally(function() {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = origText;
+                    }
+                });
+        }
+
+        var btnEmbScan = document.getElementById('btnEmbScanModels');
+        if (btnEmbScan) {
+            btnEmbScan.addEventListener('click', scanEmbModels);
+        }
+
         // Dynamically suggest models based on provider dropdown change
         const embProviderSelect = document.getElementById('embProviderSelect');
-        const embModelInput = document.getElementById('embModelInput');
+        const embModelSelect = document.getElementById('embModelSelect');
         const modelHelpText = document.getElementById('modelHelpText');
         
-        if (embProviderSelect && embModelInput && modelHelpText) {
+        if (embProviderSelect && embModelSelect && modelHelpText) {
             embProviderSelect.addEventListener('change', function() {
                 const provider = this.value;
                 let defaultModel = 'nomic-embed-text';
@@ -715,9 +819,16 @@
                     helpHtml = 'Qwen API: <code>text-embedding-v3</code>';
                 }
 
-                embModelInput.value = defaultModel;
+                // Reset dropdown to default model and update help
+                embModelSelect.innerHTML = '<option value="' + defaultModel + '" selected>' + defaultModel + '</option>';
                 modelHelpText.innerHTML = helpHtml;
+
+                // Auto-scan on provider change
+                scanEmbModels();
             });
+
+            // Auto-scan on page load
+            scanEmbModels();
         }
 
         // 5. Sidebar File Filters
