@@ -9,7 +9,6 @@
     <link href="{{ asset('vendor/harness/css/vendor.min.css') }}" rel="stylesheet">
     <link href="{{ asset('vendor/harness/css/app.min.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('vendor/harness/plugins/bootstrap-icons/font/bootstrap-icons.css') }}">
-    <link rel="stylesheet" href="{{ asset('vendor/harness/plugins/apexcharts/dist/apexcharts.min.css') }}">
     <link href="{{ asset('vendor/harness/plugins/datatables.net-bs5/css/dataTables.bootstrap5.min.css') }}" rel="stylesheet">
     <link href="{{ asset('vendor/harness/plugins/datatables.net-responsive-bs5/css/responsive.bootstrap5.min.css') }}" rel="stylesheet">
     <style>
