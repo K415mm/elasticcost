@@ -364,19 +364,10 @@
             runLog.scrollTop = runLog.scrollHeight;
         };
 
-        log('Starting test suite...');
+        log('Starting test suite (background mode)...');
 
         try {
-            // Simulate progress since the AJAX call is synchronous
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress = Math.min(progress + 1, 95);
-                progressBar.style.width = progress + '%';
-                progressBar.innerText = progress + '%';
-            }, 500);
-
-            log('Sending run request...');
-
+            log('Dispatching background test run...');
             const response = await fetch('{{ route("test-compare.run") }}', {
                 method: 'POST',
                 headers: {
@@ -387,29 +378,59 @@
                 body: JSON.stringify({})
             });
 
-            clearInterval(interval);
+            if (response.status === 409) {
+                const data = await response.json();
+                throw new Error(data.message || 'A run is already in progress');
+            }
 
             if (!response.ok) {
                 throw new Error('HTTP ' + response.status);
             }
 
             const data = await response.json();
+            log('✓ Background process started (PID: ' + data.pid + ')');
+            log('Polling for progress...');
 
-            progressBar.style.width = '100%';
-            progressBar.innerText = '100%';
-            log('✓ Test suite completed!');
-            log('✓ Report generated');
+            // Poll status every 5 seconds
+            let lastLogLen = 0;
+            const pollInterval = setInterval(async () => {
+                try {
+                    const statusResp = await fetch('{{ route("test-compare.status") }}', {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    const status = await statusResp.json();
 
-            if (data.summary) {
-                log('\nSummary:');
-                Object.keys(data.summary).forEach(mode => {
-                    const s = data.summary[mode];
-                    log(`  ${mode}: ${s.successful}/${s.total_requests} successful, avg ${s.avg_latency_ms}ms, ${s.avg_total_tokens} tokens`);
-                });
-            }
+                    // Update progress bar based on trace counts
+                    const total = 68; // 17 requests × 4 modes
+                    const done = (status.trace_counts['B-full-harness'] || 0)
+                               + (status.trace_counts['B-warm-harness'] || 0)
+                               + (status.trace_counts['A2-loop-no-features'] || 0)
+                               + (status.trace_counts['A1-direct-api'] || 0);
+                    const pct = Math.min(Math.round((done / total) * 100), 99);
+                    progressBar.style.width = pct + '%';
+                    progressBar.innerText = pct + '% (' + done + '/' + total + ')';
 
-            log('\nReloading page to show results...');
-            setTimeout(() => location.reload(), 2000);
+                    // Append new log lines
+                    if (status.log && status.log.length > lastLogLen) {
+                        const newLog = status.log.substring(lastLogLen);
+                        lastLogLen = status.log.length;
+                        // Only log meaningful lines
+                        const lines = newLog.split('\n').filter(l => l.trim());
+                        lines.forEach(line => log(line));
+                    }
+
+                    if (!status.running) {
+                        clearInterval(pollInterval);
+                        progressBar.style.width = '100%';
+                        progressBar.innerText = '100%';
+                        log('✓ Test suite completed!');
+                        log('Reloading page to show results...');
+                        setTimeout(() => location.reload(), 2000);
+                    }
+                } catch (e) {
+                    // Keep polling even if one request fails
+                }
+            }, 5000);
 
         } catch (error) {
             log('✗ Error: ' + error.message);

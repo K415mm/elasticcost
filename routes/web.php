@@ -125,6 +125,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:test_compare')->group(function () {
         Route::get('test-compare', [TestCompareController::class, 'index'])->name('test-compare.index');
         Route::post('test-compare/run', [TestCompareController::class, 'run'])->name('test-compare.run');
+        Route::get('test-compare/status', [TestCompareController::class, 'status'])->name('test-compare.status');
         Route::get('test-compare/dataset', [TestCompareController::class, 'dataset'])->name('test-compare.dataset');
         Route::get('test-compare/trace/{mode}/{index}', [TestCompareController::class, 'trace'])->name('test-compare.trace');
     });

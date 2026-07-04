@@ -9,12 +9,12 @@ use Illuminate\Console\Command;
 class TestPhpkaiharnessCommand extends Command
 {
     protected $signature = 'test:phpkaiharness
-                            {--run : Execute the full test suite (60 executions: 20 requests × 3 modes)}
+                            {--run : Execute the full test suite (68 executions: 17 requests × 4 modes)}
                             {--report-only : Generate report from existing traces without running tests}
-                            {--mode= : Run only a specific mode (A1-direct-api, A2-loop-no-features, B-full-harness)}
+                            {--mode= : Run only a specific mode (A1-direct-api, A2-loop-no-features, B-full-harness, B-warm-harness)}
                             {--dir= : Output directory name (default: testandcompare)}';
 
-    protected $description = 'Run phpkaiharness comparison tests (20 requests × 3 modes) and generate report';
+    protected $description = 'Run phpkaiharness comparison tests (17 requests × 4 modes) and generate report';
 
     public function handle(): int
     {
@@ -26,17 +26,19 @@ class TestPhpkaiharnessCommand extends Command
             $this->info('Use --run to execute the test suite, or --report-only to generate a report from existing traces.');
             $this->info('');
             $this->info('Available options:');
-            $this->info('  --run              Execute all 60 test executions (20 requests × 3 modes)');
+            $this->info('  --run              Execute all 68 test executions (17 requests × 4 modes)');
             $this->info('  --report-only      Generate report from existing traces');
             $this->info('  --mode=B-full-harness  Run only a specific mode');
+            $this->info('  --mode=B-warm-harness   Run only warm mode');
 
             return self::SUCCESS;
         }
 
         $this->info('Starting phpkaiharness comparison test suite...');
-        $this->info('Mode B:  Full phpkaiharness (all features enabled) — runs first');
-        $this->info('Mode A2: AgentLoop with all features disabled — runs second');
-        $this->info('Mode A1: Direct Qwen Cloud API (no harness) — runs last');
+        $this->info('Mode B-cold:  Full phpkaiharness (all features, cold cache) — runs first');
+        $this->info('Mode B-warm:  Full phpkaiharness (warm cache) — runs second');
+        $this->info('Mode A2:      AgentLoop with all features disabled — runs third');
+        $this->info('Mode A1:      Direct Qwen Cloud API (no harness) — runs last');
         $this->info('');
 
         $dirName = $this->option('dir') ?: 'testandcompare';
@@ -49,7 +51,8 @@ class TestPhpkaiharnessCommand extends Command
             $modeLabel = match ($mode) {
                 'A1-direct-api' => 'A1 (Direct API)',
                 'A2-loop-no-features' => 'A2 (Loop, no features)',
-                'B-full-harness' => 'B (Full Harness)',
+                'B-full-harness' => 'B-cold (Full Harness)',
+                'B-warm-harness' => 'B-warm (Warm Cache)',
                 default => $mode,
             };
 
@@ -69,7 +72,7 @@ class TestPhpkaiharnessCommand extends Command
 
         // Print summary table
         $this->table(
-            ['Metric', 'B (Full Harness)', 'A2 (Loop, no features)', 'A1 (Direct API)'],
+            ['Metric', 'B-cold', 'B-warm', 'A2 (Loop)', 'A1 (Direct API)'],
             $this->buildSummaryTable($result['summary'])
         );
 
@@ -106,8 +109,11 @@ class TestPhpkaiharnessCommand extends Command
         $summary = json_decode(file_get_contents($summaryFile), true);
         $traces = [];
 
-        foreach (['A1-direct-api', 'A2-loop-no-features', 'B-full-harness'] as $mode) {
+        foreach (['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'] as $mode) {
             $dir = $outputDir.'/traces/'.$mode;
+            if (! is_dir($dir)) {
+                $dir = base_path('testandcompare-warm').'/traces/'.$mode;
+            }
             if (is_dir($dir)) {
                 $files = glob($dir.'/request-*.json');
                 foreach ($files as $file) {
@@ -144,6 +150,7 @@ class TestPhpkaiharnessCommand extends Command
             $rows[] = [
                 $label,
                 $summary['B-full-harness'][$key] ?? 'N/A',
+                $summary['B-warm-harness'][$key] ?? 'N/A',
                 $summary['A2-loop-no-features'][$key] ?? 'N/A',
                 $summary['A1-direct-api'][$key] ?? 'N/A',
             ];
