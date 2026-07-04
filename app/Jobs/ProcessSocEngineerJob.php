@@ -9,6 +9,7 @@ use App\Services\AiConfigHelper;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
+use Phpkaiharness\Session\SessionManager;
 
 class ProcessSocEngineerJob implements ShouldQueue
 {
@@ -42,6 +43,16 @@ class ProcessSocEngineerJob implements ShouldQueue
         }
 
         try {
+            // Activate session isolation so telemetry data goes to per-session files
+            if ($this->phpSessionId) {
+                try {
+                    $sessionManager = app(SessionManager::class);
+                    $sessionManager->activateSession($this->phpSessionId);
+                } catch (\Throwable $e) {
+                    Log::warning('ProcessSocEngineerJob: SessionManager activation failed: '.$e->getMessage());
+                }
+            }
+
             $agent = new RgSocEngineer;
             $agent->phpSessionId = $this->phpSessionId;
 

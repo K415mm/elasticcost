@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\File;
 use Laravel\Ai\Ai;
 use Phpkaiharness\Core\AgentLoop;
 use Phpkaiharness\Core\AgentSelector;
@@ -72,6 +73,7 @@ class HarnessTelemetryController extends Controller
                 $sessions = $byId->sortByDesc('created_at')->take(50)->values()->toArray();
                 $stats['total_sessions'] = max($stats['total_sessions'], count($isolatedSessions));
             }
+            // If no isolated sessions, $sessions already contains global monitor.db data
         }
 
         $config = config('harness');
@@ -166,9 +168,9 @@ class HarnessTelemetryController extends Controller
             if (! empty($phpSessionId)) {
                 $isolatedSessions = [];
                 $dir = storage_path('app/phpkaiharness/sessions/'.basename($phpSessionId));
-                if (\Illuminate\Support\Facades\File::isDirectory($dir)) {
+                if (File::isDirectory($dir)) {
                     $monitorDb = $dir.DIRECTORY_SEPARATOR.'monitor.db';
-                    if (\Illuminate\Support\Facades\File::exists($monitorDb) && (int) \Illuminate\Support\Facades\File::size($monitorDb) > 0) {
+                    if (File::exists($monitorDb) && (int) File::size($monitorDb) > 0) {
                         try {
                             $pdo = new \PDO('sqlite:'.$monitorDb);
                             $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
@@ -200,6 +202,15 @@ class HarnessTelemetryController extends Controller
                 $isolatedSessions = $this->sessionManager->collectAllSessions(1000);
             }
 
+            // Fallback: if no isolated sessions found, use global monitor.db data
+            if (empty($isolatedSessions)) {
+                $isolatedSessions = $this->report->getSessions(1000, 0);
+                foreach ($isolatedSessions as &$row) {
+                    $row['php_session_id'] = $row['php_session_id'] ?? 'global';
+                }
+                unset($row);
+            }
+
             $totalRecords = count($isolatedSessions);
             $sessionsCollection = collect($isolatedSessions);
 
@@ -229,26 +240,26 @@ class HarnessTelemetryController extends Controller
                              COUNT(CASE WHEN d.type=\'tool_call\' THEN 1 END) AS tool_calls
                       FROM harness_sessions s
                       LEFT JOIN harness_details d ON d.session_id = s.id';
-            
+
             $whereClauses = [];
             $params = [];
-            
+
             if (! empty($phpSessionId)) {
                 $whereClauses[] = "COALESCE(s.root_session_id, 'global') = :php_session_id";
                 $params[':php_session_id'] = $phpSessionId;
             }
-            
+
             if (! empty($searchVal)) {
-                $whereClauses[] = "(s.id LIKE :search OR s.method LIKE :search OR s.prompt LIKE :search)";
+                $whereClauses[] = '(s.id LIKE :search OR s.method LIKE :search OR s.prompt LIKE :search)';
                 $params[':search'] = '%'.$searchVal.'%';
             }
-            
+
             if (! empty($whereClauses)) {
-                $query .= ' WHERE ' . implode(' AND ', $whereClauses);
+                $query .= ' WHERE '.implode(' AND ', $whereClauses);
             }
-            
+
             $query .= ' GROUP BY s.id';
-            
+
             $allowedSortColumns = ['id', 'method', 'prompt', 'total_duration_ms', 'llm_calls', 'tool_calls', 'created_at'];
             $sort = 's.created_at';
             if ($sortColumn && in_array($sortColumn, $allowedSortColumns)) {
@@ -260,7 +271,7 @@ class HarnessTelemetryController extends Controller
             }
             $dir = strtolower($orderDir) === 'asc' ? 'ASC' : 'DESC';
             $query .= " ORDER BY {$sort} {$dir}";
-            
+
             // Count total matching records before pagination
             $countQuery = "SELECT COUNT(*) FROM ($query)";
             $countStmt = $pdo->prepare($countQuery);
@@ -269,9 +280,9 @@ class HarnessTelemetryController extends Controller
             }
             $countStmt->execute();
             $filteredCount = (int) $countStmt->fetchColumn();
-            
+
             // Get total count
-            $totalCountQuery = "SELECT COUNT(*) FROM harness_sessions";
+            $totalCountQuery = 'SELECT COUNT(*) FROM harness_sessions';
             if (! empty($phpSessionId)) {
                 $totalCountQuery .= " WHERE COALESCE(root_session_id, 'global') = :php_session_id";
             }
@@ -281,7 +292,7 @@ class HarnessTelemetryController extends Controller
             }
             $totalStmt->execute();
             $totalRecords = (int) $totalStmt->fetchColumn();
-            
+
             $query .= ' LIMIT :limit OFFSET :offset';
             $stmt = $pdo->prepare($query);
             $stmt->bindValue(':limit', $length, \PDO::PARAM_INT);
@@ -419,7 +430,7 @@ class HarnessTelemetryController extends Controller
                     try {
                         $pdo = new \PDO('sqlite:'.$dbPath);
                         $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-                        
+
                         // We fetch all rows grouped by root_session_id
                         $rows = $pdo->query(
                             'SELECT 
@@ -433,7 +444,7 @@ class HarnessTelemetryController extends Controller
 
                         foreach ($rows as $row) {
                             $phpSess = $row['php_session_id'];
-                            
+
                             // Find all sub-session IDs under this main session
                             $subSessionsStmt = $pdo->prepare(
                                 "SELECT id, method, status, total_duration_ms, created_at 
@@ -442,7 +453,7 @@ class HarnessTelemetryController extends Controller
                             );
                             $subSessionsStmt->execute([$phpSess]);
                             $subSessions = $subSessionsStmt->fetchAll(\PDO::FETCH_ASSOC);
-                            
+
                             // Load detail stats for each sub-session
                             $matchingSubSessions = [];
                             foreach ($subSessions as $sub) {
@@ -488,12 +499,13 @@ class HarnessTelemetryController extends Controller
                                 $row['total_completion_tokens'] = array_sum(array_column($matchingSubSessions, 'completion_tokens'));
                                 $row['llm_calls'] = array_sum(array_column($matchingSubSessions, 'llms'));
                                 $row['tool_calls'] = array_sum(array_column($matchingSubSessions, 'tools'));
-                                
+
                                 $mainSessions[] = $row;
                             }
                         }
                         $pdo = null;
-                    } catch (\Throwable $e) {}
+                    } catch (\Throwable $e) {
+                    }
                 }
             }
 
