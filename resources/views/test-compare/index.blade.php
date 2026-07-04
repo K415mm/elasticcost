@@ -141,7 +141,7 @@
 
 <div class="test-compare-header">
     <h1>phpkaiharness Test Compare Suite</h1>
-    <p>Compare direct Qwen Cloud API calls vs AgentLoop (no features) vs Full phpkaiharness across 20 test requests</p>
+    <p>Compare direct Qwen Cloud API calls vs AgentLoop (no features) vs Full phpkaiharness (cold & warm cache) across 17 test requests</p>
 </div>
 
 <div class="row">
@@ -150,7 +150,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h3>Test Execution</h3>
-                    <p class="text-muted mb-0">Runs 60 executions (20 requests × 3 modes). This may take several minutes.</p>
+                    <p class="text-muted mb-0">Runs 68 executions (17 requests × 4 modes). This may take several minutes.</p>
                 </div>
                 <div>
                     <button id="runBtn" class="run-btn" onclick="runTests()">
@@ -171,7 +171,7 @@
 
 @if($hasResults)
 <div class="row mt-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="mode-card">
             <h3>A1 — Direct API <span class="badge bg-secondary">Baseline</span></h3>
             <p class="text-muted small">Raw Qwen Cloud API, no harness</p>
@@ -183,7 +183,7 @@
             @endif
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="mode-card">
             <h3>A2 — Loop (no features) <span class="badge bg-info">Overhead</span></h3>
             <p class="text-muted small">AgentLoop with all features disabled</p>
@@ -195,16 +195,33 @@
             @endif
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="mode-card" style="border-color: #e94560;">
-            <h3>B — Full Harness <span class="badge bg-danger">Enhanced</span></h3>
-            <p class="text-muted small">All phpkaiharness features enabled</p>
+            <h3>B — Full Harness (Cold) <span class="badge bg-danger">Cold Cache</span></h3>
+            <p class="text-muted small">All features enabled, first run</p>
             @if(isset($summary['B-full-harness']))
             <div class="metric-row"><span class="metric-label">Avg Latency</span><span class="metric-value">{{ $summary['B-full-harness']['avg_latency_ms'] }}ms</span></div>
             <div class="metric-row"><span class="metric-label">Avg Tokens</span><span class="metric-value">{{ $summary['B-full-harness']['avg_total_tokens'] }}</span></div>
             <div class="metric-row"><span class="metric-label">Tool Calls</span><span class="metric-value good">{{ $summary['B-full-harness']['avg_tool_calls'] }}</span></div>
             <div class="metric-row"><span class="metric-label">Pipeline Stages</span><span class="metric-value good">{{ $summary['B-full-harness']['pipeline_stages_avg'] }}</span></div>
             <div class="metric-row"><span class="metric-label">Success Rate</span><span class="metric-value">{{ $summary['B-full-harness']['successful'] }}/{{ $summary['B-full-harness']['total_requests'] }}</span></div>
+            @endif
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="mode-card" style="border-color: #4ade80;">
+            <h3>B — Full Harness (Warm) <span class="badge bg-success">Warm Cache</span></h3>
+            <p class="text-muted small">Same as B-cold, but cache pre-warmed</p>
+            @if(isset($summary['B-warm-harness']))
+            <div class="metric-row"><span class="metric-label">Avg Latency</span><span class="metric-value good">{{ $summary['B-warm-harness']['avg_latency_ms'] }}ms</span></div>
+            <div class="metric-row"><span class="metric-label">Avg Tokens</span><span class="metric-value">{{ $summary['B-warm-harness']['avg_total_tokens'] }}</span></div>
+            <div class="metric-row"><span class="metric-label">Tool Calls</span><span class="metric-value good">{{ $summary['B-warm-harness']['avg_tool_calls'] }}</span></div>
+            <div class="metric-row"><span class="metric-label">Pipeline Stages</span><span class="metric-value good">{{ $summary['B-warm-harness']['pipeline_stages_avg'] }}</span></div>
+            <div class="metric-row"><span class="metric-label">Success Rate</span><span class="metric-value">{{ $summary['B-warm-harness']['successful'] }}/{{ $summary['B-warm-harness']['total_requests'] }}</span></div>
+            @elseif($hasWarmResults ?? false)
+            <p class="text-muted small">Warm results loading...</p>
+            @else
+            <p class="text-muted small">No warm run yet. Run test suite to generate.</p>
             @endif
         </div>
     </div>
@@ -268,33 +285,42 @@
                         <th>#</th>
                         <th>Agent</th>
                         <th>Category</th>
-                        <th>A1 Latency</th>
-                        <th>A2 Latency</th>
-                        <th>B Latency</th>
-                        <th>A1 Tokens</th>
-                        <th>B Tokens</th>
-                        <th>B Tools</th>
-                        <th>B Stages</th>
+                        <th>A1 Lat</th>
+                        <th>A2 Lat</th>
+                        <th>B-Cold Lat</th>
+                        <th>B-Warm Lat</th>
+                        <th>B-Cold Tok</th>
+                        <th>B-Warm Tok</th>
+                        <th>B-Cold Tools</th>
+                        <th>B-Warm Tools</th>
+                        <th>Δ Latency</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @for($i = 0; $i < count($traces['A1-direct-api'] ?? []); $i++)
+                    @for($i = 0; $i < max(count($traces['A1-direct-api'] ?? []), count($traces['B-full-harness'] ?? []), count($traces['B-warm-harness'] ?? [])); $i++)
                     @php
                         $a1 = $traces['A1-direct-api'][$i] ?? [];
                         $a2 = $traces['A2-loop-no-features'][$i] ?? [];
-                        $b = $traces['B-full-harness'][$i] ?? [];
+                        $bc = $traces['B-full-harness'][$i] ?? [];
+                        $bw = $traces['B-warm-harness'][$i] ?? [];
+                        $coldLat = $bc['timing']['latency_ms'] ?? 0;
+                        $warmLat = $bw['timing']['latency_ms'] ?? 0;
+                        $delta = $coldLat > 0 ? round(($warmLat - $coldLat) / $coldLat * 100) : 0;
+                        $deltaClass = $delta < 0 ? 'good' : ($delta > 10 ? 'bad' : '');
                     @endphp
                     <tr>
                         <td>{{ $i + 1 }}</td>
-                        <td>{{ $a1['agent'] ?? 'N/A' }}</td>
-                        <td><code>{{ $a1['category'] ?? 'N/A' }}</code></td>
-                        <td>{{ ($a1['timing']['latency_ms'] ?? 0) }}ms</td>
+                        <td>{{ $a1['agent'] ?? $bc['agent'] ?? 'N/A' }}</td>
+                        <td><code>{{ $a1['category'] ?? $bc['category'] ?? 'N/A' }}</code></td>
+                        <td>{{ $coldLat }}ms</td>
                         <td>{{ ($a2['timing']['latency_ms'] ?? 0) }}ms</td>
-                        <td>{{ ($b['timing']['latency_ms'] ?? 0) }}ms</td>
-                        <td>{{ $a1['tokens']['total_tokens'] ?? 0 }}</td>
-                        <td>{{ $b['tokens']['total_tokens'] ?? 0 }}</td>
-                        <td>{{ $b['tool_calls']['count'] ?? 0 }}</td>
-                        <td>{{ count($b['pipeline_stages'] ?? []) }}</td>
+                        <td>{{ $coldLat }}ms</td>
+                        <td>{{ $warmLat > 0 ? $warmLat.'ms' : '—' }}</td>
+                        <td>{{ $bc['tokens']['total_tokens'] ?? 0 }}</td>
+                        <td>{{ $bw['tokens']['total_tokens'] ?? '—' }}</td>
+                        <td>{{ $bc['tool_calls']['count'] ?? 0 }}</td>
+                        <td>{{ $bw['tool_calls']['count'] ?? '—' }}</td>
+                        <td>@if($warmLat > 0)<span class="metric-value {{ $deltaClass }}">{{ $delta > 0 ? '+' : '' }}{{ $delta }}%</span>@else — @endif</td>
                     </tr>
                     @endfor
                 </tbody>

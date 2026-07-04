@@ -51,29 +51,33 @@ class TestCompareReportGenerator
         $a1 = $this->summary['A1-direct-api'] ?? [];
         $a2 = $this->summary['A2-loop-no-features'] ?? [];
         $b = $this->summary['B-full-harness'] ?? [];
+        $bw = $this->summary['B-warm-harness'] ?? [];
 
         $latencyImprovement = $this->pctChange($a1['avg_latency_ms'] ?? 0, $b['avg_latency_ms'] ?? 0);
         $tokenImprovement = $this->pctChange($a1['avg_total_tokens'] ?? 0, $b['avg_total_tokens'] ?? 0);
+        $warmLatencyImprovement = $bw['avg_latency_ms'] ?? 0 ? $this->pctChange($b['avg_latency_ms'] ?? 0, $bw['avg_latency_ms']) : 'N/A';
 
         return "## Executive Summary\n\n".
-            'This report compares three execution modes across '.($a1['total_requests'] ?? 0)." test requests:\n\n".
+            'This report compares four execution modes across '.($a1['total_requests'] ?? 0)." test requests:\n\n".
             "| Mode | Description |\n|---|---|\n".
             "| **A1 — Direct API** | Raw Qwen Cloud API call, no harness, no tools, no pipeline |\n".
             "| **A2 — Loop (no features)** | AgentLoop with all feature_graph nodes disabled |\n".
-            "| **B — Full phpkaiharness** | All features enabled: draft verification, quantum memory, ontology RAG, semantic cache, optimizer |\n\n".
+            "| **B-cold — Full phpkaiharness** | All features enabled, cold cache (first run) |\n".
+            "| **B-warm — Full phpkaiharness** | Same as B-cold but with warm semantic cache |\n\n".
             "### Key Findings\n\n".
-            '- **Latency:** Full harness averages '.($b['avg_latency_ms'] ?? 0).'ms vs '.($a1['avg_latency_ms'] ?? 0)."ms for direct API ({$latencyImprovement})\n".
+            '- **Latency:** Full harness (cold) averages '.($b['avg_latency_ms'] ?? 0).'ms vs '.($a1['avg_latency_ms'] ?? 0)."ms for direct API ({$latencyImprovement})\n".
+            '- **Warm vs Cold:** Warm cache averages '.($bw['avg_latency_ms'] ?? 0).'ms vs '.($b['avg_latency_ms'] ?? 0)."ms for cold ({$warmLatencyImprovement})\n".
             '- **Token Usage:** Full harness uses '.($b['avg_total_tokens'] ?? 0).' tokens avg vs '.($a1['avg_total_tokens'] ?? 0)." for direct API ({$tokenImprovement})\n".
             '- **Tool Calls:** Full harness averages '.($b['avg_tool_calls'] ?? 0)." tool calls per request; A1/A2 have 0\n".
-            '- **Success Rate:** A1: '.($a1['successful'] ?? 0).'/'.($a1['total_requests'] ?? 0).', A2: '.($a2['successful'] ?? 0).'/'.($a2['total_requests'] ?? 0).', B: '.($b['successful'] ?? 0).'/'.($b['total_requests'] ?? 0)."\n\n".
+            '- **Success Rate:** A1: '.($a1['successful'] ?? 0).'/'.($a1['total_requests'] ?? 0).', A2: '.($a2['successful'] ?? 0).'/'.($a2['total_requests'] ?? 0).', B-cold: '.($b['successful'] ?? 0).'/'.($b['total_requests'] ?? 0).', B-warm: '.($bw['successful'] ?? 0).'/'.($bw['total_requests'] ?? 0)."\n\n".
             "---\n\n";
     }
 
     private function generateAggregateComparison(): string
     {
         $md = "## Aggregate Metrics Comparison\n\n";
-        $md .= "| Metric | A1 (Direct API) | A2 (Loop, no features) | B (Full Harness) | B vs A1 |\n";
-        $md .= "|---|---|---|---|---|\n";
+        $md .= "| Metric | A1 (Direct API) | A2 (Loop, no features) | B-Cold (Full Harness) | B-Warm (Warm Cache) | B vs A1 |\n";
+        $md .= "|---|---|---|---|---|---|\n";
 
         $metrics = [
             'avg_latency_ms' => 'Avg Latency (ms)',
@@ -89,9 +93,10 @@ class TestCompareReportGenerator
         foreach ($metrics as $key => $label) {
             $a1v = $this->summary['A1-direct-api'][$key] ?? 'N/A';
             $a2v = $this->summary['A2-loop-no-features'][$key] ?? 'N/A';
-            $bv = $this->summary['B-full-harness'][$key] ?? 'N/A';
-            $diff = is_numeric($a1v) && is_numeric($bv) ? $this->pctChange($a1v, $bv) : 'N/A';
-            $md .= "| **{$label}** | {$a1v} | {$a2v} | {$bv} | {$diff} |\n";
+            $bcv = $this->summary['B-full-harness'][$key] ?? 'N/A';
+            $bwv = $this->summary['B-warm-harness'][$key] ?? 'N/A';
+            $diff = is_numeric($a1v) && is_numeric($bcv) ? $this->pctChange($a1v, $bcv) : 'N/A';
+            $md .= "| **{$label}** | {$a1v} | {$a2v} | {$bcv} | {$bwv} | {$diff} |\n";
         }
 
         $md .= "\n---\n\n";
@@ -106,26 +111,37 @@ class TestCompareReportGenerator
         $a1Traces = $this->traces['A1-direct-api'] ?? [];
         $a2Traces = $this->traces['A2-loop-no-features'] ?? [];
         $bTraces = $this->traces['B-full-harness'] ?? [];
+        $bwTraces = $this->traces['B-warm-harness'] ?? [];
 
-        $md .= "| # | Agent | Category | A1 Latency | A2 Latency | B Latency | A1 Tokens | B Tokens | B Tools | B Stages |\n";
-        $md .= "|---|---|---|---|---|---|---|---|---|---|\n";
+        $md .= "| # | Agent | Category | A1 Latency | A2 Latency | B-Cold Latency | B-Warm Latency | B-Cold Tokens | B-Warm Tokens | B-Cold Tools | B-Warm Tools | B-Cold Stages |\n";
+        $md .= "|---|---|---|---|---|---|---|---|---|---|---|---|\n";
 
-        for ($i = 0; $i < count($a1Traces); $i++) {
+        $maxCount = max(count($a1Traces), count($bTraces), count($bwTraces));
+        for ($i = 0; $i < $maxCount; $i++) {
             $a1 = $a1Traces[$i] ?? [];
             $a2 = $a2Traces[$i] ?? [];
             $b = $bTraces[$i] ?? [];
+            $bw = $bwTraces[$i] ?? [];
+
+            $coldLat = $b['timing']['latency_ms'] ?? 0;
+            $warmLat = $bw['timing']['latency_ms'] ?? 0;
+            $warmLatStr = $warmLat > 0 ? $warmLat.'ms' : '—';
+            $warmTokStr = isset($bw['tokens']['total_tokens']) ? $bw['tokens']['total_tokens'] : '—';
+            $warmToolsStr = isset($bw['tool_calls']['count']) ? $bw['tool_calls']['count'] : '—';
 
             $md .= sprintf(
-                "| %d | %s | %s | %dms | %dms | %dms | %d | %d | %d | %d |\n",
+                "| %d | %s | %s | %dms | %dms | %dms | %s | %d | %s | %d | %s | %d |\n",
                 $i + 1,
-                $a1['agent'] ?? 'N/A',
-                $a1['category'] ?? 'N/A',
+                $a1['agent'] ?? $b['agent'] ?? 'N/A',
+                $a1['category'] ?? $b['category'] ?? 'N/A',
                 $a1['timing']['latency_ms'] ?? 0,
                 $a2['timing']['latency_ms'] ?? 0,
-                $b['timing']['latency_ms'] ?? 0,
-                $a1['tokens']['total_tokens'] ?? 0,
+                $coldLat,
+                $warmLatStr,
                 $b['tokens']['total_tokens'] ?? 0,
+                $warmTokStr,
                 $b['tool_calls']['count'] ?? 0,
+                $warmToolsStr,
                 count($b['pipeline_stages'] ?? [])
             );
         }
@@ -277,20 +293,24 @@ class TestCompareReportGenerator
         $a1Latencies = array_map(fn ($t) => $t['timing']['latency_ms'], $this->traces['A1-direct-api'] ?? []);
         $a2Latencies = array_map(fn ($t) => $t['timing']['latency_ms'], $this->traces['A2-loop-no-features'] ?? []);
         $bLatencies = array_map(fn ($t) => $t['timing']['latency_ms'], $this->traces['B-full-harness'] ?? []);
+        $bwLatencies = array_map(fn ($t) => $t['timing']['latency_ms'], $this->traces['B-warm-harness'] ?? []);
 
         $md .= "### Latency Distribution\n\n";
-        $md .= "| Percentile | A1 (Direct API) | A2 (Loop, no features) | B (Full Harness) |\n|---|---|---|---|\n";
+        $md .= "| Percentile | A1 (Direct API) | A2 (Loop, no features) | B-Cold (Full Harness) | B-Warm (Warm Cache) |\n|---|---|---|---|---|\n";
 
         foreach ([10, 25, 50, 75, 90] as $pct) {
             $a1v = $this->percentile($a1Latencies, $pct);
             $a2v = $this->percentile($a2Latencies, $pct);
             $bv = $this->percentile($bLatencies, $pct);
-            $md .= "| P{$pct} | {$a1v}ms | {$a2v}ms | {$bv}ms |\n";
+            $bwv = $this->percentile($bwLatencies, $pct);
+            $md .= "| P{$pct} | {$a1v}ms | {$a2v}ms | {$bv}ms | {$bwv}ms |\n";
         }
 
         $md .= "\n### Cache Impact\n\n";
-        $cacheHits = count(array_filter($this->traces['B-full-harness'] ?? [], fn ($t) => $t['cache']['hit'] ?? false));
-        $md .= "- Cache hits in mode B: {$cacheHits} out of ".count($bLatencies)." requests\n";
+        $coldCacheHits = count(array_filter($this->traces['B-full-harness'] ?? [], fn ($t) => $t['cache']['hit'] ?? false));
+        $warmCacheHits = count(array_filter($this->traces['B-warm-harness'] ?? [], fn ($t) => $t['cache']['hit'] ?? false));
+        $md .= "- Cache hits in B-cold: {$coldCacheHits} out of ".count($bLatencies)." requests\n";
+        $md .= "- Cache hits in B-warm: {$warmCacheHits} out of ".count($bwLatencies)." requests\n";
         $md .= "- Cache hits reduce latency to near-zero (skip LLM call entirely)\n\n";
         $md .= "---\n\n";
 
@@ -301,6 +321,7 @@ class TestCompareReportGenerator
     {
         $a1 = $this->summary['A1-direct-api'] ?? [];
         $b = $this->summary['B-full-harness'] ?? [];
+        $bw = $this->summary['B-warm-harness'] ?? [];
 
         $md = "## Conclusion\n\n";
         $md .= "### What phpkaiharness Adds\n\n";
@@ -308,17 +329,25 @@ class TestCompareReportGenerator
 
         $toolCalls = $b['avg_tool_calls'] ?? 0;
         $stages = $b['pipeline_stages_avg'] ?? 0;
+        $warmLatency = $bw['avg_latency_ms'] ?? 0;
+        $coldLatency = $b['avg_latency_ms'] ?? 0;
+        $warmImprovement = $warmLatency > 0 && $coldLatency > 0 ? $this->pctChange($coldLatency, $warmLatency) : 'N/A';
 
         $md .= "1. **Tool-Augmented Execution**: The full harness averaged {$toolCalls} tool calls per request, enabling real database queries and updates that the direct API mode cannot perform.\n";
         $md .= "2. **Pipeline Processing**: An average of {$stages} pipeline stages executed per request, including draft verification, ontology injection, and quantum memory retrieval.\n";
         $md .= "3. **Context Enrichment**: The harness injects real database records and memory context, producing more accurate and contextually relevant responses.\n";
         $md .= "4. **Multi-Language Support**: Semantic context retrieval via embeddings enables better understanding of non-standard dialects (Tunisian Arabic) without explicit language models.\n";
-        $md .= "5. **Iterative Refinement**: The agent loop allows multi-step tool calling (query → update → confirm), producing complete results in a single user interaction.\n\n";
+        $md .= "5. **Iterative Refinement**: The agent loop allows multi-step tool calling (query → update → confirm), producing complete results in a single user interaction.\n";
+        if ($warmLatency > 0) {
+            $md .= "6. **Warm Cache Benefit**: Running with a warm semantic cache reduced average latency from {$coldLatency}ms to {$warmLatency}ms ({$warmImprovement}), demonstrating the value of cache persistence in production.\n";
+        }
+        $md .= "\n";
 
         $md .= "### When to Use Each Mode\n\n";
         $md .= "- **Direct API (A1):** Best for simple, stateless text generation where no database context or tools are needed.\n";
         $md .= "- **Loop without features (A2):** Useful when you need tool calling but want minimal overhead. No pipeline processing.\n";
-        $md .= "- **Full phpkaiharness (B):** Optimal for production use where accuracy, context awareness, and tool augmentation matter most.\n\n";
+        $md .= "- **Full phpkaiharness (B-cold):** Optimal for first-run or cold-start scenarios where cache is empty.\n";
+        $md .= "- **Full phpkaiharness (B-warm):** Best for production with persistent cache. Warm cache reduces latency and token usage.\n\n";
 
         $md .= "---\n\n";
         $md .= "*This report was automatically generated by the phpkaiharness Test Compare suite.*\n";
