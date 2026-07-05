@@ -92,6 +92,9 @@ class TestPhpkaiharnessCommand extends Command
         $this->info("Traces saved to: {$outputDir}/traces/");
         $this->info("Summary saved to: {$outputDir}/comparison-summary.json");
 
+        // Write marker file so the status endpoint knows we're done
+        file_put_contents(storage_path('logs/test-compare-run.marker'), 'DONE');
+
         return self::SUCCESS;
     }
 

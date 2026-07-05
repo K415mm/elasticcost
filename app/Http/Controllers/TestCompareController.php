@@ -247,11 +247,12 @@ class TestCompareController extends Controller
     {
         $logFile = storage_path('logs/test-compare-run.log');
         $pidFile = storage_path('logs/test-compare-run.pid');
+        $markerFile = storage_path('logs/test-compare-run.marker');
 
         // Check if a run is already in progress
         if (file_exists($pidFile)) {
             $pid = (int) file_get_contents($pidFile);
-            if ($pid > 0 && @posix_kill($pid, 0)) {
+            if ($pid > 0 && $this->isProcessRunning($pid)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'A test run is already in progress (PID: '.$pid.').',
@@ -259,7 +260,19 @@ class TestCompareController extends Controller
             }
         }
 
-        $command = 'php '.base_path().'/artisan test:phpkaiharness --run > '.escapeshellarg($logFile).' 2>&1 & echo $!';
+        // Clean up old marker
+        if (file_exists($markerFile)) {
+            unlink($markerFile);
+        }
+
+        // Use nohup + disown to fully detach from Octane's process tree
+        // The artisan command writes 'DONE' to the marker file when complete
+        $artisan = base_path().'/artisan';
+        $command = sprintf(
+            'nohup php %s test:phpkaiharness --run > %s 2>&1 < /dev/null & echo $!',
+            escapeshellarg($artisan),
+            escapeshellarg($logFile)
+        );
         $pid = (int) trim(shell_exec($command));
         if ($pid > 0) {
             file_put_contents($pidFile, $pid);
@@ -280,14 +293,21 @@ class TestCompareController extends Controller
     {
         $pidFile = storage_path('logs/test-compare-run.pid');
         $logFile = storage_path('logs/test-compare-run.log');
+        $markerFile = storage_path('logs/test-compare-run.marker');
 
         $running = false;
         $pid = 0;
         if (file_exists($pidFile)) {
             $pid = (int) file_get_contents($pidFile);
-            if ($pid > 0 && @posix_kill($pid, 0)) {
+            if ($pid > 0 && $this->isProcessRunning($pid)) {
                 $running = true;
             }
+        }
+
+        // Also check marker file — the artisan command writes 'DONE' when finished
+        $markerDone = file_exists($markerFile) && trim(file_get_contents($markerFile)) === 'DONE';
+        if ($markerDone) {
+            $running = false;
         }
 
         $log = '';
@@ -317,7 +337,33 @@ class TestCompareController extends Controller
             'pid' => $pid,
             'log' => $log,
             'trace_counts' => $traceCounts,
+            'marker_done' => $markerDone,
         ]);
+    }
+
+    /**
+     * Check if a process is running (works without posix_kill).
+     */
+    private function isProcessRunning(int $pid): bool
+    {
+        if ($pid <= 0) {
+            return false;
+        }
+
+        // Try /proc filesystem first (Linux)
+        if (file_exists("/proc/{$pid}")) {
+            return true;
+        }
+
+        // Fallback: posix_kill with signal 0
+        if (function_exists('posix_kill')) {
+            return @posix_kill($pid, 0);
+        }
+
+        // Last resort: ps command
+        $result = shell_exec("ps -p {$pid} -o pid= 2>/dev/null");
+
+        return ! empty(trim($result ?? ''));
     }
 
     /**

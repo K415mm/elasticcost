@@ -570,7 +570,16 @@
 
             // Poll status every 5 seconds
             let lastLogLen = 0;
+            let pollCount = 0;
+            const maxPolls = 120; // 10 minutes max
             const pollInterval = setInterval(async () => {
+                pollCount++;
+                if (pollCount > maxPolls) {
+                    clearInterval(pollInterval);
+                    log('⚠ Polling timeout — check server logs. Reloading...');
+                    setTimeout(() => location.reload(), 3000);
+                    return;
+                }
                 try {
                     const statusResp = await fetch('{{ route("test-compare.status") }}', {
                         headers: { 'Accept': 'application/json' }
@@ -579,30 +588,41 @@
 
                     // Update progress bar based on trace counts
                     const total = 68; // 17 requests × 4 modes
-                    const done = (status.trace_counts['B-full-harness'] || 0)
-                               + (status.trace_counts['B-warm-harness'] || 0)
+                    const done = (status.trace_counts['A1-direct-api'] || 0)
                                + (status.trace_counts['A2-loop-no-features'] || 0)
-                               + (status.trace_counts['A1-direct-api'] || 0);
+                               + (status.trace_counts['B-full-harness'] || 0)
+                               + (status.trace_counts['B-warm-harness'] || 0);
                     const pct = Math.min(Math.round((done / total) * 100), 99);
                     progressBar.style.width = pct + '%';
                     progressBar.innerText = pct + '% (' + done + '/' + total + ')';
+
+                    // Show per-mode progress
+                    const modes = ['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'];
+                    const modeLabels = {'A1-direct-api': 'A1', 'A2-loop-no-features': 'A2', 'B-full-harness': 'B-cold', 'B-warm-harness': 'B-warm'};
+                    let progressStr = modes.map(m => modeLabels[m] + ':' + (status.trace_counts[m] || 0) + '/17').join(' | ');
+                    log('Progress: ' + progressStr);
 
                     // Append new log lines
                     if (status.log && status.log.length > lastLogLen) {
                         const newLog = status.log.substring(lastLogLen);
                         lastLogLen = status.log.length;
-                        // Only log meaningful lines
                         const lines = newLog.split('\n').filter(l => l.trim());
                         lines.forEach(line => log(line));
                     }
 
-                    if (!status.running) {
+                    // Check completion: process not running OR marker says DONE
+                    if (!status.running || status.marker_done) {
                         clearInterval(pollInterval);
-                        progressBar.style.width = '100%';
-                        progressBar.innerText = '100%';
-                        log('✓ Test suite completed!');
-                        log('Reloading page to show results...');
-                        setTimeout(() => location.reload(), 2000);
+                        if (done < total && !status.marker_done) {
+                            log('⚠ Process terminated early — only ' + done + '/68 traces generated.');
+                            log('Check server logs for errors. Reloading to show partial results...');
+                        } else {
+                            progressBar.style.width = '100%';
+                            progressBar.innerText = '100%';
+                            log('✓ Test suite completed! (' + done + '/68 traces)');
+                            log('Reloading page to show results...');
+                        }
+                        setTimeout(() => location.reload(), 3000);
                     }
                 } catch (e) {
                     // Keep polling even if one request fails
