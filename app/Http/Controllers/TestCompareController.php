@@ -17,8 +17,8 @@ class TestCompareController extends Controller
 
         // Load from 'latest' symlink (points to runs/{run_id})
         $latestDir = is_link($baseDir.'/latest') ? $baseDir.'/latest' : $baseDir;
-        $hasResults = file_exists($latestDir.'/comparison-summary.json');
-        $summary = $hasResults
+        $hasSummary = file_exists($latestDir.'/comparison-summary.json');
+        $summary = $hasSummary
             ? json_decode(file_get_contents($latestDir.'/comparison-summary.json'), true)
             : null;
 
@@ -26,28 +26,37 @@ class TestCompareController extends Controller
         $runMeta = $summary['_meta'] ?? null;
         unset($summary['_meta']);
 
-        // Load all traces from latest run directory
+        // Load all traces from latest run directory — even if summary isn't written yet
         $traces = [];
         $traceFreshness = [];
         $allModes = ['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'];
+        $hasTraces = false;
 
-        if ($hasResults) {
-            foreach ($allModes as $mode) {
-                $dir = $latestDir.'/traces/'.$mode;
-                if (is_dir($dir)) {
-                    $files = glob($dir.'/request-*.json');
-                    foreach ($files as $file) {
-                        $data = json_decode(file_get_contents($file), true);
-                        if (is_array($data)) {
-                            $traces[$mode][] = $data;
-                        }
-                    }
-                    if (isset($traces[$mode])) {
-                        usort($traces[$mode], fn ($a, $b) => ($a['request_index'] ?? 0) <=> ($b['request_index'] ?? 0));
+        foreach ($allModes as $mode) {
+            $dir = $latestDir.'/traces/'.$mode;
+            if (is_dir($dir)) {
+                $files = glob($dir.'/request-*.json');
+                foreach ($files as $file) {
+                    $data = json_decode(file_get_contents($file), true);
+                    if (is_array($data)) {
+                        $traces[$mode][] = $data;
+                        $hasTraces = true;
                     }
                 }
+                if (isset($traces[$mode])) {
+                    usort($traces[$mode], fn ($a, $b) => ($a['request_index'] ?? 0) <=> ($b['request_index'] ?? 0));
+                }
             }
+        }
 
+        // If we have traces but no summary (run in progress), compute partial summary
+        if ($hasTraces && ! $summary) {
+            $summary = $this->computePartialSummary($traces);
+        }
+
+        $hasResults = $hasSummary || $hasTraces;
+
+        if ($hasTraces) {
             // Check trace freshness — are all traces from the same run?
             $runIds = [];
             foreach ($traces as $modeTraces) {
@@ -60,6 +69,19 @@ class TestCompareController extends Controller
             $traceFreshness['unique_run_ids'] = array_keys($runIds);
             $traceFreshness['is_single_run'] = count($runIds) <= 1;
             $traceFreshness['trace_count'] = array_sum(array_map('count', $traces));
+
+            // If no summary meta, build partial meta from traces
+            if (! $runMeta && $hasTraces) {
+                $runMeta = [
+                    'run_id' => array_key_first($runIds) ?? null,
+                    'run_start' => null,
+                    'run_end' => null,
+                    'total_modes' => 4,
+                    'total_executions' => 68,
+                    'modes_run' => array_keys($traces),
+                    'in_progress' => true,
+                ];
+            }
 
             // Check file modification times for staleness
             $newestMtime = 0;
@@ -117,6 +139,43 @@ class TestCompareController extends Controller
             'analytics',
             'availableRuns',
         ));
+    }
+
+    /**
+     * Compute a partial summary from traces when the run is still in progress
+     * and no comparison-summary.json has been written yet.
+     */
+    private function computePartialSummary(array $traces): array
+    {
+        $summary = [];
+
+        foreach ($traces as $mode => $modeTraces) {
+            if (empty($modeTraces)) {
+                continue;
+            }
+
+            $latencies = array_map(fn ($t) => $t['timing']['latency_ms'] ?? 0, $modeTraces);
+            $totalTokens = array_map(fn ($t) => $t['tokens']['total_tokens'] ?? 0, $modeTraces);
+            $toolCallCounts = array_map(fn ($t) => $t['tool_calls']['count'] ?? 0, $modeTraces);
+            $responseLengths = array_map(fn ($t) => $t['response_length'] ?? 0, $modeTraces);
+            $successCount = count(array_filter($modeTraces, fn ($t) => $t['success'] ?? false));
+            $count = max(count($modeTraces), 1);
+
+            $summary[$mode] = [
+                'total_requests' => count($modeTraces),
+                'successful' => $successCount,
+                'failed' => count($modeTraces) - $successCount,
+                'avg_latency_ms' => (int) round(array_sum($latencies) / $count),
+                'min_latency_ms' => empty($latencies) ? 0 : min($latencies),
+                'max_latency_ms' => empty($latencies) ? 0 : max($latencies),
+                'avg_total_tokens' => (int) round(array_sum($totalTokens) / $count),
+                'avg_tool_calls' => round(array_sum($toolCallCounts) / $count, 2),
+                'avg_response_length' => (int) round(array_sum($responseLengths) / $count),
+                'pipeline_stages_avg' => (int) round(array_sum(array_map(fn ($t) => count($t['pipeline_stages'] ?? []), $modeTraces)) / $count),
+            ];
+        }
+
+        return $summary;
     }
 
     /**
