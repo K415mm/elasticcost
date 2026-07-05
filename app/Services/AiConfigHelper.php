@@ -276,6 +276,8 @@ class AiConfigHelper
                         'ai.providers.qwen.driver' => 'openai',
                         'ai.providers.qwen.key' => $apiKey,
                         'ai.providers.qwen.url' => $url,
+                        'ai.providers.qwen.models.embeddings.default' => $model,
+                        'ai.providers.qwen.models.embeddings.dimensions' => 1024,
                         'ai.default_for_embeddings' => 'qwen',
                     ]);
 

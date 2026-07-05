@@ -139,6 +139,12 @@ return [
             'driver' => 'openai',
             'key' => env('PHPKAIHARNESS_QWEN_KEY') ?: env('QWEN_API_KEY') ?: env('DASHSCOPE_API_KEY'),
             'url' => env('PHPKAIHARNESS_QWEN_URL') ?: env('QWEN_URL') ?: env('DASHSCOPE_URL') ?: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+            'models' => [
+                'embeddings' => [
+                    'default' => env('QWEN_EMBEDDING_MODEL', 'text-embedding-v3'),
+                    'dimensions' => 1024,
+                ],
+            ],
         ],
 
         'voyageai' => [
