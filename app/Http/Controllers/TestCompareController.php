@@ -13,26 +13,27 @@ class TestCompareController extends Controller
     public function index()
     {
         $dataset = TestDataset::all();
-        $outputDir = base_path('testandcompare');
+        $baseDir = base_path('testandcompare');
 
-        // Load summary from single directory
-        $hasResults = file_exists($outputDir.'/comparison-summary.json');
+        // Load from 'latest' symlink (points to runs/{run_id})
+        $latestDir = is_link($baseDir.'/latest') ? $baseDir.'/latest' : $baseDir;
+        $hasResults = file_exists($latestDir.'/comparison-summary.json');
         $summary = $hasResults
-            ? json_decode(file_get_contents($outputDir.'/comparison-summary.json'), true)
+            ? json_decode(file_get_contents($latestDir.'/comparison-summary.json'), true)
             : null;
 
         // Extract run metadata
         $runMeta = $summary['_meta'] ?? null;
         unset($summary['_meta']);
 
-        // Load all traces from single directory
+        // Load all traces from latest run directory
         $traces = [];
         $traceFreshness = [];
         $allModes = ['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'];
 
         if ($hasResults) {
             foreach ($allModes as $mode) {
-                $dir = $outputDir.'/traces/'.$mode;
+                $dir = $latestDir.'/traces/'.$mode;
                 if (is_dir($dir)) {
                     $files = glob($dir.'/request-*.json');
                     foreach ($files as $file) {
@@ -64,7 +65,7 @@ class TestCompareController extends Controller
             $newestMtime = 0;
             $oldestMtime = PHP_INT_MAX;
             foreach ($allModes as $mode) {
-                $dir = $outputDir.'/traces/'.$mode;
+                $dir = $latestDir.'/traces/'.$mode;
                 if (is_dir($dir)) {
                     $files = glob($dir.'/request-*.json');
                     foreach ($files as $file) {
@@ -81,10 +82,28 @@ class TestCompareController extends Controller
                 : 0;
         }
 
+        // List available runs for history
+        $runsDir = $baseDir.'/runs';
+        $availableRuns = [];
+        if (is_dir($runsDir)) {
+            $runDirs = glob($runsDir.'/*', GLOB_ONLYDIR);
+            rsort($runDirs);
+            foreach (array_slice($runDirs, 0, 10) as $runDir) {
+                $runId = basename($runDir);
+                $runSummaryFile = $runDir.'/comparison-summary.json';
+                $availableRuns[] = [
+                    'id' => $runId,
+                    'date' => date('Y-m-d H:i', strtotime(substr($runId, 0, 8).' '.substr($runId, 9, 2).':'.substr($runId, 11, 2).':'.substr($runId, 13, 2))),
+                    'has_summary' => file_exists($runSummaryFile),
+                    'trace_count' => is_dir($runDir.'/traces') ? count(glob($runDir.'/traces/*/request-*.json')) : 0,
+                ];
+            }
+        }
+
         // Compute cross-mode analytics
         $analytics = $this->computeAnalytics($summary, $traces);
 
-        $reportPath = $outputDir.'/comparison-report.md';
+        $reportPath = $latestDir.'/comparison-report.md';
         $reportContent = file_exists($reportPath) ? file_get_contents($reportPath) : null;
 
         return view('test-compare.index', compact(
@@ -96,6 +115,7 @@ class TestCompareController extends Controller
             'runMeta',
             'traceFreshness',
             'analytics',
+            'availableRuns',
         ));
     }
 
@@ -294,6 +314,7 @@ class TestCompareController extends Controller
         $pidFile = storage_path('logs/test-compare-run.pid');
         $logFile = storage_path('logs/test-compare-run.log');
         $markerFile = storage_path('logs/test-compare-run.marker');
+        $runIdFile = storage_path('logs/test-compare-run.id');
 
         $running = false;
         $pid = 0;
@@ -319,12 +340,39 @@ class TestCompareController extends Controller
             }
         }
 
-        // Check current trace counts from single directory
-        $outputDir = base_path('testandcompare');
+        // Count traces from the CURRENT run's directory only (not old runs)
+        $baseDir = base_path('testandcompare');
+        $runId = file_exists($runIdFile) ? trim(file_get_contents($runIdFile)) : null;
+        $runDir = $runId ? $baseDir.'/runs/'.$runId : null;
+
         $traceCounts = [];
+        $currentStage = null;
         foreach (['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'] as $mode) {
-            $dir = $outputDir.'/traces/'.$mode;
-            $traceCounts[$mode] = is_dir($dir) ? count(glob($dir.'/request-*.json')) : 0;
+            $dir = $runDir ? $runDir.'/traces/'.$mode : null;
+            $traceCounts[$mode] = ($dir && is_dir($dir)) ? count(glob($dir.'/request-*.json')) : 0;
+
+            // Detect current stage: first mode with traces but not yet 17
+            if ($currentStage === null && $traceCounts[$mode] > 0 && $traceCounts[$mode] < 17) {
+                $currentStage = $mode;
+            }
+        }
+        // If all modes have 0 traces, we're just starting
+        if ($currentStage === null && array_sum($traceCounts) === 0) {
+            $currentStage = 'starting';
+        }
+        // If all modes have 17, we're done
+        if ($currentStage === null && array_sum($traceCounts) >= 68) {
+            $currentStage = 'completed';
+        }
+        // If some modes are complete but next hasn't started
+        if ($currentStage === null && array_sum($traceCounts) > 0 && array_sum($traceCounts) < 68) {
+            $modeOrder = ['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'];
+            foreach ($modeOrder as $mode) {
+                if ($traceCounts[$mode] < 17) {
+                    $currentStage = $mode;
+                    break;
+                }
+            }
         }
 
         // Clean up PID file if process finished
@@ -338,6 +386,8 @@ class TestCompareController extends Controller
             'log' => $log,
             'trace_counts' => $traceCounts,
             'marker_done' => $markerDone,
+            'run_id' => $runId,
+            'current_stage' => $currentStage,
         ]);
     }
 
@@ -381,8 +431,9 @@ class TestCompareController extends Controller
      */
     public function trace(string $mode, int $index)
     {
-        $outputDir = base_path('testandcompare');
-        $dir = $outputDir.'/traces/'.$mode;
+        $baseDir = base_path('testandcompare');
+        $latestDir = is_link($baseDir.'/latest') ? $baseDir.'/latest' : $baseDir;
+        $dir = $latestDir.'/traces/'.$mode;
         $files = is_dir($dir) ? glob($dir.'/request-*.json') : [];
 
         if (empty($files)) {

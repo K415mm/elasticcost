@@ -47,8 +47,10 @@ class TestRunner
 
     public function __construct(?string $outputDir = null)
     {
-        $this->outputDir = $outputDir ?? base_path('testandcompare');
+        $baseDir = $outputDir ?? base_path('testandcompare');
         $this->runId = date('Ymd-His');
+        // Per-run subdirectory: testandcompare/runs/{run_id}/
+        $this->outputDir = $baseDir.'/runs/'.$this->runId;
         $this->runStartTime = microtime(true);
     }
 
@@ -825,6 +827,42 @@ class TestRunner
     }
 
     /**
+     * Get the base directory (parent of runs/{run_id}).
+     */
+    private function getBaseDir(): string
+    {
+        return dirname(dirname($this->outputDir));
+    }
+
+    /**
+     * Update the 'latest' symlink to point to this run.
+     */
+    private function updateLatestSymlink(): void
+    {
+        $baseDir = $this->getBaseDir();
+        $latest = $baseDir.'/latest';
+
+        // Remove existing symlink/file
+        if (is_link($latest) || file_exists($latest)) {
+            @unlink($latest);
+        }
+
+        // Create symlink: testandcompare/latest -> runs/{run_id}
+        @symlink($this->outputDir, $latest);
+
+        // Fallback: if symlink fails, copy summary file
+        if (! is_link($latest)) {
+            if (! is_dir($latest)) {
+                @mkdir($latest, 0775, true);
+            }
+            $summaryFile = $this->outputDir.'/comparison-summary.json';
+            if (file_exists($summaryFile)) {
+                @copy($summaryFile, $latest.'/comparison-summary.json');
+            }
+        }
+    }
+
+    /**
      * Save traces for a specific mode.
      */
     private function saveTraces(string $mode, array $traces): void
@@ -839,6 +877,9 @@ class TestRunner
             $filename = sprintf('%s/request-%02d-%s.json', $dir, $trace['request_index'] + 1, strtolower($trace['agent']));
             file_put_contents($filename, json_encode($trace, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         }
+
+        // Update latest symlink after each mode is saved (so progress is visible)
+        $this->updateLatestSymlink();
     }
 
     /**
@@ -882,5 +923,8 @@ class TestRunner
             mkdir($this->outputDir, 0775, true);
         }
         file_put_contents($this->outputDir.'/comparison-summary.json', json_encode($summary, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+        // Update latest symlink to point to this run
+        $this->updateLatestSymlink();
     }
 }

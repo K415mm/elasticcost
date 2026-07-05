@@ -46,6 +46,14 @@ class TestPhpkaiharnessCommand extends Command
         $outputDir = base_path($dirName);
         $runner = new TestRunner($outputDir);
 
+        // Write run_id to file so the controller status endpoint knows which directory to count
+        $runIdFile = storage_path('logs/test-compare-run.id');
+        file_put_contents($runIdFile, $runner->getRunId());
+
+        $this->info('Run ID: '.$runner->getRunId());
+        $this->info('Output: '.$runner->getOutputDir());
+        $this->info('');
+
         $filterMode = $this->option('mode');
 
         $result = $runner->runAll(function (string $mode, int $index, int $total, string $status) {
@@ -84,13 +92,13 @@ class TestPhpkaiharnessCommand extends Command
         $reportGenerator = new TestCompareReportGenerator(
             $result['traces'],
             $result['summary'],
-            $outputDir
+            $runner->getOutputDir()
         );
         $reportGenerator->generate();
 
-        $this->info("Report saved to: {$outputDir}/comparison-report.md");
-        $this->info("Traces saved to: {$outputDir}/traces/");
-        $this->info("Summary saved to: {$outputDir}/comparison-summary.json");
+        $this->info("Report saved to: {$runner->getOutputDir()}/comparison-report.md");
+        $this->info("Traces saved to: {$runner->getOutputDir()}/traces/");
+        $this->info("Summary saved to: {$runner->getOutputDir()}/comparison-summary.json");
 
         // Write marker file so the status endpoint knows we're done
         file_put_contents(storage_path('logs/test-compare-run.marker'), 'DONE');
@@ -101,7 +109,9 @@ class TestPhpkaiharnessCommand extends Command
     private function generateReportOnly(): int
     {
         $dirName = $this->option('dir') ?: 'testandcompare';
-        $outputDir = base_path($dirName);
+        $baseDir = base_path($dirName);
+        // Use 'latest' symlink, or fall back to base dir
+        $outputDir = is_link($baseDir.'/latest') ? $baseDir.'/latest' : $baseDir;
         $summaryFile = $outputDir.'/comparison-summary.json';
 
         if (! file_exists($summaryFile)) {

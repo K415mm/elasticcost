@@ -163,6 +163,56 @@
         display: none;
         margin-top: 16px;
     }
+    .stage-indicator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: 2px solid transparent;
+        transition: all 0.3s;
+    }
+    .stage-pending {
+        background: rgba(255,255,255,0.05);
+        color: #666;
+        border-color: rgba(255,255,255,0.1);
+    }
+    .stage-running {
+        background: rgba(233,69,96,0.2);
+        color: #e94560;
+        border-color: #e94560;
+        animation: pulse 1.5s infinite;
+    }
+    .stage-done {
+        background: rgba(74,222,128,0.15);
+        color: #4ade80;
+        border-color: #4ade80;
+    }
+    .stage-error {
+        background: rgba(239,68,68,0.15);
+        color: #ef4444;
+        border-color: #ef4444;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+    .stage-icon { font-size: 1rem; }
+    .stage-count { font-weight: 400; opacity: 0.8; }
+    .run-history-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin-bottom: 4px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    .run-history-item .run-id { font-family: monospace; font-size: 0.8rem; color: #a0a0b0; }
+    .run-history-item .run-traces { font-size: 0.8rem; color: #666; }
 </style>
 @endsection
 
@@ -221,6 +271,23 @@
 </div>
 @endif
 
+@if(!empty($availableRuns))
+<div class="row mt-2">
+    <div class="col-md-12">
+        <div class="analytics-card">
+            <h3>📋 Run History</h3>
+            @foreach($availableRuns as $run)
+            <div class="run-history-item">
+                <span class="run-id">{{ $run['id'] }}</span>
+                <span>{{ $run['date'] }}</span>
+                <span class="run-traces">{{ $run['trace_count'] }} traces @if($run['has_summary'])✓ summary @endif</span>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+@endif
+
 <div class="row">
     <div class="col-md-12">
         <div class="mode-card">
@@ -239,6 +306,20 @@
             <div id="progressContainer" style="display:none; margin-top:16px;">
                 <div class="progress-bar-container">
                     <div id="progressBar" class="progress-bar-fill" style="width:0%;">0%</div>
+                </div>
+                <div id="stageIndicators" style="display:flex; gap:8px; margin:12px 0;">
+                    <div id="stage-A1" class="stage-indicator stage-pending">
+                        <span class="stage-icon">○</span> A1 <span class="stage-count">0/17</span>
+                    </div>
+                    <div id="stage-A2" class="stage-indicator stage-pending">
+                        <span class="stage-icon">○</span> A2 <span class="stage-count">0/17</span>
+                    </div>
+                    <div id="stage-B-cold" class="stage-indicator stage-pending">
+                        <span class="stage-icon">○</span> B-cold <span class="stage-count">0/17</span>
+                    </div>
+                    <div id="stage-B-warm" class="stage-indicator stage-pending">
+                        <span class="stage-icon">○</span> B-warm <span class="stage-count">0/17</span>
+                    </div>
                 </div>
                 <div id="runLog"></div>
             </div>
@@ -596,11 +677,38 @@
                     progressBar.style.width = pct + '%';
                     progressBar.innerText = pct + '% (' + done + '/' + total + ')';
 
-                    // Show per-mode progress
-                    const modes = ['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'];
-                    const modeLabels = {'A1-direct-api': 'A1', 'A2-loop-no-features': 'A2', 'B-full-harness': 'B-cold', 'B-warm-harness': 'B-warm'};
-                    let progressStr = modes.map(m => modeLabels[m] + ':' + (status.trace_counts[m] || 0) + '/17').join(' | ');
-                    log('Progress: ' + progressStr);
+                    // Update stage indicators
+                    const stageMap = {
+                        'A1-direct-api': 'stage-A1',
+                        'A2-loop-no-features': 'stage-A2',
+                        'B-full-harness': 'stage-B-cold',
+                        'B-warm-harness': 'stage-B-warm',
+                    };
+                    const currentStage = status.current_stage;
+                    Object.keys(stageMap).forEach(mode => {
+                        const el = document.getElementById(stageMap[mode]);
+                        const count = status.trace_counts[mode] || 0;
+                        el.querySelector('.stage-count').textContent = count + '/17';
+                        el.classList.remove('stage-pending', 'stage-running', 'stage-done', 'stage-error');
+                        if (count >= 17) {
+                            el.classList.add('stage-done');
+                            el.querySelector('.stage-icon').textContent = '✓';
+                        } else if (mode === currentStage) {
+                            el.classList.add('stage-running');
+                            el.querySelector('.stage-icon').textContent = '◉';
+                        } else if (count > 0) {
+                            el.classList.add('stage-done');
+                            el.querySelector('.stage-icon').textContent = '✓';
+                        } else {
+                            el.classList.add('stage-pending');
+                            el.querySelector('.stage-icon').textContent = '○';
+                        }
+                    });
+
+                    // Show current stage in log
+                    if (currentStage && currentStage !== 'starting' && currentStage !== 'completed') {
+                        log('Stage: ' + currentStage + ' (' + done + '/68 total)');
+                    }
 
                     // Append new log lines
                     if (status.log && status.log.length > lastLogLen) {
