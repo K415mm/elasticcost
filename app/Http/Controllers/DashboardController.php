@@ -55,7 +55,8 @@ class DashboardController extends Controller
         $totalClusterRamGb = collect($clientSummaries)->sum('cluster_ram_gb');
         $totalRequiredErus = collect($clientSummaries)->sum('required_erus');
 
-        $scenarios = Cache::remember('dashboard:scenarios', now()->addMinutes(10), fn () => Scenario::all());
+        $scenarios = Cache::remember('dashboard:scenarios', now()->addMinutes(10), fn () => Scenario::all()->toArray());
+        $scenarios = collect($scenarios)->map(fn ($s) => (object) $s);
 
         // Active exchange rates
         $eurRate = CurrencyHelper::rate('EUR');
