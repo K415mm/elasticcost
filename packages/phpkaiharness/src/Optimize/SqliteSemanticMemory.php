@@ -2,6 +2,7 @@
 
 namespace Phpkaiharness\Optimize;
 
+use App\Services\AiConfigHelper;
 use Laravel\Ai\Embeddings;
 use PDO;
 use Phpkaiharness\Contracts\SemanticMemoryInterface;
@@ -94,8 +95,18 @@ class SqliteSemanticMemory implements SemanticMemoryInterface
             if (empty($provider)) {
                 $provider = config('harness.default.provider', 'ollama');
             }
+            $model = null;
+            if (class_exists('App\Services\AiConfigHelper')) {
+                try {
+                    $cfg = AiConfigHelper::configureEmbeddings();
+                    $provider = $cfg['provider'] ?? $provider;
+                    $model = $cfg['model'] ?? null;
+                } catch (\Throwable $e) {
+                    // Ignore config errors
+                }
+            }
             try {
-                $response = Embeddings::for([$text])->generate($provider);
+                $response = Embeddings::for([$text])->generate($provider, $model);
 
                 return $response->first() ?? [];
             } catch (\Throwable $e) {

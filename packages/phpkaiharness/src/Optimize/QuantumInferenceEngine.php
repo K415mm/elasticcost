@@ -2,6 +2,7 @@
 
 namespace Phpkaiharness\Optimize;
 
+use App\Services\AiConfigHelper;
 use Illuminate\Support\Facades\DB;
 use Laravel\Ai\Embeddings;
 use PDO;
@@ -67,7 +68,6 @@ class QuantumInferenceEngine
         if (! is_dir($dir)) {
             @mkdir($dir, 0777, true);
         }
-
 
         $this->pdo = new PDO('sqlite:'.$this->dbPath);
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -448,8 +448,18 @@ class QuantumInferenceEngine
 
         if (class_exists(Embeddings::class)) {
             $provider = config('ai.default_for_embeddings') ?: (config('harness.default.provider') ?: 'ollama');
+            $model = null;
+            if (class_exists('App\Services\AiConfigHelper')) {
+                try {
+                    $cfg = AiConfigHelper::configureEmbeddings();
+                    $provider = $cfg['provider'] ?? $provider;
+                    $model = $cfg['model'] ?? null;
+                } catch (\Throwable $e) {
+                    // Ignore config errors
+                }
+            }
             try {
-                $response = Embeddings::for([$text])->generate($provider);
+                $response = Embeddings::for([$text])->generate($provider, $model);
 
                 return $response->first() ?? [];
             } catch (\Throwable $e) {
