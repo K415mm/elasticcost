@@ -52,6 +52,11 @@ class TestRunner
         // Per-run subdirectory: testandcompare/runs/{run_id}/
         $this->outputDir = $baseDir.'/runs/'.$this->runId;
         $this->runStartTime = microtime(true);
+
+        // Pre-create the run directory to catch permission issues early
+        if (! is_dir($this->outputDir)) {
+            @mkdir($this->outputDir, 0775, true);
+        }
     }
 
     public function getOutputDir(): string
