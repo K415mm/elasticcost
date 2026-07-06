@@ -270,7 +270,7 @@
                                 <tr>
                                     <td class="fw-bold text-white">{{ $scen->name }}</td>
                                     <td>{{ ucfirst($scen->workload_profile) }}</td>
-                                    <td class="text-center text-white mono-cell">{{ $scen->days_retention }} days</td>
+                                    <td class="text-center text-white mono-cell">{{ $scen->retention_days ?? $scen->days_retention ?? 0 }} days</td>
                                     <td class="text-center">
                                         {{ $scen->hot_days }}d / {{ $scen->hot_replicas }}r
                                     </td>

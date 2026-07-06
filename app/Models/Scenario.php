@@ -34,4 +34,13 @@ class Scenario extends Model
         'frozen_replicas' => 'integer',
         'is_system_default' => 'boolean',
     ];
+
+    protected $appends = [
+        'days_retention',
+    ];
+
+    public function getDaysRetentionAttribute(): int
+    {
+        return (int) ($this->attributes['retention_days'] ?? 0);
+    }
 }
