@@ -78,6 +78,7 @@ services:
       - elasticcost-network
 
   worker:
+    user: "82:82"
     build:
       context: .
       dockerfile: Dockerfile
@@ -99,6 +100,7 @@ services:
       - elasticcost-network
 
   reverb:
+    user: "82:82"
     build:
       context: .
       dockerfile: Dockerfile
@@ -121,6 +123,7 @@ services:
       - elasticcost-network
 
   pulse:
+    user: "82:82"
     build:
       context: .
       dockerfile: Dockerfile
