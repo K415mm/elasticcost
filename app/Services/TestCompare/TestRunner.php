@@ -11,7 +11,6 @@ use App\Models\AgentConversation;
 use App\Models\AgentConversationMessage;
 use App\Models\GlobalSetting;
 use App\Services\AiConfigHelper;
-use App\Services\TestCompare\AiEvaluator;
 use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
@@ -228,6 +227,7 @@ class TestRunner
     private function runDirectApi(int $index, array $data): TestProbe
     {
         $probe = new TestProbe('A1-direct-api', $index, $data);
+        $probe->runId = $this->runId;
 
         $aiConfig = AiConfigHelper::configure();
         $provider = $aiConfig['provider'];
@@ -301,6 +301,7 @@ class TestRunner
     private function runLoopNoFeatures(int $index, array $data): TestProbe
     {
         $probe = new TestProbe('A2-loop-no-features', $index, $data);
+        $probe->runId = $this->runId;
 
         // Temporarily disable all feature_graph nodes
         $originalConfig = config('harness.feature_graph.nodes');
@@ -344,6 +345,7 @@ class TestRunner
     private function runFullHarness(int $index, array $data, string $mode = 'B-full-harness'): TestProbe
     {
         $probe = new TestProbe($mode, $index, $data);
+        $probe->runId = $this->runId;
 
         // Listen to harness events to capture pipeline stages and tool calls
         $eventListeners = $this->attachEventListeners($probe);
@@ -934,7 +936,7 @@ class TestRunner
                     $name = $detail['name'];
                     $payload = json_decode($detail['payload'] ?? '{}', true) ?: [];
                     $response = json_decode($detail['response'] ?? '{}', true) ?: [];
-                    if (empty($response) && !empty($detail['response'])) {
+                    if (empty($response) && ! empty($detail['response'])) {
                         $response = ['message' => $detail['response']];
                     }
 
@@ -996,8 +998,8 @@ class TestRunner
         }
 
         // Always apply the reliable prompt/system prompt parsing for quantum memory & ontology RAG
-        $promptToCheck = ($trace['prompts']['effective_user_prompt'] ?? '') . "\n" . ($trace['prompts']['optimized_system_prompt'] ?? '');
-        
+        $promptToCheck = ($trace['prompts']['effective_user_prompt'] ?? '')."\n".($trace['prompts']['optimized_system_prompt'] ?? '');
+
         // 1. Quantum memory
         if (str_contains($promptToCheck, '[QUANTUM-HARNESS MEMORY ENVELOPE]:')) {
             $parts = explode('[QUANTUM-HARNESS MEMORY ENVELOPE]:', $promptToCheck);
