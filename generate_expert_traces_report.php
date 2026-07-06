@@ -54,9 +54,15 @@ function querySession(string $dbPath): ?array
             "SELECT payload FROM harness_details WHERE type='quantum' LIMIT 1"
         )->fetchColumn();
 
-        // Memories
-        $memCount = $pdo->query("SELECT COUNT(*) FROM harness_memories")->fetchColumn();
-        $factsCount = $pdo->query("SELECT COUNT(*) FROM harness_facts")->fetchColumn();
+        // Memories & facts (tables may not exist in all sessions)
+        $memCount = 0;
+        $factsCount = 0;
+        try {
+            $memCount = $pdo->query("SELECT COUNT(*) FROM harness_memories")->fetchColumn();
+        } catch (Exception $e) { /* table absent */ }
+        try {
+            $factsCount = $pdo->query("SELECT COUNT(*) FROM harness_facts")->fetchColumn();
+        } catch (Exception $e) { /* table absent */ }
 
         return [
             'session'         => $session,
@@ -71,7 +77,6 @@ function querySession(string $dbPath): ?array
             'db_path'         => $dbPath,
         ];
     } catch (Exception $e) {
-        fwrite(STDERR, "ERROR on $dbPath: " . $e->getMessage() . "\n");
         return null;
     }
 }
@@ -82,9 +87,7 @@ $coldSessions   = [];
 $warmSessions   = [];
 
 for ($i = 0; $i < 20; $i++) {
-    $p = "$sessionsBase/testcmp__B-full-harness_$i/monitor.db";
-    fwrite(STDERR, "Checking: $p exists=" . (file_exists($p) ? 'Y' : 'N') . "\n");
-    $r = querySession($p);
+    $r = querySession("$sessionsBase/testcmp__B-full-harness_$i/monitor.db");
     if ($r !== null) {
         $coldSessions[$i] = $r;
     }
