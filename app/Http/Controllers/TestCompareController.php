@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\TestCompare\TestDataset;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\File;
 
 class TestCompareController extends Controller
 {
@@ -143,8 +142,7 @@ class TestCompareController extends Controller
     }
 
     /**
-     * Compute a partial summary from traces when the run is still in progress
-     * and no comparison-summary.json has been written yet.
+     * Compute a partial summary from traces (used while run is still in progress).
      */
     private function computePartialSummary(array $traces): array
     {
@@ -162,6 +160,8 @@ class TestCompareController extends Controller
             $successCount = count(array_filter($modeTraces, fn ($t) => $t['success'] ?? false));
             $count = max(count($modeTraces), 1);
 
+            $aiScores = array_filter(array_map(fn ($t) => $t['ai_evaluation']['score'] ?? null, $modeTraces), fn ($s) => $s !== null);
+
             $summary[$mode] = [
                 'total_requests' => count($modeTraces),
                 'successful' => $successCount,
@@ -173,6 +173,9 @@ class TestCompareController extends Controller
                 'avg_tool_calls' => round(array_sum($toolCallCounts) / $count, 2),
                 'avg_response_length' => (int) round(array_sum($responseLengths) / $count),
                 'pipeline_stages_avg' => (int) round(array_sum(array_map(fn ($t) => count($t['pipeline_stages'] ?? []), $modeTraces)) / $count),
+                'avg_ai_score' => ! empty($aiScores) ? round(array_sum($aiScores) / count($aiScores), 1) : null,
+                'ai_win_count' => count(array_filter($modeTraces, fn ($t) => ($t['ai_evaluation']['is_winner'] ?? false) === true)),
+                'partial' => true,
             ];
         }
 
@@ -197,6 +200,7 @@ class TestCompareController extends Controller
             'efficiency_ratios' => [],
             'per_request_deltas' => [],
             'features_matrix' => [],
+            'ai_evaluation_summary' => [],
         ];
 
         // Latency comparison
@@ -292,6 +296,8 @@ class TestCompareController extends Controller
                 'index' => $i,
                 'agent' => $a1['agent'] ?? $bc['agent'] ?? 'N/A',
                 'category' => $a1['category'] ?? $bc['category'] ?? 'N/A',
+                'description' => $a1['description'] ?? $bc['description'] ?? '',
+                'prompt' => $a1['prompts']['raw_user_prompt'] ?? $bc['prompts']['raw_user_prompt'] ?? '',
                 'a1_latency' => $a1Lat,
                 'a2_latency' => $a2Lat,
                 'b_cold_latency' => $bcLat,
@@ -315,117 +321,87 @@ class TestCompareController extends Controller
                 'a2_success' => $a2['success'] ?? false,
                 'b_cold_success' => $bc['success'] ?? false,
                 'b_warm_success' => $bw['success'] ?? false,
+                // AI evaluations per mode
+                'a1_eval' => $a1['ai_evaluation'] ?? null,
+                'a2_eval' => $a2['ai_evaluation'] ?? null,
+                'b_cold_eval' => $bc['ai_evaluation'] ?? null,
+                'b_warm_eval' => $bw['ai_evaluation'] ?? null,
+                // Winner
+                'winner' => $bc['ai_evaluation']['winner_mode'] ?? ($a1['ai_evaluation']['winner_mode'] ?? null),
+                // Response previews
+                'a1_response' => mb_substr($a1['response'] ?? '', 0, 300),
+                'b_cold_response' => mb_substr($bc['response'] ?? '', 0, 300),
+                'b_warm_response' => mb_substr($bw['response'] ?? '', 0, 300),
             ];
         }
 
-        // Feature Matrix evaluation breakdown
-        $bcTraces = $traces['B-full-harness'] ?? [];
-        $bwTraces = $traces['B-warm-harness'] ?? [];
-
-        $draftCount = count(array_filter($bcTraces, fn ($t) => ! empty($t['features_eval']['draft_verification']['draft_generated']) || ! empty($t['draft_verification']['draft'])));
-        $ragCount = count(array_filter($bcTraces, fn ($t) => ! empty($t['features_eval']['ontology_rag']['injected']) || ! empty($t['context_injected'])));
-        $cacheHitCold = count(array_filter($bcTraces, fn ($t) => ($t['cache']['hit'] ?? $t['features_eval']['semantic_cache']['hit'] ?? false) === true));
-        $cacheHitWarm = count(array_filter($bwTraces, fn ($t) => ($t['cache']['hit'] ?? $t['features_eval']['semantic_cache']['hit'] ?? false) === true));
-        $quantumNodesTotal = array_sum(array_map(fn ($t) => $t['quantum_memory']['nodes_retrieved'] ?? $t['features_eval']['quantum_memory']['nodes_retrieved'] ?? count($t['quantum_memory']['nodes'] ?? []), $bcTraces));
-        $compressedCount = count(array_filter($bcTraces, fn ($t) => ($t['features_eval']['context_compression']['enabled'] ?? false) === true));
-        $compactionCount = count(array_filter($bcTraces, fn ($t) => ($t['iterations'] ?? 1) > 1));
-        $graphMemoryTools = array_sum(array_map(fn ($t) => count(array_filter($t['tool_calls']['calls'] ?? [], fn ($c) => ($c['name'] ?? '') === 'query_graph_memory')), $bcTraces));
+        // Features matrix — aggregate from B-mode traces
+        $bColdTraces = $traces['B-full-harness'] ?? [];
+        $bWarmTraces = $traces['B-warm-harness'] ?? [];
+        $allBTraces = array_merge($bColdTraces, $bWarmTraces);
 
         $result['features_matrix'] = [
             'draft_verification' => [
-                'name' => 'Draft Verification',
-                'description' => 'Speculative proposal generation verified by fast model passes',
-                'executed_count' => $draftCount,
-                'status' => 'ACTIVE',
+                'executed_count' => count(array_filter($allBTraces, fn ($t) => ! empty($t['draft_verification']['draft']))),
+                'avg_draft_length' => count($allBTraces) > 0
+                    ? (int) round(array_sum(array_map(fn ($t) => strlen($t['draft_verification']['draft'] ?? ''), $allBTraces)) / max(count($allBTraces), 1))
+                    : 0,
             ],
             'ontology_rag' => [
-                'name' => 'Ontology RAG (pgvector)',
-                'description' => 'Semantic document chunk injection from PostgreSQL pgvector',
-                'executed_count' => $ragCount,
-                'status' => 'ACTIVE',
+                'executed_count' => count(array_filter($allBTraces, fn ($t) => count($t['context_injected'] ?? []) > 0)),
+                'total_chunks_injected' => array_sum(array_map(fn ($t) => array_sum(array_column($t['context_injected'] ?? [], 'record_count')), $allBTraces)),
             ],
             'semantic_cache' => [
-                'name' => 'Semantic Cache',
-                'description' => 'Cross-session exact & fuzzy prompt matching to skip LLM calls',
-                'cold_hits' => $cacheHitCold,
-                'warm_hits' => $cacheHitWarm,
-                'warm_hit_pct' => count($bwTraces) > 0 ? round(($cacheHitWarm / count($bwTraces)) * 100, 1) : 0,
-                'status' => 'ACTIVE',
+                'cold_hits' => count(array_filter($bColdTraces, fn ($t) => ($t['cache']['hit'] ?? false) === true)),
+                'warm_hits' => count(array_filter($bWarmTraces, fn ($t) => ($t['cache']['hit'] ?? false) === true)),
+                'warm_hit_pct' => count($bWarmTraces) > 0
+                    ? round(count(array_filter($bWarmTraces, fn ($t) => ($t['cache']['hit'] ?? false) === true)) / count($bWarmTraces) * 100)
+                    : 0,
             ],
             'quantum_memory' => [
-                'name' => 'Quantum Memory Superposition',
-                'description' => 'Multi-hop entanglement traversal & phase-angle superposition retrieval',
-                'total_nodes_retrieved' => $quantumNodesTotal,
-                'status' => 'ACTIVE',
+                'total_nodes_retrieved' => array_sum(array_map(fn ($t) => $t['quantum_memory']['nodes_retrieved'] ?? 0, $allBTraces)),
+                'avg_nodes_per_request' => count($allBTraces) > 0
+                    ? round(array_sum(array_map(fn ($t) => $t['quantum_memory']['nodes_retrieved'] ?? 0, $allBTraces)) / count($allBTraces), 1)
+                    : 0,
             ],
             'context_compression' => [
-                'name' => 'Context Compression',
-                'description' => 'Prompt middleware noise stripping & token reduction',
-                'executed_count' => $compressedCount,
-                'status' => 'ACTIVE',
+                'executed_count' => count(array_filter($allBTraces, fn ($t) => count($t['pipeline_stages'] ?? []) > 0)),
+                'avg_prompt_tokens' => count($allBTraces) > 0
+                    ? (int) round(array_sum(array_map(fn ($t) => $t['tokens']['prompt_tokens'] ?? 0, $allBTraces)) / count($allBTraces))
+                    : 0,
             ],
             'compaction' => [
-                'name' => 'Context Compactor',
-                'description' => 'Sliding window compaction on multi-turn conversation histories',
-                'compacted_turns' => $compactionCount,
-                'status' => 'ACTIVE',
+                'compacted_turns' => array_sum(array_map(fn ($t) => $t['iterations'] ?? 0, $allBTraces)),
+                'avg_iterations' => count($allBTraces) > 0
+                    ? round(array_sum(array_map(fn ($t) => $t['iterations'] ?? 0, $allBTraces)) / count($allBTraces), 1)
+                    : 0,
             ],
             'cognitive_graph_memory' => [
-                'name' => 'Cognitive Graph Memory',
-                'description' => 'Persistent facts & entity relationships queried via QueryGraphMemoryTool',
-                'facts_queried' => $graphMemoryTools,
-                'status' => 'ACTIVE',
+                'facts_queried' => count(array_filter(
+                    array_merge(...array_map(fn ($t) => $t['tool_calls']['calls'] ?? [], $allBTraces)),
+                    fn ($tc) => ($tc['name'] ?? '') === 'query_graph_memory'
+                )),
             ],
         ];
 
-        return $result;
-    }
+        // AI evaluation summary across modes
+        foreach ($modes as $mode) {
+            $modeTraces = $traces[$mode] ?? [];
+            $scores = array_filter(array_map(fn ($t) => $t['ai_evaluation']['score'] ?? null, $modeTraces), fn ($s) => $s !== null);
+            $wins = count(array_filter($modeTraces, fn ($t) => ($t['ai_evaluation']['is_winner'] ?? false) === true));
 
-    /**
-     * Purge all old runs and traces.
-     */
-    public function purge()
-    {
-        try {
-            $baseDir = base_path('testandcompare');
-            $runsDir = $baseDir.'/runs';
-
-            if (is_dir($runsDir)) {
-                File::cleanDirectory($runsDir);
+            if (! empty($scores)) {
+                $result['ai_evaluation_summary'][$mode] = [
+                    'avg_score' => round(array_sum($scores) / count($scores), 1),
+                    'min_score' => min($scores),
+                    'max_score' => max($scores),
+                    'win_count' => $wins,
+                    'win_pct' => count($modeTraces) > 0 ? round($wins / count($modeTraces) * 100) : 0,
+                ];
             }
-
-            if (is_link($baseDir.'/latest') || is_file($baseDir.'/latest')) {
-                @unlink($baseDir.'/latest');
-            } elseif (is_dir($baseDir.'/latest')) {
-                File::deleteDirectory($baseDir.'/latest');
-            }
-
-            if (is_dir($baseDir.'/traces')) {
-                File::deleteDirectory($baseDir.'/traces');
-            }
-
-            $filesToClean = [
-                storage_path('logs/test-compare-run.pid'),
-                storage_path('logs/test-compare-run.log'),
-                storage_path('logs/test-compare-run.marker'),
-                storage_path('logs/test-compare-run.id'),
-            ];
-            foreach ($filesToClean as $file) {
-                if (file_exists($file)) {
-                    @unlink($file);
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'All old test runs and traces have been purged successfully.',
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Purge failed: '.$e->getMessage(),
-            ], 500);
         }
+
+        return $result;
     }
 
     /**
@@ -513,17 +489,14 @@ class TestCompareController extends Controller
         $runId = file_exists($runIdFile) ? trim(file_get_contents($runIdFile)) : null;
         $runDir = $runId ? $baseDir.'/runs/'.$runId : null;
 
-        $totalReqs = count(TestDataset::all());
-        $totalExecutions = $totalReqs * 4;
-
         $traceCounts = [];
         $currentStage = null;
         foreach (['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'] as $mode) {
             $dir = $runDir ? $runDir.'/traces/'.$mode : null;
             $traceCounts[$mode] = ($dir && is_dir($dir)) ? count(glob($dir.'/request-*.json')) : 0;
 
-            // Detect current stage: first mode with traces but not yet complete
-            if ($currentStage === null && $traceCounts[$mode] > 0 && $traceCounts[$mode] < $totalReqs) {
+            // Detect current stage: first mode with traces but not yet 17
+            if ($currentStage === null && $traceCounts[$mode] > 0 && $traceCounts[$mode] < 17) {
                 $currentStage = $mode;
             }
         }
@@ -531,15 +504,15 @@ class TestCompareController extends Controller
         if ($currentStage === null && array_sum($traceCounts) === 0) {
             $currentStage = 'starting';
         }
-        // If all modes are complete
-        if ($currentStage === null && array_sum($traceCounts) >= $totalExecutions) {
+        // If all modes have 17, we're done
+        if ($currentStage === null && array_sum($traceCounts) >= 68) {
             $currentStage = 'completed';
         }
         // If some modes are complete but next hasn't started
-        if ($currentStage === null && array_sum($traceCounts) > 0 && array_sum($traceCounts) < $totalExecutions) {
+        if ($currentStage === null && array_sum($traceCounts) > 0 && array_sum($traceCounts) < 68) {
             $modeOrder = ['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'];
             foreach ($modeOrder as $mode) {
-                if ($traceCounts[$mode] < $totalReqs) {
+                if ($traceCounts[$mode] < 17) {
                     $currentStage = $mode;
                     break;
                 }

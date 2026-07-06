@@ -4,215 +4,78 @@
 
 @section('styles')
 <style>
-    .test-compare-header {
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        border-radius: 12px;
-        padding: 24px;
-        margin-bottom: 24px;
-    }
-    .test-compare-header h1 {
-        color: #e94560;
-        font-size: 1.75rem;
-        margin: 0;
-    }
-    .test-compare-header p {
-        color: #a0a0b0;
-        margin: 8px 0 0 0;
-    }
-    .analytics-card {
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 10px;
-        padding: 16px;
-        margin-bottom: 16px;
-    }
-    .analytics-card h3 {
-        color: #e94560;
-        font-size: 1rem;
-        margin: 0 0 12px 0;
-    }
-    .insight-banner {
-        border-radius: 8px;
-        padding: 12px 16px;
-        margin-bottom: 8px;
-        font-size: 0.9rem;
-    }
-    .insight-positive { background: rgba(74,222,128,0.1); border-left: 3px solid #4ade80; }
-    .insight-negative { background: rgba(248,113,113,0.1); border-left: 3px solid #f87171; }
-    .insight-neutral  { background: rgba(96,165,250,0.1); border-left: 3px solid #60a5fa; }
-    .delta-badge {
-        font-size: 0.75rem;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-weight: 600;
-    }
-    .delta-up   { background: rgba(248,113,113,0.2); color: #f87171; }
-    .delta-down { background: rgba(74,222,128,0.2); color: #4ade80; }
-    .delta-flat { background: rgba(160,160,176,0.2); color: #a0a0b0; }
-    .freshness-ok { color: #4ade80; }
-    .freshness-warn { color: #fbbf24; }
-    .freshness-bad { color: #f87171; }
-    .mode-card {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 10px;
-        padding: 16px;
-        margin-bottom: 16px;
-        transition: border-color 0.2s;
-    }
-    .mode-card:hover {
-        border-color: #e94560;
-    }
-    .mode-card h3 {
-        color: #e94560;
-        font-size: 1.1rem;
-        margin: 0 0 8px 0;
-    }
-    .mode-card .badge {
-        font-size: 0.75rem;
-    }
-    .metric-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 6px 0;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-    .metric-row:last-child { border-bottom: none; }
-    .metric-label { color: #a0a0b0; }
-    .metric-value { color: #fff; font-weight: 600; }
-    .metric-value.good { color: #4ade80; }
-    .metric-value.bad { color: #f87171; }
-    .progress-bar-container {
-        background: rgba(255,255,255,0.1);
-        border-radius: 8px;
-        height: 24px;
-        overflow: hidden;
-        margin: 12px 0;
-    }
-    .progress-bar-fill {
-        background: linear-gradient(90deg, #e94560, #0f3460);
-        height: 100%;
-        transition: width 0.3s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-    .dataset-table {
-        font-size: 0.85rem;
-    }
-    .dataset-table .agent-badge {
-        font-size: 0.7rem;
-        padding: 2px 8px;
-        border-radius: 4px;
-    }
-    .agent-badge.elastic { background: #0f3460; color: #a0d0ff; }
-    .agent-badge.soc { background: #4a1942; color: #ff9ecf; }
-    .lang-badge { font-size: 0.7rem; padding: 1px 6px; border-radius: 3px; }
-    .lang-en { background: #1a472a; color: #4ade80; }
-    .lang-fr { background: #1e3a5f; color: #60a5fa; }
-    .lang-tn { background: #7c2d12; color: #fb923c; }
-    .run-btn {
-        background: linear-gradient(135deg, #e94560, #0f3460);
-        border: none;
-        padding: 12px 32px;
-        border-radius: 8px;
-        font-weight: 600;
-        color: #fff;
-        cursor: pointer;
-        transition: transform 0.2s;
-    }
-    .run-btn:hover { transform: translateY(-2px); }
-    .run-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .trace-detail {
-        background: rgba(0,0,0,0.3);
-        border-radius: 8px;
-        padding: 16px;
-        margin-top: 12px;
-        font-family: monospace;
-        font-size: 0.8rem;
-        max-height: 400px;
-        overflow-y: auto;
-        white-space: pre-wrap;
-        word-break: break-all;
-    }
-    .report-content {
-        background: rgba(255,255,255,0.03);
-        border-radius: 8px;
-        padding: 24px;
-        max-height: 600px;
-        overflow-y: auto;
-    }
-    .report-content h1 { color: #e94560; font-size: 1.5rem; }
-    .report-content h2 { color: #e94560; font-size: 1.2rem; margin-top: 24px; }
-    .report-content table { width: 100%; margin: 12px 0; }
-    .report-content th { background: rgba(255,255,255,0.05); padding: 8px; }
-    .report-content td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .report-content code { background: rgba(233,69,96,0.15); padding: 2px 6px; border-radius: 3px; }
-    #runLog {
-        background: rgba(0,0,0,0.4);
-        border-radius: 8px;
-        padding: 12px;
-        max-height: 300px;
-        overflow-y: auto;
-        font-family: monospace;
-        font-size: 0.8rem;
-        color: #4ade80;
-        display: none;
-        margin-top: 16px;
-    }
-    .stage-indicator {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        border: 2px solid transparent;
-        transition: all 0.3s;
-    }
-    .stage-pending {
-        background: rgba(255,255,255,0.05);
-        color: #666;
-        border-color: rgba(255,255,255,0.1);
-    }
-    .stage-running {
-        background: rgba(233,69,96,0.2);
-        color: #e94560;
-        border-color: #e94560;
-        animation: pulse 1.5s infinite;
-    }
-    .stage-done {
-        background: rgba(74,222,128,0.15);
-        color: #4ade80;
-        border-color: #4ade80;
-    }
-    .stage-error {
-        background: rgba(239,68,68,0.15);
-        color: #ef4444;
-        border-color: #ef4444;
-    }
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.6; }
-    }
-    .stage-icon { font-size: 1rem; }
-    .stage-count { font-weight: 400; opacity: 0.8; }
-    .run-history-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 12px;
-        border-radius: 6px;
-        margin-bottom: 4px;
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.05);
-    }
-    .run-history-item .run-id { font-family: monospace; font-size: 0.8rem; color: #a0a0b0; }
-    .run-history-item .run-traces { font-size: 0.8rem; color: #666; }
+/* ── Layout & Header ── */
+.tc-header{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:12px;padding:24px;margin-bottom:24px;}
+.tc-header h1{color:#e94560;font-size:1.75rem;margin:0;}
+.tc-header p{color:#a0a0b0;margin:8px 0 0;}
+/* ── Cards ── */
+.tc-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;margin-bottom:16px;}
+.tc-card h3{color:#e94560;font-size:1rem;margin:0 0 12px;}
+.mode-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:16px;margin-bottom:16px;transition:border-color .2s;}
+.mode-card:hover{border-color:#e94560;}
+.mode-card h3{color:#e94560;font-size:1.1rem;margin:0 0 8px;}
+/* ── Metrics ── */
+.metric-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.metric-row:last-child{border-bottom:none;}
+.metric-label{color:#a0a0b0;}
+.metric-value{color:#fff;font-weight:600;}
+.metric-value.good{color:#4ade80;}
+.metric-value.bad{color:#f87171;}
+.metric-value.warn{color:#fbbf24;}
+/* ── Badges & Deltas ── */
+.delta-badge{font-size:.75rem;padding:2px 6px;border-radius:4px;font-weight:600;}
+.delta-up{background:rgba(248,113,113,.2);color:#f87171;}
+.delta-down{background:rgba(74,222,128,.2);color:#4ade80;}
+.delta-flat{background:rgba(160,160,176,.2);color:#a0a0b0;}
+/* ── Insights ── */
+.insight{border-radius:8px;padding:10px 14px;margin-bottom:6px;font-size:.875rem;}
+.insight-pos{background:rgba(74,222,128,.08);border-left:3px solid #4ade80;}
+.insight-neg{background:rgba(248,113,113,.08);border-left:3px solid #f87171;}
+.insight-neu{background:rgba(96,165,250,.08);border-left:3px solid #60a5fa;}
+/* ── AI Score ── */
+.ai-score{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;font-weight:700;font-size:.9rem;}
+.ai-score-high{background:rgba(74,222,128,.2);color:#4ade80;border:2px solid #4ade80;}
+.ai-score-mid{background:rgba(251,191,36,.2);color:#fbbf24;border:2px solid #fbbf24;}
+.ai-score-low{background:rgba(248,113,113,.2);color:#f87171;border:2px solid #f87171;}
+.winner-crown{font-size:1rem;}
+/* ── Progress ── */
+.prog-wrap{background:rgba(255,255,255,.1);border-radius:8px;height:24px;overflow:hidden;margin:12px 0;}
+.prog-fill{background:linear-gradient(90deg,#e94560,#0f3460);height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;font-weight:600;transition:width .3s;}
+/* ── Stage indicators ── */
+.stage-ind{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:.85rem;font-weight:600;border:2px solid transparent;transition:all .3s;}
+.stage-pending{background:rgba(255,255,255,.05);color:#666;border-color:rgba(255,255,255,.1);}
+.stage-running{background:rgba(233,69,96,.2);color:#e94560;border-color:#e94560;animation:pulse 1.5s infinite;}
+.stage-done{background:rgba(74,222,128,.15);color:#4ade80;border-color:#4ade80;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+/* ── Run log ── */
+#runLog{background:rgba(0,0,0,.4);border-radius:8px;padding:12px;max-height:300px;overflow-y:auto;font-family:monospace;font-size:.8rem;color:#4ade80;display:none;margin-top:16px;}
+/* ── Tables ── */
+.tc-table{font-size:.82rem;width:100%;}
+.tc-table th{background:rgba(255,255,255,.05);padding:8px 6px;white-space:nowrap;}
+.tc-table td{padding:7px 6px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+/* ── Expandable rows ── */
+.expand-row{background:rgba(0,0,0,.25);font-size:.8rem;}
+.response-preview{background:rgba(255,255,255,.03);border-radius:6px;padding:10px;font-size:.78rem;color:#d0d0e0;max-height:120px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;border-left:3px solid rgba(255,255,255,.1);}
+/* ── Freshness ── */
+.freshness-ok{color:#4ade80;} .freshness-warn{color:#fbbf24;} .freshness-bad{color:#f87171;}
+/* ── Dataset ── */
+.agent-badge.elastic{background:#0f3460;color:#a0d0ff;} .agent-badge.soc{background:#4a1942;color:#ff9ecf;}
+.agent-badge{font-size:.7rem;padding:2px 8px;border-radius:4px;}
+.lang-badge{font-size:.7rem;padding:1px 6px;border-radius:3px;}
+.lang-en{background:#1a472a;color:#4ade80;} .lang-fr{background:#1e3a5f;color:#60a5fa;} .lang-tn{background:#7c2d12;color:#fb923c;}
+/* ── Run history ── */
+.run-hist{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-radius:6px;margin-bottom:4px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);}
+/* ── Report ── */
+.report-content{background:rgba(255,255,255,.03);border-radius:8px;padding:24px;max-height:600px;overflow-y:auto;}
+.report-content h1{color:#e94560;font-size:1.5rem;}
+.report-content h2{color:#e94560;font-size:1.2rem;margin-top:24px;}
+.report-content table{width:100%;margin:12px 0;}
+.report-content th{background:rgba(255,255,255,.05);padding:8px;}
+.report-content td{padding:8px;border-bottom:1px solid rgba(255,255,255,.05);}
+/* ── Buttons ── */
+.run-btn{background:linear-gradient(135deg,#e94560,#0f3460);border:none;padding:12px 32px;border-radius:8px;font-weight:600;color:#fff;cursor:pointer;transition:transform .2s;}
+.run-btn:hover{transform:translateY(-2px);}
+.run-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
 </style>
 @endsection
 
@@ -222,473 +85,535 @@
     <li class="breadcrumb-item active">PHPKAIHARNESS TEST COMPARE</li>
 </ul>
 
-<div class="test-compare-header">
+{{-- ── Header ── --}}
+<div class="tc-header">
     <h1>phpkaiharness Test Compare Suite</h1>
-    <p>A1 (Direct API) vs A2 (Loop, no features) vs B-cold (Full Harness, cold cache) vs B-warm (Full Harness, warm cache) — 17 requests × 4 modes = 68 executions</p>
+    <p>A1 (Direct API) vs A2 (Loop, no features) vs B-cold (Full Harness) vs B-warm (Warm Cache) — 20 requests × 4 modes = 80 executions</p>
     @if($runMeta ?? null)
-    <p class="text-muted small mt-1">Run ID: <code>{{ $runMeta['run_id'] }}</code> | Started: {{ $runMeta['run_start'] }} | Ended: {{ $runMeta['run_end'] }}</p>
+    <p class="text-muted small mt-1">
+        Run ID: <code>{{ $runMeta['run_id'] }}</code>
+        @if($runMeta['run_start']) | Started: {{ $runMeta['run_start'] }} @endif
+        @if($runMeta['run_end'])   | Ended: {{ $runMeta['run_end'] }} @endif
+        @if($runMeta['in_progress'] ?? false) <span class="badge bg-warning text-dark ms-1">IN PROGRESS</span> @endif
+    </p>
     @endif
 </div>
 
+{{-- ── Run History ── --}}
+@if(!empty($availableRuns))
+<div class="tc-card mb-3">
+    <h3>📋 Run History</h3>
+    @foreach($availableRuns as $run)
+    <div class="run-hist">
+        <span style="font-family:monospace;font-size:.8rem;color:#a0a0b0;">{{ $run['id'] }}</span>
+        <span>{{ $run['date'] }}</span>
+        <span style="font-size:.8rem;color:#666;">{{ $run['trace_count'] }} traces @if($run['has_summary'])<span class="text-success">✓ summary</span>@endif</span>
+    </div>
+    @endforeach
+</div>
+@endif
+
+{{-- ── Trace Freshness ── --}}
 @if($hasResults && !empty($traceFreshness))
-<div class="row mb-3">
-    <div class="col-md-12">
-        <div class="analytics-card">
-            <h3>📋 Trace Freshness & Integrity</h3>
-            <div class="row">
-                <div class="col-md-3">
-                    <span class="text-muted">Total Traces:</span>
-                    <span class="metric-value">{{ $traceFreshness['trace_count'] }}</span>
-                </div>
-                <div class="col-md-3">
-                    <span class="text-muted">Single Run:</span>
-                    @if($traceFreshness['is_single_run'])
-                    <span class="freshness-ok">✓ Yes ({{ count($traceFreshness['unique_run_ids']) }} run ID)</span>
-                    @else
-                    <span class="freshness-bad">✗ No ({{ count($traceFreshness['unique_run_ids']) }} run IDs)</span>
-                    @endif
-                </div>
-                <div class="col-md-3">
-                    <span class="text-muted">Oldest:</span>
-                    <span class="metric-value">{{ $traceFreshness['oldest_trace'] ?? 'N/A' }}</span>
-                </div>
-                <div class="col-md-3">
-                    <span class="text-muted">Newest:</span>
-                    <span class="metric-value">{{ $traceFreshness['newest_trace'] ?? 'N/A' }}</span>
-                </div>
-            </div>
-            @if(!$traceFreshness['is_single_run'] && $traceFreshness['span_minutes'] > 30)
-            <div class="insight-banner insight-negative mt-2">
-                ⚠ Traces span {{ $traceFreshness['span_minutes'] }} minutes across multiple run IDs — data may be stale or mixed. Run a fresh test for accurate comparison.
-            </div>
-            @elseif($traceFreshness['span_minutes'] > 0)
-            <div class="insight-banner insight-neutral mt-2">
-                ℹ Traces span {{ $traceFreshness['span_minutes'] }} min — @if($traceFreshness['span_minutes'] < 60) consistent with a single run @else may include old data @endif
-            </div>
+<div class="tc-card mb-3">
+    <h3>📋 Trace Integrity</h3>
+    <div class="row">
+        <div class="col-md-3">
+            <span class="text-muted">Total Traces:</span>
+            <span class="metric-value ms-2">{{ $traceFreshness['trace_count'] }}</span>
+        </div>
+        <div class="col-md-3">
+            <span class="text-muted">Single Run:</span>
+            @if($traceFreshness['is_single_run'])
+            <span class="freshness-ok ms-2">✓ Yes</span>
+            @else
+            <span class="freshness-bad ms-2">✗ Mixed ({{ count($traceFreshness['unique_run_ids']) }} IDs)</span>
             @endif
         </div>
+        <div class="col-md-3">
+            <span class="text-muted">Oldest:</span>
+            <span class="metric-value ms-2">{{ $traceFreshness['oldest_trace'] ?? 'N/A' }}</span>
+        </div>
+        <div class="col-md-3">
+            <span class="text-muted">Newest:</span>
+            <span class="metric-value ms-2">{{ $traceFreshness['newest_trace'] ?? 'N/A' }}</span>
+        </div>
     </div>
+    @if($traceFreshness['span_minutes'] > 60)
+    <div class="insight insight-neg mt-2">⚠ Traces span {{ $traceFreshness['span_minutes'] }} min across multiple run IDs — run a fresh test.</div>
+    @endif
 </div>
 @endif
 
-@if(!empty($availableRuns))
-<div class="row mt-2">
-    <div class="col-md-12">
-        <div class="analytics-card">
-            <h3>📋 Run History</h3>
-            @foreach($availableRuns as $run)
-            <div class="run-history-item">
-                <span class="run-id">{{ $run['id'] }}</span>
-                <span>{{ $run['date'] }}</span>
-                <span class="run-traces">{{ $run['trace_count'] }} traces @if($run['has_summary'])✓ summary @endif</span>
-            </div>
-            @endforeach
+{{-- ── Run Control ── --}}
+<div class="mode-card">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h3>Test Execution</h3>
+            <p class="text-muted mb-0">80 executions (20 requests × 4 modes). Includes AI evaluation of every response.</p>
+        </div>
+        <div>
+            <button id="runBtn" class="run-btn" onclick="runTests()">▶ Run Full Test Suite</button>
+            <button class="btn btn-outline-danger btn-sm ms-2" onclick="purgeOldRuns()">🗑 Purge Old Runs</button>
+            <a href="{{ route('test-compare.index') }}" class="btn btn-outline-secondary btn-sm ms-2">↻ Refresh</a>
         </div>
     </div>
-</div>
-@endif
-
-<div class="row">
-    <div class="col-md-12">
-        <div class="mode-card">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h3>Test Execution</h3>
-                    <p class="text-muted mb-0">Runs 68 executions (17 requests × 4 modes). This may take several minutes.</p>
-                </div>
-                <div>
-                    <button id="runBtn" class="run-btn" onclick="runTests()">
-                        <i class="icon-play"></i> Run Full Test Suite
-                    </button>
-                    <button id="purgeBtn" class="btn btn-outline-danger btn-sm ms-2" onclick="purgeOldRuns()">
-                        🗑️ Purge Old Runs
-                    </button>
-                    <a href="{{ route('test-compare.index') }}" class="btn btn-outline-secondary btn-sm ms-2">Refresh Results</a>
-                </div>
-            </div>
-            <div id="progressContainer" style="display:none; margin-top:16px;">
-                <div class="progress-bar-container">
-                    <div id="progressBar" class="progress-bar-fill" style="width:0%;">0%</div>
-                </div>
-                <div id="stageIndicators" style="display:flex; gap:8px; margin:12px 0;">
-                    <div id="stage-A1" class="stage-indicator stage-pending">
-                        <span class="stage-icon">○</span> A1 <span class="stage-count">0/17</span>
-                    </div>
-                    <div id="stage-A2" class="stage-indicator stage-pending">
-                        <span class="stage-icon">○</span> A2 <span class="stage-count">0/17</span>
-                    </div>
-                    <div id="stage-B-cold" class="stage-indicator stage-pending">
-                        <span class="stage-icon">○</span> B-cold <span class="stage-count">0/17</span>
-                    </div>
-                    <div id="stage-B-warm" class="stage-indicator stage-pending">
-                        <span class="stage-icon">○</span> B-warm <span class="stage-count">0/17</span>
-                    </div>
-                </div>
-                <div id="runLog"></div>
-            </div>
+    <div id="progressContainer" style="display:none;margin-top:16px;">
+        <div class="prog-wrap"><div id="progressBar" class="prog-fill" style="width:0%;">0%</div></div>
+        <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;">
+            <div id="stage-A1" class="stage-ind stage-pending"><span class="stage-icon">○</span> A1 <span class="stage-count">0/20</span></div>
+            <div id="stage-A2" class="stage-ind stage-pending"><span class="stage-icon">○</span> A2 <span class="stage-count">0/20</span></div>
+            <div id="stage-B-cold" class="stage-ind stage-pending"><span class="stage-icon">○</span> B-cold <span class="stage-count">0/20</span></div>
+            <div id="stage-B-warm" class="stage-ind stage-pending"><span class="stage-icon">○</span> B-warm <span class="stage-count">0/20</span></div>
+            <div id="stage-eval" class="stage-ind stage-pending"><span class="stage-icon">○</span> AI Eval <span class="stage-count"></span></div>
         </div>
+        <div id="runLog"></div>
     </div>
 </div>
 
 @if($hasResults)
+
+{{-- ── Mode Summary Cards ── --}}
 <div class="row mt-4">
+    @php
+    $modeCards = [
+        'A1-direct-api'       => ['label'=>'A1 — Direct API',       'badge'=>'Baseline',  'color'=>'secondary', 'border'=>''],
+        'A2-loop-no-features' => ['label'=>'A2 — Loop (no features)','badge'=>'Overhead',  'color'=>'info',      'border'=>''],
+        'B-full-harness'      => ['label'=>'B — Full Harness (Cold)','badge'=>'Cold Cache','color'=>'danger',    'border'=>'border-color:#e94560;'],
+        'B-warm-harness'      => ['label'=>'B — Full Harness (Warm)','badge'=>'Warm Cache','color'=>'success',   'border'=>'border-color:#4ade80;'],
+    ];
+    $a1Avg = $summary['A1-direct-api']['avg_latency_ms'] ?? 1;
+    @endphp
+    @foreach($modeCards as $modeKey => $mc)
     <div class="col-md-3">
-        <div class="mode-card">
-            <h3>A1 — Direct API <span class="badge bg-secondary">Baseline</span></h3>
-            <p class="text-muted small">Raw Qwen Cloud API, no harness</p>
-            @if(isset($summary['A1-direct-api']))
-            <div class="metric-row"><span class="metric-label">Avg Latency</span><span class="metric-value">{{ $summary['A1-direct-api']['avg_latency_ms'] }}ms</span></div>
-            <div class="metric-row"><span class="metric-label">Min / Max</span><span class="metric-value">{{ $summary['A1-direct-api']['min_latency_ms'] }} / {{ $summary['A1-direct-api']['max_latency_ms'] }}ms</span></div>
-            <div class="metric-row"><span class="metric-label">Avg Tokens</span><span class="metric-value">{{ $summary['A1-direct-api']['avg_total_tokens'] }}</span></div>
-            <div class="metric-row"><span class="metric-label">Tool Calls</span><span class="metric-value">0</span></div>
-            <div class="metric-row"><span class="metric-label">Success Rate</span><span class="metric-value">{{ $summary['A1-direct-api']['successful'] }}/{{ $summary['A1-direct-api']['total_requests'] }}</span></div>
+        <div class="mode-card" style="{{ $mc['border'] }}">
+            <h3>{{ $mc['label'] }} <span class="badge bg-{{ $mc['color'] }}">{{ $mc['badge'] }}</span></h3>
+            @if(isset($summary[$modeKey]))
+            @php
+                $s = $summary[$modeKey];
+                $vsA1 = $analytics['latency_comparison'][$modeKey]['vs_a1'] ?? null;
+                $aiScore = $s['avg_ai_score'] ?? null;
+                $aiWins = $s['ai_win_count'] ?? 0;
+            @endphp
+            <div class="metric-row">
+                <span class="metric-label">Avg Latency</span>
+                <span class="metric-value">
+                    {{ number_format($s['avg_latency_ms']) }}ms
+                    @if($vsA1 !== null)
+                    <span class="delta-badge {{ $vsA1 > 0 ? 'delta-up' : 'delta-down' }}">{{ $vsA1 > 0 ? '+' : '' }}{{ $vsA1 }}%</span>
+                    @endif
+                </span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Min / Max</span>
+                <span class="metric-value">{{ number_format($s['min_latency_ms']) }} / {{ number_format($s['max_latency_ms']) }}ms</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Avg Tokens</span>
+                <span class="metric-value">{{ number_format($s['avg_total_tokens']) }}</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Tool Calls</span>
+                <span class="metric-value">{{ $s['avg_tool_calls'] }}</span>
+            </div>
+            @if(isset($s['pipeline_stages_avg']) && $modeKey !== 'A1-direct-api' && $modeKey !== 'A2-loop-no-features')
+            <div class="metric-row">
+                <span class="metric-label">Pipeline Stages</span>
+                <span class="metric-value good">{{ $s['pipeline_stages_avg'] }}</span>
+            </div>
             @endif
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="mode-card">
-            <h3>A2 — Loop (no features) <span class="badge bg-info">Overhead</span></h3>
-            <p class="text-muted small">AgentLoop with all features disabled</p>
-            @if(isset($summary['A2-loop-no-features']))
-            @php $a2VsA1 = $analytics['latency_comparison']['A2-loop-no-features']['vs_a1'] ?? null; @endphp
-            <div class="metric-row"><span class="metric-label">Avg Latency</span><span class="metric-value">{{ $summary['A2-loop-no-features']['avg_latency_ms'] }}ms @if($a2VsA1 !== null)<span class="delta-badge {{ $a2VsA1 > 0 ? 'delta-up' : 'delta-down' }}">{{ $a2VsA1 > 0 ? '+' : '' }}{{ $a2VsA1 }}% vs A1</span>@endif</span></div>
-            <div class="metric-row"><span class="metric-label">Min / Max</span><span class="metric-value">{{ $summary['A2-loop-no-features']['min_latency_ms'] }} / {{ $summary['A2-loop-no-features']['max_latency_ms'] }}ms</span></div>
-            <div class="metric-row"><span class="metric-label">Avg Tokens</span><span class="metric-value">{{ $summary['A2-loop-no-features']['avg_total_tokens'] }}</span></div>
-            <div class="metric-row"><span class="metric-label">Tool Calls</span><span class="metric-value">{{ $summary['A2-loop-no-features']['avg_tool_calls'] }}</span></div>
-            <div class="metric-row"><span class="metric-label">Success Rate</span><span class="metric-value">{{ $summary['A2-loop-no-features']['successful'] }}/{{ $summary['A2-loop-no-features']['total_requests'] }}</span></div>
+            <div class="metric-row">
+                <span class="metric-label">Success</span>
+                <span class="metric-value {{ $s['failed'] > 0 ? 'bad' : 'good' }}">{{ $s['successful'] }}/{{ $s['total_requests'] }}</span>
+            </div>
+            @if($aiScore !== null)
+            <div class="metric-row">
+                <span class="metric-label">AI Score (avg)</span>
+                <span class="metric-value {{ $aiScore >= 7 ? 'good' : ($aiScore >= 5 ? 'warn' : 'bad') }}">{{ $aiScore }}/10 <small class="text-muted">({{ $aiWins }} wins)</small></span>
+            </div>
             @endif
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="mode-card" style="border-color: #e94560;">
-            <h3>B — Full Harness (Cold) <span class="badge bg-danger">Cold Cache</span></h3>
-            <p class="text-muted small">All features enabled, first run</p>
-            @if(isset($summary['B-full-harness']))
-            @php $bcVsA1 = $analytics['latency_comparison']['B-full-harness']['vs_a1'] ?? null; @endphp
-            <div class="metric-row"><span class="metric-label">Avg Latency</span><span class="metric-value">{{ $summary['B-full-harness']['avg_latency_ms'] }}ms @if($bcVsA1 !== null)<span class="delta-badge {{ $bcVsA1 > 0 ? 'delta-up' : 'delta-down' }}">{{ $bcVsA1 > 0 ? '+' : '' }}{{ $bcVsA1 }}% vs A1</span>@endif</span></div>
-            <div class="metric-row"><span class="metric-label">Min / Max</span><span class="metric-value">{{ $summary['B-full-harness']['min_latency_ms'] }} / {{ $summary['B-full-harness']['max_latency_ms'] }}ms</span></div>
-            <div class="metric-row"><span class="metric-label">Avg Tokens</span><span class="metric-value">{{ $summary['B-full-harness']['avg_total_tokens'] }}</span></div>
-            <div class="metric-row"><span class="metric-label">Tool Calls</span><span class="metric-value good">{{ $summary['B-full-harness']['avg_tool_calls'] }}</span></div>
-            <div class="metric-row"><span class="metric-label">Pipeline Stages</span><span class="metric-value good">{{ $summary['B-full-harness']['pipeline_stages_avg'] }}</span></div>
-            <div class="metric-row"><span class="metric-label">Success Rate</span><span class="metric-value">{{ $summary['B-full-harness']['successful'] }}/{{ $summary['B-full-harness']['total_requests'] }}</span></div>
-            @endif
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="mode-card" style="border-color: #4ade80;">
-            <h3>B — Full Harness (Warm) <span class="badge bg-success">Warm Cache</span></h3>
-            <p class="text-muted small">Same as B-cold, but cache pre-warmed</p>
-            @if(isset($summary['B-warm-harness']))
-            @php $bwVsA1 = $analytics['latency_comparison']['B-warm-harness']['vs_a1'] ?? null; @endphp
-            <div class="metric-row"><span class="metric-label">Avg Latency</span><span class="metric-value good">{{ $summary['B-warm-harness']['avg_latency_ms'] }}ms @if($bwVsA1 !== null)<span class="delta-badge {{ $bwVsA1 > 0 ? 'delta-up' : 'delta-down' }}">{{ $bwVsA1 > 0 ? '+' : '' }}{{ $bwVsA1 }}% vs A1</span>@endif</span></div>
-            <div class="metric-row"><span class="metric-label">Min / Max</span><span class="metric-value">{{ $summary['B-warm-harness']['min_latency_ms'] }} / {{ $summary['B-warm-harness']['max_latency_ms'] }}ms</span></div>
-            <div class="metric-row"><span class="metric-label">Avg Tokens</span><span class="metric-value">{{ $summary['B-warm-harness']['avg_total_tokens'] }}</span></div>
-            <div class="metric-row"><span class="metric-label">Tool Calls</span><span class="metric-value good">{{ $summary['B-warm-harness']['avg_tool_calls'] }}</span></div>
-            <div class="metric-row"><span class="metric-label">Pipeline Stages</span><span class="metric-value good">{{ $summary['B-warm-harness']['pipeline_stages_avg'] }}</span></div>
-            <div class="metric-row"><span class="metric-label">Success Rate</span><span class="metric-value">{{ $summary['B-warm-harness']['successful'] }}/{{ $summary['B-warm-harness']['total_requests'] }}</span></div>
             @else
-            <p class="text-muted small">No warm run yet. Run test suite to generate.</p>
+            <p class="text-muted small">No data yet.</p>
             @endif
+        </div>
+    </div>
+    @endforeach
+</div>
+
+{{-- ── AI Evaluation Summary ── --}}
+@if(!empty($analytics['ai_evaluation_summary']))
+<div class="row mt-2">
+    <div class="col-md-12">
+        <div class="tc-card">
+            <h3>🤖 AI Evaluation Summary (LLM Judge — Accuracy · Completeness · Relevance · Quality)</h3>
+            <div class="row g-3">
+                @foreach(['A1-direct-api'=>'A1 Direct API','A2-loop-no-features'=>'A2 Loop','B-full-harness'=>'B-cold','B-warm-harness'=>'B-warm'] as $mk => $ml)
+                @if(isset($analytics['ai_evaluation_summary'][$mk]))
+                @php $ae = $analytics['ai_evaluation_summary'][$mk]; @endphp
+                <div class="col-md-3">
+                    <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:14px;text-align:center;">
+                        <div class="text-muted small mb-2">{{ $ml }}</div>
+                        @php $sc = $ae['avg_score']; @endphp
+                        <div class="ai-score {{ $sc >= 7 ? 'ai-score-high' : ($sc >= 5 ? 'ai-score-mid' : 'ai-score-low') }}" style="margin:0 auto 10px;">{{ $sc }}</div>
+                        <div class="text-muted small">{{ $ae['min_score'] }}–{{ $ae['max_score'] }} range</div>
+                        <div class="mt-1">
+                            <span class="badge {{ $ae['win_pct'] >= 40 ? 'bg-success' : 'bg-secondary' }}">🏆 {{ $ae['win_count'] }} wins ({{ $ae['win_pct'] }}%)</span>
+                        </div>
+                    </div>
+                </div>
+                @endif
+                @endforeach
+            </div>
         </div>
     </div>
 </div>
 @endif
 
-@if($hasResults && !empty($analytics['overhead_breakdown']))
+{{-- ── Overhead Breakdown & Cache Impact ── --}}
+@if(!empty($analytics['overhead_breakdown']))
 <div class="row mt-2">
     <div class="col-md-6">
-        <div class="analytics-card">
-            <h3>🔍 Overhead Breakdown (A1 → A2 → B-cold → B-warm)</h3>
+        <div class="tc-card">
+            <h3>🔍 Overhead Breakdown</h3>
             @php $ob = $analytics['overhead_breakdown']; @endphp
-            <div class="metric-row"><span class="metric-label">A1 Baseline Latency</span><span class="metric-value">{{ $ob['a1_baseline'] }}ms</span></div>
-            <div class="metric-row"><span class="metric-label">A2 Loop Overhead</span><span class="metric-value">{{ $ob['a2_loop_overhead_ms'] > 0 ? '+' : '' }}{{ $ob['a2_loop_overhead_ms'] }}ms ({{ $ob['a2_loop_overhead_pct'] > 0 ? '+' : '' }}{{ $ob['a2_loop_overhead_pct'] }}%)</span></div>
-            <div class="metric-row"><span class="metric-label">B-cold Harness Overhead</span><span class="metric-value">{{ $ob['b_cold_harness_overhead_ms'] > 0 ? '+' : '' }}{{ $ob['b_cold_harness_overhead_ms'] }}ms ({{ $ob['b_cold_harness_overhead_pct'] > 0 ? '+' : '' }}{{ $ob['b_cold_harness_overhead_pct'] }}%)</span></div>
-            <div class="metric-row"><span class="metric-label">B-warm vs B-cold</span><span class="metric-value {{ $ob['b_warm_vs_cold_ms'] < 0 ? 'good' : '' }}">{{ $ob['b_warm_vs_cold_ms'] > 0 ? '+' : '' }}{{ $ob['b_warm_vs_cold_ms'] }}ms ({{ $ob['b_warm_vs_cold_pct'] > 0 ? '+' : '' }}{{ $ob['b_warm_vs_cold_pct'] }}%)</span></div>
-            <div class="metric-row"><span class="metric-label">Total A1 → B-cold</span><span class="metric-value">{{ $ob['total_overhead_a1_to_b_cold_ms'] > 0 ? '+' : '' }}{{ $ob['total_overhead_a1_to_b_cold_ms'] }}ms ({{ $ob['total_overhead_a1_to_b_cold_pct'] > 0 ? '+' : '' }}{{ $ob['total_overhead_a1_to_b_cold_pct'] }}%)</span></div>
+            <div class="metric-row"><span class="metric-label">A1 Baseline</span><span class="metric-value">{{ number_format($ob['a1_baseline']) }}ms</span></div>
+            <div class="metric-row"><span class="metric-label">A2 Loop Overhead</span><span class="metric-value {{ $ob['a2_loop_overhead_ms'] > 0 ? 'bad' : 'good' }}">{{ $ob['a2_loop_overhead_ms'] > 0 ? '+' : '' }}{{ number_format($ob['a2_loop_overhead_ms']) }}ms ({{ $ob['a2_loop_overhead_pct'] > 0 ? '+' : '' }}{{ $ob['a2_loop_overhead_pct'] }}%)</span></div>
+            <div class="metric-row"><span class="metric-label">B-cold Harness</span><span class="metric-value bad">{{ $ob['b_cold_harness_overhead_ms'] > 0 ? '+' : '' }}{{ number_format($ob['b_cold_harness_overhead_ms']) }}ms ({{ $ob['b_cold_harness_overhead_pct'] > 0 ? '+' : '' }}{{ $ob['b_cold_harness_overhead_pct'] }}%)</span></div>
+            <div class="metric-row"><span class="metric-label">B-warm vs B-cold</span><span class="metric-value {{ $ob['b_warm_vs_cold_ms'] < 0 ? 'good' : 'bad' }}">{{ $ob['b_warm_vs_cold_ms'] > 0 ? '+' : '' }}{{ number_format($ob['b_warm_vs_cold_ms']) }}ms ({{ $ob['b_warm_vs_cold_pct'] > 0 ? '+' : '' }}{{ $ob['b_warm_vs_cold_pct'] }}%)</span></div>
+            <div class="metric-row"><span class="metric-label">Total A1 → B-cold</span><span class="metric-value">{{ $ob['total_overhead_a1_to_b_cold_ms'] > 0 ? '+' : '' }}{{ number_format($ob['total_overhead_a1_to_b_cold_ms']) }}ms ({{ $ob['total_overhead_a1_to_b_cold_pct'] > 0 ? '+' : '' }}{{ $ob['total_overhead_a1_to_b_cold_pct'] }}%)</span></div>
         </div>
     </div>
     <div class="col-md-6">
-        <div class="analytics-card">
+        <div class="tc-card">
             <h3>⚡ Cache Impact (B-cold vs B-warm)</h3>
             @if(!empty($analytics['cache_impact']))
             @php $ci = $analytics['cache_impact']; @endphp
-            <div class="metric-row"><span class="metric-label">Cold Avg Latency</span><span class="metric-value">{{ $ci['cold_avg_latency'] }}ms</span></div>
-            <div class="metric-row"><span class="metric-label">Warm Avg Latency</span><span class="metric-value good">{{ $ci['warm_avg_latency'] }}ms</span></div>
-            <div class="metric-row"><span class="metric-label">Latency Saved</span><span class="metric-value {{ $ci['latency_saved_ms'] > 0 ? 'good' : 'bad' }}">{{ $ci['latency_saved_ms'] }}ms ({{ $ci['latency_saved_pct'] }}%)</span></div>
-            <div class="metric-row"><span class="metric-label">Cold Avg Tokens</span><span class="metric-value">{{ $ci['cold_avg_tokens'] }}</span></div>
-            <div class="metric-row"><span class="metric-label">Warm Avg Tokens</span><span class="metric-value">{{ $ci['warm_avg_tokens'] }}</span></div>
+            <div class="metric-row"><span class="metric-label">Cold Avg Latency</span><span class="metric-value">{{ number_format($ci['cold_avg_latency']) }}ms</span></div>
+            <div class="metric-row"><span class="metric-label">Warm Avg Latency</span><span class="metric-value good">{{ number_format($ci['warm_avg_latency']) }}ms</span></div>
+            <div class="metric-row"><span class="metric-label">Latency Saved</span><span class="metric-value {{ $ci['latency_saved_ms'] > 0 ? 'good' : 'bad' }}">{{ number_format($ci['latency_saved_ms']) }}ms ({{ $ci['latency_saved_pct'] }}%)</span></div>
+            <div class="metric-row"><span class="metric-label">Cold / Warm Tokens</span><span class="metric-value">{{ $ci['cold_avg_tokens'] }} / {{ $ci['warm_avg_tokens'] }}</span></div>
             <div class="metric-row"><span class="metric-label">Token Delta</span><span class="metric-value">{{ $ci['token_delta'] > 0 ? '+' : '' }}{{ $ci['token_delta'] }}</span></div>
+            <div class="metric-row"><span class="metric-label">Warm Cache Hits</span><span class="metric-value {{ ($analytics['features_matrix']['semantic_cache']['warm_hits'] ?? 0) > 0 ? 'good' : 'bad' }}">{{ $analytics['features_matrix']['semantic_cache']['warm_hits'] ?? 0 }}/20 ({{ $analytics['features_matrix']['semantic_cache']['warm_hit_pct'] ?? 0 }}%)</span></div>
             @else
-            <p class="text-muted small">No warm data available — run full test suite to generate.</p>
+            <p class="text-muted small">Run full test suite to generate warm data.</p>
             @endif
         </div>
     </div>
 </div>
 
-<div class="row mt-2">
-    <div class="col-md-12">
-        <div class="analytics-card">
-            <h3>📊 Key Insights</h3>
-            @php $ob = $analytics['overhead_breakdown']; @endphp
-            @if($ob['a2_loop_overhead_ms'] > 0)
-            <div class="insight-banner insight-negative">AgentLoop overhead: +{{ $ob['a2_loop_overhead_ms'] }}ms ({{ $ob['a2_loop_overhead_pct'] }}%) — the loop itself adds latency even without features.</div>
-            @elseif($ob['a2_loop_overhead_ms'] < 0)
-            <div class="insight-banner insight-positive">AgentLoop is faster than direct API by {{ abs($ob['a2_loop_overhead_ms']) }}ms — the loop may batch requests more efficiently.</div>
-            @endif
-            @if($ob['b_cold_harness_overhead_ms'] > 0)
-            <div class="insight-banner insight-neutral">Full harness adds +{{ $ob['b_cold_harness_overhead_ms'] }}ms ({{ $ob['b_cold_harness_overhead_pct'] }}%) over A2 — this is the cost of pipeline stages, RAG, cache, and guardrails.</div>
-            @endif
-            @if(!empty($analytics['cache_impact']) && $analytics['cache_impact']['latency_saved_ms'] > 0)
-            <div class="insight-banner insight-positive">Warm cache saves {{ $analytics['cache_impact']['latency_saved_ms'] }}ms ({{ $analytics['cache_impact']['latency_saved_pct'] }}%) over cold cache — semantic cache is effective.</div>
-            @elseif(!empty($analytics['cache_impact']) && $analytics['cache_impact']['latency_saved_ms'] <= 0)
-            <div class="insight-banner insight-negative">Warm cache is NOT faster than cold ({{ $analytics['cache_impact']['latency_saved_ms'] }}ms) — cache may not be hitting or is adding overhead.</div>
-            @endif
-            @if(isset($summary['B-full-harness']) && $summary['B-full-harness']['failed'] > 0)
-            <div class="insight-banner insight-negative">B-cold has {{ $summary['B-full-harness']['failed'] }} failed requests — investigate errors in trace details.</div>
-            @endif
-            @if(isset($summary['B-warm-harness']) && $summary['B-warm-harness']['failed'] > 0)
-            <div class="insight-banner insight-negative">B-warm has {{ $summary['B-warm-harness']['failed'] }} failed requests — warm cache may not resolve all issues.</div>
-            @endif
-        </div>
-    </div>
+{{-- ── Key Insights ── --}}
+<div class="tc-card mt-2">
+    <h3>💡 Key Insights</h3>
+    @php $ob = $analytics['overhead_breakdown']; @endphp
+    @if($ob['a2_loop_overhead_ms'] > 0)
+    <div class="insight insight-neg">AgentLoop overhead: +{{ number_format($ob['a2_loop_overhead_ms']) }}ms ({{ $ob['a2_loop_overhead_pct'] }}%) — the loop itself adds latency even without features.</div>
+    @elseif($ob['a2_loop_overhead_ms'] < 0)
+    <div class="insight insight-pos">AgentLoop is faster than direct API by {{ number_format(abs($ob['a2_loop_overhead_ms'])) }}ms — may batch more efficiently.</div>
+    @endif
+    @if($ob['b_cold_harness_overhead_ms'] > 0)
+    <div class="insight insight-neu">Full harness adds +{{ number_format($ob['b_cold_harness_overhead_ms']) }}ms ({{ $ob['b_cold_harness_overhead_pct'] }}%) over A2 — cost of pipeline, RAG, cache, guardrails.</div>
+    @endif
+    @if(!empty($analytics['cache_impact']))
+    @if($analytics['cache_impact']['latency_saved_ms'] > 0)
+    <div class="insight insight-pos">Warm cache saves {{ number_format($analytics['cache_impact']['latency_saved_ms']) }}ms ({{ $analytics['cache_impact']['latency_saved_pct'] }}%) — semantic cache is effective.</div>
+    @else
+    <div class="insight insight-neg">Warm cache NOT faster than cold ({{ number_format($analytics['cache_impact']['latency_saved_ms']) }}ms delta) — cache may not be hitting.</div>
+    @endif
+    @endif
+    @if(!empty($analytics['ai_evaluation_summary']))
+    @php
+        $bestMode = collect($analytics['ai_evaluation_summary'])->sortByDesc('avg_score')->keys()->first();
+        $bestLabel = ['A1-direct-api'=>'A1 Direct API','A2-loop-no-features'=>'A2 Loop','B-full-harness'=>'B-cold','B-warm-harness'=>'B-warm'][$bestMode] ?? $bestMode;
+        $bestScore = $analytics['ai_evaluation_summary'][$bestMode]['avg_score'] ?? 0;
+    @endphp
+    <div class="insight insight-pos">🏆 Best response quality: <strong>{{ $bestLabel }}</strong> with avg AI score {{ $bestScore }}/10 — AI judge ranked this mode's responses highest.</div>
+    @endif
 </div>
+@endif
 
-<div class="row mt-3">
-    <div class="col-md-12">
-        <div class="analytics-card" style="border: 1px solid rgba(74,222,128,0.25); background: rgba(74,222,128,0.02);">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                    <h3 style="color: #4ade80; margin:0;">🔮 phpkaiharness Feature Evaluation Matrix</h3>
-                    <p class="text-muted small mb-0">Evaluation of advanced harness features and their concrete performance enhancements across pipeline stages</p>
-                </div>
-                <span class="badge bg-success">7 HARNESS FEATURES ACTIVE</span>
-            </div>
-            <div class="row g-3">
-                @php $fm = $analytics['features_matrix'] ?? []; @endphp
-                <div class="col-md-4">
-                    <div class="mode-card p-3 h-100 mb-0">
-                        <div class="d-flex justify-content-between">
-                            <h5 style="color: #60a5fa; font-size: 0.95rem; margin:0;">⚡ Draft Verification</h5>
-                            <span class="badge bg-primary">Active</span>
-                        </div>
-                        <p class="text-muted small mb-2 mt-1">Speculative draft proposals verified by fast model passes</p>
-                        <div class="metric-row"><span class="metric-label">Proposals Generated</span><span class="metric-value">{{ $fm['draft_verification']['executed_count'] ?? 0 }}</span></div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mode-card p-3 h-100 mb-0">
-                        <div class="d-flex justify-content-between">
-                            <h5 style="color: #c084fc; font-size: 0.95rem; margin:0;">📚 Ontology RAG</h5>
-                            <span class="badge" style="background:#9333ea; color:#fff;">pgvector</span>
-                        </div>
-                        <p class="text-muted small mb-2 mt-1">Semantic document chunk injection from PostgreSQL pgvector</p>
-                        <div class="metric-row"><span class="metric-label">Chunks Injected</span><span class="metric-value">{{ $fm['ontology_rag']['executed_count'] ?? 0 }}</span></div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mode-card p-3 h-100 mb-0">
-                        <div class="d-flex justify-content-between">
-                            <h5 style="color: #4ade80; font-size: 0.95rem; margin:0;">🎯 Semantic Cache</h5>
-                            <span class="badge bg-success">Cross-Session</span>
-                        </div>
-                        <p class="text-muted small mb-2 mt-1">Cross-session exact & fuzzy prompt matching to skip LLM calls</p>
-                        <div class="metric-row"><span class="metric-label">Cold Hits / Warm Hits</span><span class="metric-value">{{ $fm['semantic_cache']['cold_hits'] ?? 0 }} / {{ $fm['semantic_cache']['warm_hits'] ?? 0 }}</span></div>
-                        <div class="metric-row"><span class="metric-label">Warm Hit Rate</span><span class="metric-value good">{{ $fm['semantic_cache']['warm_hit_pct'] ?? 0 }}%</span></div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mode-card p-3 h-100 mb-0">
-                        <div class="d-flex justify-content-between">
-                            <h5 style="color: #facc15; font-size: 0.95rem; margin:0;">⚛️ Quantum Memory</h5>
-                            <span class="badge bg-warning text-dark">Superposition</span>
-                        </div>
-                        <p class="text-muted small mb-2 mt-1">Multi-hop entanglement traversal & phase-angle superposition</p>
-                        <div class="metric-row"><span class="metric-label">Nodes Retrieved</span><span class="metric-value">{{ $fm['quantum_memory']['total_nodes_retrieved'] ?? 0 }}</span></div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mode-card p-3 h-100 mb-0">
-                        <div class="d-flex justify-content-between">
-                            <h5 style="color: #fb923c; font-size: 0.95rem; margin:0;">🗜️ Context Compression</h5>
-                            <span class="badge" style="background:#ea580c; color:#fff;">Middleware</span>
-                        </div>
-                        <p class="text-muted small mb-2 mt-1">Prompt middleware noise stripping & token reduction</p>
-                        <div class="metric-row"><span class="metric-label">Compressed Requests</span><span class="metric-value">{{ $fm['context_compression']['executed_count'] ?? 0 }}</span></div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mode-card p-3 h-100 mb-0">
-                        <div class="d-flex justify-content-between">
-                            <h5 style="color: #38bdf8; font-size: 0.95rem; margin:0;">🔄 Context Compactor</h5>
-                            <span class="badge bg-info">Sliding Window</span>
-                        </div>
-                        <p class="text-muted small mb-2 mt-1">Sliding window compaction on multi-turn conversation histories</p>
-                        <div class="metric-row"><span class="metric-label">Compacted Turns</span><span class="metric-value">{{ $fm['compaction']['compacted_turns'] ?? 0 }}</span></div>
-                    </div>
-                </div>
-                <div class="col-md-12">
-                    <div class="mode-card p-3 mb-0">
-                        <div class="d-flex justify-content-between">
-                            <h5 style="color: #ec4899; font-size: 0.95rem; margin:0;">🕸️ Cognitive Graph Memory</h5>
-                            <span class="badge" style="background:#db2777; color:#fff;">QueryGraphMemoryTool</span>
-                        </div>
-                        <p class="text-muted small mb-2 mt-1">Persistent facts & entity relationships stored in harness_facts and retrieved dynamically</p>
-                        <div class="metric-row"><span class="metric-label">Fact Queries Executed</span><span class="metric-value">{{ $fm['cognitive_graph_memory']['facts_queried'] ?? 0 }}</span></div>
-                    </div>
-                </div>
+{{-- ── phpkaiharness Feature Matrix ── --}}
+@if(!empty($analytics['features_matrix']))
+<div class="tc-card mt-2" style="border-color:rgba(74,222,128,.25);">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 style="color:#4ade80;margin:0;">🔮 phpkaiharness Feature Evaluation Matrix</h3>
+            <p class="text-muted small mb-0">Measured from live B-mode trace data (cold + warm runs)</p>
+        </div>
+        <span class="badge bg-success">7 FEATURES</span>
+    </div>
+    @php $fm = $analytics['features_matrix']; @endphp
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="mode-card p-3 h-100 mb-0">
+                <div class="d-flex justify-content-between"><h5 style="color:#60a5fa;font-size:.95rem;margin:0;">⚡ Draft Verification</h5><span class="badge bg-primary">Active</span></div>
+                <p class="text-muted small mb-2 mt-1">Speculative draft proposals verified by fast model passes</p>
+                <div class="metric-row"><span class="metric-label">Proposals Generated</span><span class="metric-value">{{ $fm['draft_verification']['executed_count'] }}</span></div>
             </div>
         </div>
-    </div>
-</div>
-
-<div class="row mt-2">
-    <div class="col-md-12">
-        <div class="analytics-card">
-            <h3>📈 Efficiency Ratios</h3>
-            <table class="table table-sm">
-                <thead>
-                    <tr><th>Mode</th><th>Tokens/ms</th><th>Chars/ms</th><th>ms/Token</th></tr>
-                </thead>
-                <tbody>
-                    @foreach(['A1-direct-api' => 'A1 (Direct API)', 'A2-loop-no-features' => 'A2 (Loop)', 'B-full-harness' => 'B-cold', 'B-warm-harness' => 'B-warm'] as $mode => $label)
-                    @if(isset($analytics['efficiency_ratios'][$mode]))
-                    <tr>
-                        <td>{{ $label }}</td>
-                        <td>{{ $analytics['efficiency_ratios'][$mode]['tokens_per_ms'] }}</td>
-                        <td>{{ $analytics['efficiency_ratios'][$mode]['chars_per_ms'] }}</td>
-                        <td>{{ $analytics['efficiency_ratios'][$mode]['ms_per_token'] }}</td>
-                    </tr>
-                    @endif
-                    @endforeach
-                </tbody>
-            </table>
+        <div class="col-md-4">
+            <div class="mode-card p-3 h-100 mb-0">
+                <div class="d-flex justify-content-between"><h5 style="color:#c084fc;font-size:.95rem;margin:0;">📚 Ontology RAG</h5><span class="badge" style="background:#9333ea;color:#fff;">pgvector</span></div>
+                <p class="text-muted small mb-2 mt-1">Semantic document chunk injection from PostgreSQL</p>
+                <div class="metric-row"><span class="metric-label">Requests w/ Injection</span><span class="metric-value">{{ $fm['ontology_rag']['executed_count'] }}</span></div>
+                <div class="metric-row"><span class="metric-label">Total Chunks Injected</span><span class="metric-value">{{ $fm['ontology_rag']['total_chunks_injected'] }}</span></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mode-card p-3 h-100 mb-0">
+                <div class="d-flex justify-content-between"><h5 style="color:#4ade80;font-size:.95rem;margin:0;">🎯 Semantic Cache</h5><span class="badge bg-success">Cross-Session</span></div>
+                <p class="text-muted small mb-2 mt-1">Cross-session exact & fuzzy prompt matching</p>
+                <div class="metric-row"><span class="metric-label">Cold Hits / Warm Hits</span><span class="metric-value">{{ $fm['semantic_cache']['cold_hits'] }} / {{ $fm['semantic_cache']['warm_hits'] }}</span></div>
+                <div class="metric-row"><span class="metric-label">Warm Hit Rate</span><span class="metric-value {{ $fm['semantic_cache']['warm_hit_pct'] > 0 ? 'good' : 'bad' }}">{{ $fm['semantic_cache']['warm_hit_pct'] }}%</span></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mode-card p-3 h-100 mb-0">
+                <div class="d-flex justify-content-between"><h5 style="color:#facc15;font-size:.95rem;margin:0;">⚛️ Quantum Memory</h5><span class="badge bg-warning text-dark">Superposition</span></div>
+                <p class="text-muted small mb-2 mt-1">Multi-hop entanglement traversal & phase superposition</p>
+                <div class="metric-row"><span class="metric-label">Total Nodes Retrieved</span><span class="metric-value">{{ $fm['quantum_memory']['total_nodes_retrieved'] }}</span></div>
+                <div class="metric-row"><span class="metric-label">Avg per Request</span><span class="metric-value">{{ $fm['quantum_memory']['avg_nodes_per_request'] }}</span></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mode-card p-3 h-100 mb-0">
+                <div class="d-flex justify-content-between"><h5 style="color:#fb923c;font-size:.95rem;margin:0;">🗜️ Context Compression</h5><span class="badge" style="background:#ea580c;color:#fff;">Middleware</span></div>
+                <p class="text-muted small mb-2 mt-1">Prompt middleware noise stripping & token reduction</p>
+                <div class="metric-row"><span class="metric-label">Requests Processed</span><span class="metric-value">{{ $fm['context_compression']['executed_count'] }}</span></div>
+                <div class="metric-row"><span class="metric-label">Avg Prompt Tokens</span><span class="metric-value">{{ $fm['context_compression']['avg_prompt_tokens'] }}</span></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mode-card p-3 h-100 mb-0">
+                <div class="d-flex justify-content-between"><h5 style="color:#38bdf8;font-size:.95rem;margin:0;">🔄 Context Compactor</h5><span class="badge bg-info">Sliding Window</span></div>
+                <p class="text-muted small mb-2 mt-1">Sliding window compaction on multi-turn history</p>
+                <div class="metric-row"><span class="metric-label">Total Iterations</span><span class="metric-value">{{ $fm['compaction']['compacted_turns'] }}</span></div>
+                <div class="metric-row"><span class="metric-label">Avg Iterations/Req</span><span class="metric-value">{{ $fm['compaction']['avg_iterations'] }}</span></div>
+            </div>
+        </div>
+        <div class="col-md-12">
+            <div class="mode-card p-3 mb-0">
+                <div class="d-flex justify-content-between"><h5 style="color:#ec4899;font-size:.95rem;margin:0;">🕸️ Cognitive Graph Memory</h5><span class="badge" style="background:#db2777;color:#fff;">QueryGraphMemoryTool</span></div>
+                <p class="text-muted small mb-2 mt-1">Persistent entity relationships retrieved dynamically via harness_facts</p>
+                <div class="metric-row"><span class="metric-label">Graph Memory Queries</span><span class="metric-value">{{ $fm['cognitive_graph_memory']['facts_queried'] }}</span></div>
+            </div>
         </div>
     </div>
 </div>
 @endif
 
-<div class="row mt-4">
-    <div class="col-md-12">
-        <div class="mode-card">
-            <h3>Test Dataset ({{ count($dataset) }} requests)</h3>
-            <table class="table table-sm dataset-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Agent</th>
-                        <th>Category</th>
-                        <th>Prompt</th>
-                        <th>Lang</th>
-                        <th>Tools?</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($dataset as $i => $req)
-                    <tr>
-                        <td>{{ $i + 1 }}</td>
-                        <td>
-                            @if($req['agent'] === 'ElasticCostAssistant')
-                            <span class="agent-badge elastic">ElasticCost</span>
-                            @else
-                            <span class="agent-badge soc">RG SOC</span>
-                            @endif
-                        </td>
-                        <td><code>{{ $req['category'] }}</code></td>
-                        <td>{{ Str::limit($req['prompt'], 80) }}</td>
-                        <td>
-                            @if(str_contains($req['category'], 'tunisian'))
-                            <span class="lang-badge lang-tn">TN</span>
-                            @elseif(str_contains($req['category'], 'french'))
-                            <span class="lang-badge lang-fr">FR</span>
-                            @else
-                            <span class="lang-badge lang-en">EN</span>
-                            @endif
-                        </td>
-                        <td>{{ $req['expects_tools'] ? 'Yes' : 'No' }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
+{{-- ── Efficiency Ratios ── --}}
+@if(!empty($analytics['efficiency_ratios']))
+<div class="tc-card mt-2">
+    <h3>📈 Efficiency Ratios</h3>
+    <table class="tc-table">
+        <thead><tr><th>Mode</th><th>Tokens/ms</th><th>Chars/ms</th><th>ms/Token</th><th>Avg AI Score</th><th>AI Wins</th></tr></thead>
+        <tbody>
+        @foreach(['A1-direct-api'=>'A1 Direct API','A2-loop-no-features'=>'A2 Loop','B-full-harness'=>'B-cold','B-warm-harness'=>'B-warm'] as $mk => $ml)
+        @if(isset($analytics['efficiency_ratios'][$mk]))
+        @php
+            $er = $analytics['efficiency_ratios'][$mk];
+            $ae = $analytics['ai_evaluation_summary'][$mk] ?? null;
+        @endphp
+        <tr>
+            <td><strong>{{ $ml }}</strong></td>
+            <td>{{ $er['tokens_per_ms'] }}</td>
+            <td>{{ $er['chars_per_ms'] }}</td>
+            <td>{{ $er['ms_per_token'] }}</td>
+            <td>@if($ae)<span class="{{ $ae['avg_score'] >= 7 ? 'text-success' : ($ae['avg_score'] >= 5 ? 'text-warning' : 'text-danger') }}">{{ $ae['avg_score'] }}/10</span>@else —@endif</td>
+            <td>@if($ae)<span class="badge bg-secondary">{{ $ae['win_count'] }} ({{ $ae['win_pct'] }}%)</span>@else —@endif</td>
+        </tr>
+        @endif
+        @endforeach
+        </tbody>
+    </table>
 </div>
+@endif
 
-@if($hasResults && !empty($analytics['per_request_deltas']))
-<div class="row mt-4">
-    <div class="col-md-12">
-        <div class="mode-card">
-            <h3>Per-Request Comparison (A1 vs A2 vs B-cold vs B-warm)</h3>
-            <table class="table table-sm">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Agent</th>
-                        <th>Category</th>
-                        <th>A1 Lat</th>
-                        <th>A2 Lat</th>
-                        <th>B-cold Lat</th>
-                        <th>B-warm Lat</th>
-                        <th>A2 vs A1</th>
-                        <th>B-cold vs A1</th>
-                        <th>B-warm vs B-cold</th>
-                        <th>A1 Tok</th>
-                        <th>B-cold Tok</th>
-                        <th>B-warm Tok</th>
-                        <th>B-cold Tools</th>
-                        <th>B-warm Tools</th>
-                        <th>Cache</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($analytics['per_request_deltas'] as $row)
-                    <tr>
-                        <td>{{ $row['index'] + 1 }}</td>
-                        <td>{{ $row['agent'] }}</td>
-                        <td><code>{{ $row['category'] }}</code></td>
-                        <td>{{ $row['a1_latency'] }}ms</td>
-                        <td>{{ $row['a2_latency'] }}ms</td>
-                        <td>{{ $row['b_cold_latency'] }}ms</td>
-                        <td>{{ $row['b_warm_latency'] > 0 ? $row['b_warm_latency'].'ms' : '—' }}</td>
-                        <td>@if($row['a2_vs_a1_pct'] !== null)<span class="delta-badge {{ $row['a2_vs_a1_pct'] > 0 ? 'delta-up' : 'delta-down' }}">{{ $row['a2_vs_a1_pct'] > 0 ? '+' : '' }}{{ $row['a2_vs_a1_pct'] }}%</span>@else — @endif</td>
-                        <td>@if($row['b_cold_vs_a1_pct'] !== null)<span class="delta-badge {{ $row['b_cold_vs_a1_pct'] > 0 ? 'delta-up' : 'delta-down' }}">{{ $row['b_cold_vs_a1_pct'] > 0 ? '+' : '' }}{{ $row['b_cold_vs_a1_pct'] }}%</span>@else — @endif</td>
-                        <td>@if($row['b_warm_vs_b_cold_pct'] !== null)<span class="delta-badge {{ $row['b_warm_vs_b_cold_pct'] > 0 ? 'delta-up' : 'delta-down' }}">{{ $row['b_warm_vs_b_cold_pct'] > 0 ? '+' : '' }}{{ $row['b_warm_vs_b_cold_pct'] }}%</span>@else — @endif</td>
-                        <td>{{ $row['a1_tokens'] }}</td>
-                        <td>{{ $row['b_cold_tokens'] }}</td>
-                        <td>{{ $row['b_warm_tokens'] > 0 ? $row['b_warm_tokens'] : '—' }}</td>
-                        <td>{{ $row['b_cold_tools'] }}</td>
-                        <td>{{ $row['b_warm_tools'] > 0 ? $row['b_warm_tools'] : '—' }}</td>
-                        <td>
-                            @if($row['b_warm_cache_hit']) <span class="delta-badge delta-down">HIT</span>
-                            @elseif($row['b_cold_cache_hit']) <span class="delta-badge delta-flat">COLD HIT</span>
-                            @else <span class="text-muted">—</span> @endif
-                        </td>
-                        <td>
-                            @if($row['a1_success'] && $row['a2_success'] && $row['b_cold_success'] && ($row['b_warm_success'] || $row['b_warm_latency'] === 0))
-                            <span class="freshness-ok">✓</span>
-                            @else
-                            <span class="freshness-bad">✗</span>
+{{-- ── Per-Request Comparison Table ── --}}
+@if(!empty($analytics['per_request_deltas']))
+<div class="mode-card mt-4">
+    <h3>Per-Request Comparison — All 20 Requests</h3>
+    <p class="text-muted small mb-3">Click any row to expand response previews and AI evaluation details.</p>
+    <div style="overflow-x:auto;">
+    <table class="tc-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Agent</th>
+                <th>Category</th>
+                <th>A1 Lat</th>
+                <th>A2 Lat</th>
+                <th>B-cold Lat</th>
+                <th>B-warm Lat</th>
+                <th>A2 vs A1</th>
+                <th>B-cold vs A1</th>
+                <th>B-warm vs B-cold</th>
+                <th>A1 Tok</th>
+                <th>B-cold Tok</th>
+                <th>B-warm Tok</th>
+                <th>Cache</th>
+                <th>🏆 Winner</th>
+                <th>A1 Score</th>
+                <th>A2 Score</th>
+                <th>B-cold Score</th>
+                <th>B-warm Score</th>
+                <th>OK</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach($analytics['per_request_deltas'] as $row)
+        @php
+            $idx = $row['index'];
+            $a1e = $row['a1_eval'] ?? null;
+            $a2e = $row['a2_eval'] ?? null;
+            $bce = $row['b_cold_eval'] ?? null;
+            $bwe = $row['b_warm_eval'] ?? null;
+            $winnerMode = $row['winner'] ?? null;
+            $winnerLabels = ['A1-direct-api'=>'A1','A2-loop-no-features'=>'A2','B-full-harness'=>'B-cold','B-warm-harness'=>'B-warm'];
+            $winnerLabel = $winnerLabels[$winnerMode] ?? '—';
+        @endphp
+        <tr style="cursor:pointer;" onclick="toggleExpand({{ $idx }})">
+            <td>{{ $idx + 1 }}</td>
+            <td>
+                @if(str_contains($row['agent'],'Elastic'))<span class="agent-badge elastic">EC</span>
+                @else<span class="agent-badge soc">SOC</span>@endif
+            </td>
+            <td><code style="font-size:.72rem;">{{ Str::limit($row['category'], 25) }}</code></td>
+            <td>{{ number_format($row['a1_latency']) }}ms</td>
+            <td>{{ number_format($row['a2_latency']) }}ms</td>
+            <td>{{ number_format($row['b_cold_latency']) }}ms</td>
+            <td>{{ $row['b_warm_latency'] > 0 ? number_format($row['b_warm_latency']).'ms' : '—' }}</td>
+            <td>@if($row['a2_vs_a1_pct']!==null)<span class="delta-badge {{ $row['a2_vs_a1_pct']>0?'delta-up':'delta-down' }}">{{ $row['a2_vs_a1_pct']>0?'+':'' }}{{ $row['a2_vs_a1_pct'] }}%</span>@else—@endif</td>
+            <td>@if($row['b_cold_vs_a1_pct']!==null)<span class="delta-badge {{ $row['b_cold_vs_a1_pct']>0?'delta-up':'delta-down' }}">{{ $row['b_cold_vs_a1_pct']>0?'+':'' }}{{ $row['b_cold_vs_a1_pct'] }}%</span>@else—@endif</td>
+            <td>@if($row['b_warm_vs_b_cold_pct']!==null)<span class="delta-badge {{ $row['b_warm_vs_b_cold_pct']>0?'delta-up':'delta-down' }}">{{ $row['b_warm_vs_b_cold_pct']>0?'+':'' }}{{ $row['b_warm_vs_b_cold_pct'] }}%</span>@else—@endif</td>
+            <td>{{ number_format($row['a1_tokens']) }}</td>
+            <td>{{ number_format($row['b_cold_tokens']) }}</td>
+            <td>{{ $row['b_warm_tokens'] > 0 ? number_format($row['b_warm_tokens']) : '—' }}</td>
+            <td>
+                @if($row['b_warm_cache_hit'])<span class="delta-badge delta-down">HIT ✓</span>
+                @elseif($row['b_cold_cache_hit'])<span class="delta-badge delta-flat">COLD</span>
+                @else<span class="text-muted">—</span>@endif
+            </td>
+            <td>
+                @if($winnerMode)
+                <span class="badge {{ $winnerMode==='B-warm-harness'?'bg-success':($winnerMode==='B-full-harness'?'bg-danger':'bg-secondary') }}">
+                    🏆 {{ $winnerLabel }}
+                </span>
+                @else<span class="text-muted">—</span>@endif
+            </td>
+            <td>@if($a1e && $a1e['error']===null)<span class="{{ $a1e['score']>=7?'text-success':($a1e['score']>=5?'text-warning':'text-danger') }}">{{ $a1e['score'] }}</span>@else<span class="text-muted">—</span>@endif</td>
+            <td>@if($a2e && $a2e['error']===null)<span class="{{ $a2e['score']>=7?'text-success':($a2e['score']>=5?'text-warning':'text-danger') }}">{{ $a2e['score'] }}</span>@else<span class="text-muted">—</span>@endif</td>
+            <td>@if($bce && $bce['error']===null)<span class="{{ $bce['score']>=7?'text-success':($bce['score']>=5?'text-warning':'text-danger') }}">{{ $bce['score'] }}</span>@else<span class="text-muted">—</span>@endif</td>
+            <td>@if($bwe && $bwe['error']===null)<span class="{{ $bwe['score']>=7?'text-success':($bwe['score']>=5?'text-warning':'text-danger') }}">{{ $bwe['score'] }}</span>@else<span class="text-muted">—</span>@endif</td>
+            <td>
+                @if($row['a1_success'] && $row['a2_success'] && $row['b_cold_success'])
+                <span class="freshness-ok">✓</span>
+                @else<span class="freshness-bad">✗</span>@endif
+            </td>
+        </tr>
+        {{-- Expanded detail row --}}
+        <tr id="expand-{{ $idx }}" class="expand-row" style="display:none;">
+            <td colspan="20">
+                <div class="p-3">
+                    <div class="mb-2"><strong style="color:#a0a0b0;">Prompt:</strong> <span style="color:#d0d0e0;">{{ Str::limit($row['prompt'], 200) }}</span></div>
+                    <div class="row g-2 mt-1">
+                        {{-- A1 --}}
+                        <div class="col-md-3">
+                            <div style="font-size:.75rem;font-weight:600;color:#a0a0b0;margin-bottom:4px;">A1 Response @if($a1e && ($a1e['is_winner']??false)) 🏆 @endif</div>
+                            <div class="response-preview">{{ $row['a1_response'] ?: '(empty)' }}</div>
+                            @if($a1e && $a1e['error']===null)
+                            <div style="font-size:.72rem;margin-top:6px;color:#888;">
+                                Score: <strong class="{{ $a1e['score']>=7?'text-success':($a1e['score']>=5?'text-warning':'text-danger') }}">{{ $a1e['score'] }}/10</strong>
+                                | Acc:{{ $a1e['accuracy'] }} Comp:{{ $a1e['completeness'] }} Rel:{{ $a1e['relevance'] }} Qual:{{ $a1e['quality'] }}
+                            </div>
+                            @if(!empty($a1e['verdict']))<div style="font-size:.72rem;color:#888;margin-top:3px;font-style:italic;">{{ $a1e['verdict'] }}</div>@endif
                             @endif
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+                        </div>
+                        {{-- A2 (no response preview stored, show eval only) --}}
+                        <div class="col-md-3">
+                            <div style="font-size:.75rem;font-weight:600;color:#a0a0b0;margin-bottom:4px;">A2 Eval @if($a2e && ($a2e['is_winner']??false)) 🏆 @endif</div>
+                            <div class="response-preview" style="color:#777;font-style:italic;">(response not stored in preview)</div>
+                            @if($a2e && $a2e['error']===null)
+                            <div style="font-size:.72rem;margin-top:6px;color:#888;">
+                                Score: <strong class="{{ $a2e['score']>=7?'text-success':($a2e['score']>=5?'text-warning':'text-danger') }}">{{ $a2e['score'] }}/10</strong>
+                                | Acc:{{ $a2e['accuracy'] }} Comp:{{ $a2e['completeness'] }} Rel:{{ $a2e['relevance'] }} Qual:{{ $a2e['quality'] }}
+                            </div>
+                            @if(!empty($a2e['verdict']))<div style="font-size:.72rem;color:#888;margin-top:3px;font-style:italic;">{{ $a2e['verdict'] }}</div>@endif
+                            @endif
+                        </div>
+                        {{-- B-cold --}}
+                        <div class="col-md-3">
+                            <div style="font-size:.75rem;font-weight:600;color:#a0a0b0;margin-bottom:4px;">B-cold Response @if($bce && ($bce['is_winner']??false)) 🏆 @endif</div>
+                            <div class="response-preview">{{ $row['b_cold_response'] ?: '(empty)' }}</div>
+                            @if($bce && $bce['error']===null)
+                            <div style="font-size:.72rem;margin-top:6px;color:#888;">
+                                Score: <strong class="{{ $bce['score']>=7?'text-success':($bce['score']>=5?'text-warning':'text-danger') }}">{{ $bce['score'] }}/10</strong>
+                                | Acc:{{ $bce['accuracy'] }} Comp:{{ $bce['completeness'] }} Rel:{{ $bce['relevance'] }} Qual:{{ $bce['quality'] }}
+                            </div>
+                            @if(!empty($bce['verdict']))<div style="font-size:.72rem;color:#888;margin-top:3px;font-style:italic;">{{ $bce['verdict'] }}</div>@endif
+                            @if(!empty($bce['strengths']))<div style="font-size:.72rem;color:#4ade80;margin-top:3px;">✓ {{ $bce['strengths'] }}</div>@endif
+                            @if(!empty($bce['weaknesses']) && $bce['weaknesses'] !== 'None')<div style="font-size:.72rem;color:#f87171;margin-top:2px;">✗ {{ $bce['weaknesses'] }}</div>@endif
+                            @endif
+                        </div>
+                        {{-- B-warm --}}
+                        <div class="col-md-3">
+                            <div style="font-size:.75rem;font-weight:600;color:#a0a0b0;margin-bottom:4px;">B-warm Response @if($bwe && ($bwe['is_winner']??false)) 🏆 @endif</div>
+                            <div class="response-preview">{{ $row['b_warm_response'] ?: '(empty)' }}</div>
+                            @if($bwe && $bwe['error']===null)
+                            <div style="font-size:.72rem;margin-top:6px;color:#888;">
+                                Score: <strong class="{{ $bwe['score']>=7?'text-success':($bwe['score']>=5?'text-warning':'text-danger') }}">{{ $bwe['score'] }}/10</strong>
+                                | Acc:{{ $bwe['accuracy'] }} Comp:{{ $bwe['completeness'] }} Rel:{{ $bwe['relevance'] }} Qual:{{ $bwe['quality'] }}
+                            </div>
+                            @if(!empty($bwe['verdict']))<div style="font-size:.72rem;color:#888;margin-top:3px;font-style:italic;">{{ $bwe['verdict'] }}</div>@endif
+                            @if(!empty($bwe['strengths']))<div style="font-size:.72rem;color:#4ade80;margin-top:3px;">✓ {{ $bwe['strengths'] }}</div>@endif
+                            @if(!empty($bwe['weaknesses']) && $bwe['weaknesses'] !== 'None')<div style="font-size:.72rem;color:#f87171;margin-top:2px;">✗ {{ $bwe['weaknesses'] }}</div>@endif
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+        @endforeach
+        </tbody>
+    </table>
     </div>
 </div>
 @endif
 
+{{-- ── Test Dataset ── --}}
+<div class="mode-card mt-4">
+    <h3>Test Dataset ({{ count($dataset) }} requests)</h3>
+    <table class="tc-table">
+        <thead><tr><th>#</th><th>Agent</th><th>Category</th><th>Prompt</th><th>Lang</th><th>Tools?</th></tr></thead>
+        <tbody>
+        @foreach($dataset as $i => $req)
+        <tr>
+            <td>{{ $i + 1 }}</td>
+            <td>
+                @if($req['agent'] === 'ElasticCostAssistant')<span class="agent-badge elastic">ElasticCost</span>
+                @else<span class="agent-badge soc">RG SOC</span>@endif
+            </td>
+            <td><code style="font-size:.72rem;">{{ $req['category'] }}</code></td>
+            <td>{{ Str::limit($req['prompt'], 90) }}</td>
+            <td>
+                @if(str_contains($req['category'],'tunisian'))<span class="lang-badge lang-tn">TN</span>
+                @elseif(str_contains($req['category'],'french'))<span class="lang-badge lang-fr">FR</span>
+                @else<span class="lang-badge lang-en">EN</span>@endif
+            </td>
+            <td>{{ $req['expects_tools'] ? '✓' : '—' }}</td>
+        </tr>
+        @endforeach
+        </tbody>
+    </table>
+</div>
+
+@endif {{-- hasResults --}}
+
+{{-- ── Comparison Report ── --}}
 @if($reportContent)
-<div class="row mt-4">
-    <div class="col-md-12">
-        <div class="mode-card">
-            <h3>Comparison Report</h3>
-            <div class="report-content">
-                {!! Str::markdown($reportContent) !!}
-            </div>
-        </div>
-    </div>
+<div class="mode-card mt-4">
+    <h3>Comparison Report (Markdown)</h3>
+    <div class="report-content">{!! Str::markdown($reportContent) !!}</div>
 </div>
 @endif
 
@@ -696,175 +621,122 @@
 
 @section('scripts')
 <script>
-    async function runTests() {
-        const btn = document.getElementById('runBtn');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressBar = document.getElementById('progressBar');
-        const runLog = document.getElementById('runLog');
+function toggleExpand(idx) {
+    const row = document.getElementById('expand-' + idx);
+    if (row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
 
-        btn.disabled = true;
-        btn.innerHTML = '<i class="icon-spinner icon-spin"></i> Running...';
-        progressContainer.style.display = 'block';
-        runLog.style.display = 'block';
-        runLog.innerHTML = '';
+async function runTests() {
+    const btn = document.getElementById('runBtn');
+    const prog = document.getElementById('progressContainer');
+    const bar  = document.getElementById('progressBar');
+    const log  = document.getElementById('runLog');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Running...';
+    prog.style.display = 'block';
+    log.style.display  = 'block';
+    log.innerHTML = '';
 
-        const log = (msg) => {
-            runLog.innerHTML += msg + '\n';
-            runLog.scrollTop = runLog.scrollHeight;
+    const addLog = (msg) => { log.innerHTML += msg + '\n'; log.scrollTop = log.scrollHeight; };
+    addLog('Starting test suite (background)...');
+
+    try {
+        const r = await fetch('{{ route("test-compare.run") }}', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'},
+            body: JSON.stringify({})
+        });
+        if (r.status === 409) { const d = await r.json(); throw new Error(d.message || 'Already running'); }
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const d = await r.json();
+        addLog('✓ Background PID: ' + d.pid);
+
+        let lastLogLen = 0, polls = 0;
+        const maxPolls = 150;
+        const TOTAL = 80;
+        const stageMap = {
+            'A1-direct-api':'stage-A1',
+            'A2-loop-no-features':'stage-A2',
+            'B-full-harness':'stage-B-cold',
+            'B-warm-harness':'stage-B-warm'
         };
 
-        log('Starting test suite (background mode)...');
-
-        try {
-            log('Dispatching background test run...');
-            const response = await fetch('{{ route("test-compare.run") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({})
-            });
-
-            if (response.status === 409) {
-                const data = await response.json();
-                throw new Error(data.message || 'A run is already in progress');
+        const iv = setInterval(async () => {
+            polls++;
+            if (polls > maxPolls) {
+                clearInterval(iv);
+                addLog('⚠ Timeout — reloading...');
+                setTimeout(() => location.reload(), 3000);
+                return;
             }
+            try {
+                const sr = await fetch('{{ route("test-compare.status") }}', {headers:{'Accept':'application/json'}});
+                const s  = await sr.json();
 
-            if (!response.ok) {
-                throw new Error('HTTP ' + response.status);
-            }
+                // Progress bar
+                const done = (s.trace_counts['A1-direct-api']||0)+(s.trace_counts['A2-loop-no-features']||0)
+                           + (s.trace_counts['B-full-harness']||0)+(s.trace_counts['B-warm-harness']||0);
+                const pct = Math.min(Math.round(done/TOTAL*100), done >= TOTAL ? 98 : 99);
+                bar.style.width = pct + '%';
+                bar.innerText = pct + '% (' + done + '/' + TOTAL + ')';
 
-            const data = await response.json();
-            log('✓ Background process started (PID: ' + data.pid + ')');
-            log('Polling for progress...');
+                // Stage indicators
+                Object.keys(stageMap).forEach(mode => {
+                    const el = document.getElementById(stageMap[mode]);
+                    if (!el) return;
+                    const cnt = s.trace_counts[mode] || 0;
+                    el.querySelector('.stage-count').textContent = cnt + '/20';
+                    el.className = 'stage-ind ' + (cnt >= 20 ? 'stage-done' : (mode === s.current_stage ? 'stage-running' : (cnt > 0 ? 'stage-done' : 'stage-pending')));
+                    el.querySelector('.stage-icon').textContent = cnt >= 20 ? '✓' : (mode === s.current_stage ? '◉' : '○');
+                });
 
-            // Poll status every 5 seconds
-            let lastLogLen = 0;
-            let pollCount = 0;
-            const maxPolls = 120; // 10 minutes max
-            const pollInterval = setInterval(async () => {
-                pollCount++;
-                if (pollCount > maxPolls) {
-                    clearInterval(pollInterval);
-                    log('⚠ Polling timeout — check server logs. Reloading...');
+                // AI eval stage
+                const evalEl = document.getElementById('stage-eval');
+                if (evalEl) {
+                    if (s.marker_done || done >= TOTAL) {
+                        evalEl.className = 'stage-ind stage-done';
+                        evalEl.querySelector('.stage-icon').textContent = '✓';
+                    } else if (!s.running && done >= TOTAL) {
+                        evalEl.className = 'stage-ind stage-running';
+                        evalEl.querySelector('.stage-icon').textContent = '◉';
+                    }
+                }
+
+                // Log delta
+                if (s.log && s.log.length > lastLogLen) {
+                    s.log.substring(lastLogLen).split('\n').filter(l=>l.trim()).forEach(l => addLog(l));
+                    lastLogLen = s.log.length;
+                }
+
+                if (s.marker_done || done >= TOTAL) {
+                    clearInterval(iv);
+                    bar.style.width = '100%'; bar.innerText = '100%';
+                    addLog('✓ Done! Reloading...');
                     setTimeout(() => location.reload(), 3000);
-                    return;
+                } else if (!s.running && !s.marker_done && polls > 10 && done === 0) {
+                    clearInterval(iv);
+                    addLog('⚠ No traces after 50s — check logs. Reloading...');
+                    setTimeout(() => location.reload(), 3000);
                 }
-                try {
-                    const statusResp = await fetch('{{ route("test-compare.status") }}', {
-                        headers: { 'Accept': 'application/json' }
-                    });
-                    const status = await statusResp.json();
+            } catch(e) { /* keep polling */ }
+        }, 5000);
 
-                    // Update progress bar based on trace counts
-                    const total = 80; // 20 requests × 4 modes
-                    const done = (status.trace_counts['A1-direct-api'] || 0)
-                               + (status.trace_counts['A2-loop-no-features'] || 0)
-                               + (status.trace_counts['B-full-harness'] || 0)
-                               + (status.trace_counts['B-warm-harness'] || 0);
-                    const pct = Math.min(Math.round((done / total) * 100), 99);
-                    progressBar.style.width = pct + '%';
-                    progressBar.innerText = pct + '% (' + done + '/' + total + ')';
-
-                    // Update stage indicators
-                    const stageMap = {
-                        'A1-direct-api': 'stage-A1',
-                        'A2-loop-no-features': 'stage-A2',
-                        'B-full-harness': 'stage-B-cold',
-                        'B-warm-harness': 'stage-B-warm',
-                    };
-                    const currentStage = status.current_stage;
-                    Object.keys(stageMap).forEach(mode => {
-                        const el = document.getElementById(stageMap[mode]);
-                        const count = status.trace_counts[mode] || 0;
-                        el.querySelector('.stage-count').textContent = count + '/20';
-                        el.classList.remove('stage-pending', 'stage-running', 'stage-done', 'stage-error');
-                        if (count >= 20) {
-                            el.classList.add('stage-done');
-                            el.querySelector('.stage-icon').textContent = '✓';
-                        } else if (mode === currentStage) {
-                            el.classList.add('stage-running');
-                            el.querySelector('.stage-icon').textContent = '◉';
-                        } else if (count > 0) {
-                            el.classList.add('stage-done');
-                            el.querySelector('.stage-icon').textContent = '✓';
-                        } else {
-                            el.classList.add('stage-pending');
-                            el.querySelector('.stage-icon').textContent = '○';
-                        }
-                    });
-
-                    // Show current stage in log
-                    if (currentStage && currentStage !== 'starting' && currentStage !== 'completed') {
-                        log('Stage: ' + currentStage + ' (' + done + '/80 total)');
-                    }
-
-                    // Append new log lines
-                    if (status.log && status.log.length > lastLogLen) {
-                        const newLog = status.log.substring(lastLogLen);
-                        lastLogLen = status.log.length;
-                        const lines = newLog.split('\n').filter(l => l.trim());
-                        lines.forEach(line => log(line));
-                    }
-
-                    // Check completion: marker says DONE, or all traces collected
-                    // Do NOT stop just because running=false — the nohup PID may not be trackable
-                    const allDone = done >= total;
-                    if (status.marker_done || allDone) {
-                        clearInterval(pollInterval);
-                        progressBar.style.width = '100%';
-                        progressBar.innerText = '100%';
-                        log('✓ Test suite completed! (' + done + '/80 traces)');
-                        log('Reloading page to show results...');
-                        setTimeout(() => location.reload(), 3000);
-                    } else if (!status.running && !status.marker_done && done < total) {
-                        // PID gone but traces not complete and marker not set — keep polling for a bit
-                        // The background process may still be writing traces
-                        if (pollCount > 10 && done === 0) {
-                            // If no traces at all after 50s, it really failed
-                            clearInterval(pollInterval);
-                            log('⚠ Process appears to have failed — no traces generated after 50s.');
-                            log('Check server logs. Reloading to show current state...');
-                            setTimeout(() => location.reload(), 3000);
-                        }
-                        // Otherwise keep polling — traces may still be writing
-                    }
-                } catch (e) {
-                    // Keep polling even if one request fails
-                }
-            }, 5000);
-
-        } catch (error) {
-            log('✗ Error: ' + error.message);
-            btn.disabled = false;
-            btn.innerHTML = '<i class="icon-play"></i> Run Full Test Suite';
-        }
+    } catch(e) {
+        addLog('✗ ' + e.message);
+        btn.disabled = false;
+        btn.innerHTML = '▶ Run Full Test Suite';
     }
+}
 
-    function purgeOldRuns() {
-        if (!confirm('Are you sure you want to purge all old test runs and traces? This will clear all data for a fresh start.')) {
-            return;
-        }
-        fetch('{{ route("test-compare.purge") }}', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            }
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                window.location.reload();
-            } else {
-                alert('Purge failed: ' + (data.message || 'Unknown error'));
-            }
-        })
-        .catch(err => alert('Purge request error: ' + err.message));
-    }
+function purgeOldRuns() {
+    if (!confirm('Purge all old test runs and traces?')) return;
+    fetch('{{ route("test-compare.purge") }}', {
+        method:'POST',
+        headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Content-Type':'application/json','Accept':'application/json'}
+    }).then(r=>r.json()).then(d => {
+        if (d.success) { alert(d.message); location.reload(); }
+        else alert('Purge failed: '+(d.message||'error'));
+    }).catch(e=>alert('Error: '+e.message));
+}
 </script>
 @endsection

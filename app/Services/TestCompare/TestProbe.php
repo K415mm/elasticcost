@@ -64,6 +64,9 @@ class TestProbe
 
     public bool $success = true;
 
+    /** @var array{score: int, accuracy: int, completeness: int, relevance: int, quality: int, verdict: string, strengths: string, weaknesses: string, error: string|null}|null */
+    public ?array $aiEvaluation = null;
+
     public ?string $draftContent = null;
 
     public ?string $evidenceContent = null;
@@ -246,6 +249,7 @@ class TestProbe
             'response_length' => strlen($this->finalResponse),
             'success' => $this->success,
             'errors' => $this->errors,
+            'ai_evaluation' => $this->aiEvaluation,
         ];
     }
 }

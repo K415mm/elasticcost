@@ -11,6 +11,7 @@ use App\Models\AgentConversation;
 use App\Models\AgentConversationMessage;
 use App\Models\GlobalSetting;
 use App\Services\AiConfigHelper;
+use App\Services\TestCompare\AiEvaluator;
 use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
@@ -142,6 +143,9 @@ class TestRunner
                 $this->clearCacheAndReconfigure();
             }
         }
+
+        // Run AI evaluations across all modes for all 20 requests
+        $allTraces = $this->runAiEvaluations($allTraces);
 
         $summary = $this->computeSummary($allTraces);
         $summary['_meta'] = [
@@ -902,6 +906,10 @@ class TestRunner
             $successCount = count(array_filter($traces, fn ($t) => $t['success']));
             $count = max(count($traces), 1);
 
+            // Collect AI eval scores
+            $aiScores = array_filter(array_map(fn ($t) => $t['ai_evaluation']['score'] ?? null, $traces), fn ($s) => $s !== null);
+            $winCount = count(array_filter($traces, fn ($t) => ($t['ai_evaluation']['is_winner'] ?? false) === true));
+
             $summary[$mode] = [
                 'total_requests' => count($traces),
                 'successful' => $successCount,
@@ -913,10 +921,60 @@ class TestRunner
                 'avg_tool_calls' => round(array_sum($toolCallCounts) / $count, 2),
                 'avg_response_length' => (int) round(array_sum($responseLengths) / $count),
                 'pipeline_stages_avg' => (int) round(array_sum(array_map(fn ($t) => count($t['pipeline_stages']), $traces)) / $count),
+                'avg_ai_score' => ! empty($aiScores) ? round(array_sum($aiScores) / count($aiScores), 1) : null,
+                'ai_win_count' => $winCount,
             ];
         }
 
         return $summary;
+    }
+
+    /**
+     * Run AI evaluation for every request across all modes.
+     * Determines the winning mode per request and writes ai_evaluation + winner back to trace files.
+     */
+    private function runAiEvaluations(array $allTraces): array
+    {
+        try {
+            $evaluator = new AiEvaluator;
+        } catch (\Throwable $e) {
+            Log::warning('AiEvaluator init failed: '.$e->getMessage());
+
+            return $allTraces;
+        }
+
+        $total = count(reset($allTraces) ?: []);
+        $modeOrder = ['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'];
+
+        for ($i = 0; $i < $total; $i++) {
+            $result = $evaluator->evaluateRequest($allTraces, $i);
+
+            foreach ($modeOrder as $mode) {
+                if (! isset($allTraces[$mode][$i])) {
+                    continue;
+                }
+
+                $eval = $result['evaluations'][$mode] ?? null;
+                if ($eval === null) {
+                    continue;
+                }
+
+                $allTraces[$mode][$i]['ai_evaluation'] = array_merge($eval, [
+                    'is_winner' => ($result['winner'] === $mode),
+                    'winner_mode' => $result['winner'],
+                    'winner_score' => $result['winner_score'],
+                ]);
+
+                // Re-save the updated trace file
+                $dir = $this->outputDir.'/traces/'.$mode;
+                $filename = sprintf('%s/request-%02d-%s.json', $dir, $i + 1, strtolower($allTraces[$mode][$i]['agent'] ?? 'unknown'));
+                if (file_exists($filename)) {
+                    file_put_contents($filename, json_encode($allTraces[$mode][$i], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+                }
+            }
+        }
+
+        return $allTraces;
     }
 
     /**
