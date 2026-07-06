@@ -193,7 +193,7 @@ class TestProbe
             'pipeline_stages' => $this->pipelineStages,
             'context_injected' => $this->contextInjected,
             'quantum_memory' => [
-                'nodes_retrieved' => $quantumCount,
+                'nodes_retrieved' => count($this->quantumMemoryNodes),
                 'nodes' => array_slice($this->quantumMemoryNodes, 0, 5),
             ],
             'tool_calls' => [
