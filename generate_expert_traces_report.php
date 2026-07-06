@@ -68,8 +68,10 @@ function querySession(string $dbPath): ?array
             'quantum'         => $quantumPayload,
             'memories'        => (int) $memCount,
             'facts'           => (int) $factsCount,
+            'db_path'         => $dbPath,
         ];
     } catch (Exception $e) {
+        fwrite(STDERR, "ERROR on $dbPath: " . $e->getMessage() . "\n");
         return null;
     }
 }
@@ -80,7 +82,9 @@ $coldSessions   = [];
 $warmSessions   = [];
 
 for ($i = 0; $i < 20; $i++) {
-    $r = querySession("$sessionsBase/testcmp__B-full-harness_$i/monitor.db");
+    $p = "$sessionsBase/testcmp__B-full-harness_$i/monitor.db";
+    fwrite(STDERR, "Checking: $p exists=" . (file_exists($p) ? 'Y' : 'N') . "\n");
+    $r = querySession($p);
     if ($r !== null) {
         $coldSessions[$i] = $r;
     }
