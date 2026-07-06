@@ -809,19 +809,27 @@
                         lines.forEach(line => log(line));
                     }
 
-                    // Check completion: process not running OR marker says DONE
-                    if (!status.running || status.marker_done) {
+                    // Check completion: marker says DONE, or all traces collected
+                    // Do NOT stop just because running=false — the nohup PID may not be trackable
+                    const allDone = done >= total;
+                    if (status.marker_done || allDone) {
                         clearInterval(pollInterval);
-                        if (done < total && !status.marker_done) {
-                            log('⚠ Process terminated early — only ' + done + '/80 traces generated.');
-                            log('Check server logs for errors. Reloading to show partial results...');
-                        } else {
-                            progressBar.style.width = '100%';
-                            progressBar.innerText = '100%';
-                            log('✓ Test suite completed! (' + done + '/80 traces)');
-                            log('Reloading page to show results...');
-                        }
+                        progressBar.style.width = '100%';
+                        progressBar.innerText = '100%';
+                        log('✓ Test suite completed! (' + done + '/80 traces)');
+                        log('Reloading page to show results...');
                         setTimeout(() => location.reload(), 3000);
+                    } else if (!status.running && !status.marker_done && done < total) {
+                        // PID gone but traces not complete and marker not set — keep polling for a bit
+                        // The background process may still be writing traces
+                        if (pollCount > 10 && done === 0) {
+                            // If no traces at all after 50s, it really failed
+                            clearInterval(pollInterval);
+                            log('⚠ Process appears to have failed — no traces generated after 50s.');
+                            log('Check server logs. Reloading to show current state...');
+                            setTimeout(() => location.reload(), 3000);
+                        }
+                        // Otherwise keep polling — traces may still be writing
                     }
                 } catch (e) {
                     // Keep polling even if one request fails
