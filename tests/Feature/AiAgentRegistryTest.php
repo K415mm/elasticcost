@@ -8,7 +8,8 @@ use App\Ai\Agents\SizingRegulator;
 use App\Models\Client;
 use App\Models\GlobalSetting;
 use App\Models\Scenario;
-use Database\Seeders\SizingSeeder;
+use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Ai\Embeddings;
 use Tests\TestCase;
@@ -20,9 +21,11 @@ class AiAgentRegistryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Seed standard templates
-        $this->seed(SizingSeeder::class);
+        // Seed standard templates and permissions
+        $this->seed(DatabaseSeeder::class);
         Embeddings::fake();
+        $user = User::factory()->ceo()->create();
+        $this->actingAs($user);
     }
 
     public function test_agents_page_renders_successfully(): void

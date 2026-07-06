@@ -6,7 +6,9 @@ use App\Jobs\ProcessDocumentJob;
 use App\Models\Document;
 use App\Models\DocumentationChunk;
 use App\Models\GlobalSetting;
+use App\Models\User;
 use App\Services\DocumentParser;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
@@ -16,6 +18,14 @@ use Tests\TestCase;
 class FileManagerTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(DatabaseSeeder::class);
+        $user = User::factory()->ceo()->create();
+        $this->actingAs($user);
+    }
 
     /**
      * Test the file manager page loads correctly and displays initial structure.

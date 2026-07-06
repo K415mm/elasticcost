@@ -7,6 +7,8 @@ use App\Ai\Middleware\InjectDocumentation;
 use App\Models\Client;
 use App\Models\ClientScenarioMsspDetail;
 use App\Models\Scenario;
+use App\Models\User;
+use Database\Seeders\PermissionSeeder;
 use Database\Seeders\SizingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Ai\Contracts\Agent;
@@ -22,9 +24,12 @@ class SizingRegulatorTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Seed standard sizing templates
+        // Seed standard sizing templates and permissions
+        $this->seed(PermissionSeeder::class);
         $this->seed(SizingSeeder::class);
         Embeddings::fake();
+        $user = User::factory()->ceo()->create();
+        $this->actingAs($user);
     }
 
     public function test_sizing_regulator_agent_implements_interface_correctly(): void

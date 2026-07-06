@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\GlobalSetting;
+use App\Models\User;
 use App\Services\AiConfigHelper;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Http;
@@ -13,6 +15,14 @@ use Tests\TestCase;
 class SystemSettingsTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(DatabaseSeeder::class);
+        $user = User::factory()->ceo()->create();
+        $this->actingAs($user);
+    }
 
     public function test_system_settings_dashboard_renders_successfully(): void
     {

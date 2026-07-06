@@ -5,7 +5,8 @@ namespace Tests\Feature;
 use App\Models\Client;
 use App\Models\ClientAsset;
 use App\Models\Scenario;
-use Database\Seeders\SizingSeeder;
+use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,7 +17,9 @@ class SizingExportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(SizingSeeder::class);
+        $this->seed(DatabaseSeeder::class);
+        $user = User::factory()->ceo()->create();
+        $this->actingAs($user);
     }
 
     public function test_sizing_export_excel_returns_success_headers(): void

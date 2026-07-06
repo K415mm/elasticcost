@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AssetType;
 use App\Models\Client;
+use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -16,6 +17,8 @@ class ClientAssetTest extends TestCase
     {
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
+        $user = User::factory()->ceo()->create();
+        $this->actingAs($user);
     }
 
     /**

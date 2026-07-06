@@ -21,6 +21,10 @@ return new class extends Migration
         // Ensure extension is active
         DB::statement('CREATE EXTENSION IF NOT EXISTS vector;');
 
+        if (! Schema::hasTable('documentation_chunks')) {
+            return;
+        }
+
         Schema::table('documentation_chunks', function (Blueprint $table) {
             $table->dropColumn('embedding');
         });
@@ -37,6 +41,10 @@ return new class extends Migration
         $isSqlite = DB::connection()->getDriverName() === 'sqlite';
 
         if ($isSqlite) {
+            return;
+        }
+
+        if (! Schema::hasTable('documentation_chunks')) {
             return;
         }
 

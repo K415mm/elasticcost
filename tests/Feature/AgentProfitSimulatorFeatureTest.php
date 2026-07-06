@@ -3,11 +3,17 @@
 use App\Models\Client;
 use App\Models\ClientScenarioMsspDetail;
 use App\Models\Scenario;
+use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 test('reset simulation route resets settings successfully', function () {
+    $this->seed(DatabaseSeeder::class);
+    $user = User::factory()->ceo()->create();
+    $this->actingAs($user);
+
     $client = Client::create(['name' => 'Test Client']);
     $scenario = Scenario::create([
         'name' => 'Scenario 1',

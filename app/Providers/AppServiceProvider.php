@@ -29,9 +29,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::define('viewHarness', fn ($user = null) => true);
+        Gate::define('use-ai-agents', fn ($user = null) => true);
 
         // Pulse dashboard access — managers and CEO only
-        Gate::define('viewPulse', fn ($user) => $user->hasAnyRole(['manager', 'ceo']));
+        Gate::define('viewPulse', fn ($user = null) => $user?->hasAnyRole(['manager', 'ceo']) ?? false);
 
         // Passport scopes mapped to user roles
         Passport::tokensCan([
@@ -45,12 +46,12 @@ class AppServiceProvider extends ServiceProvider
         Passport::defaultScopes(['client']);
 
         // Role-based authorization Gates
-        Gate::define('manage-clients', fn ($user) => $user->hasAnyRole(['manager', 'sales_manager', 'ceo']));
-        Gate::define('manage-scenarios', fn ($user) => $user->hasAnyRole(['manager', 'ceo']));
-        Gate::define('manage-partners', fn ($user) => $user->hasAnyRole(['sales_manager', 'ceo']));
-        Gate::define('manage-settings', fn ($user) => $user->isCeo());
-        Gate::define('view-all-reports', fn ($user) => $user->hasAnyRole(['manager', 'sales_manager', 'ceo']));
-        Gate::define('view-financials', fn ($user) => $user->hasAnyRole(['sales_manager', 'ceo']));
+        Gate::define('manage-clients', fn ($user = null) => $user?->hasAnyRole(['manager', 'sales_manager', 'ceo']) ?? false);
+        Gate::define('manage-scenarios', fn ($user = null) => $user?->hasAnyRole(['manager', 'ceo']) ?? false);
+        Gate::define('manage-partners', fn ($user = null) => $user?->hasAnyRole(['sales_manager', 'ceo']) ?? false);
+        Gate::define('manage-settings', fn ($user = null) => $user?->isCeo() ?? false);
+        Gate::define('view-all-reports', fn ($user = null) => $user?->hasAnyRole(['manager', 'sales_manager', 'ceo']) ?? false);
+        Gate::define('view-financials', fn ($user = null) => $user?->hasAnyRole(['sales_manager', 'ceo']) ?? false);
 
         // Dynamic configuration of the AI SDK from database global settings
 

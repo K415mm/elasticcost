@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Ai\Analytics\LaravelAnalyticsCollector;
+use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Phpkaiharness\Monitor\MonitorReport;
 use Phpkaiharness\Monitor\SqliteMonitorStore;
@@ -23,6 +25,9 @@ class HarnessAnalyticsDashboardTest extends TestCase
         config(['harness.cache.db_path' => $this->testDbPath]);
         // Disable session isolation so tests read from the temp DB, not per-session folders
         config(['harness.session_isolation.enabled' => false]);
+        $this->seed(DatabaseSeeder::class);
+        $user = User::factory()->ceo()->create();
+        $this->actingAs($user);
     }
 
     protected function tearDown(): void

@@ -58,7 +58,12 @@ class PhpkaiharnessServiceProvider extends ServiceProvider
                         array_walk_recursive($overrides, function (&$value) {
                             if (is_string($value) && preg_match('/^[a-zA-Z]:\\\\/', $value)) {
                                 $drive = strtolower($value[0]);
-                                $value = '/mnt/'.$drive.str_replace('\\', '/', substr($value, 2));
+                                $translated = '/mnt/'.$drive.str_replace('\\', '/', substr($value, 2));
+                                if (! file_exists($translated) && preg_match('/storage[\\\/](.+)$/', $value, $m)) {
+                                    $value = storage_path(str_replace('\\', '/', $m[1]));
+                                } else {
+                                    $value = $translated;
+                                }
                             }
                         });
                     }

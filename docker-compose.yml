@@ -39,7 +39,7 @@ services:
       - elasticcost-network
 
   postgres:
-    image: postgres:17-alpine
+    image: pgvector/pgvector:pg17
     container_name: elasticcost-db
 
 
@@ -140,27 +140,27 @@ services:
     networks:
       - elasticcost-network
 
-  octane:
-    build:
-      context: .
-      dockerfile: Dockerfile.octane
-    container_name: elasticcost-octane
-    restart: unless-stopped
-    command: php artisan octane:frankenphp --host=0.0.0.0 --port=8000 --max-requests=500
-    env_file:
-      - .env
-    ports:
-      - "8001:8000"
-    volumes:
-      - .:/var/www
-      - storage_data:/var/www/storage
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - elasticcost-network
+#  octane:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile.octane
+#    container_name: elasticcost-octane
+#    restart: unless-stopped
+#    command: php artisan octane:frankenphp --host=0.0.0.0 --port=8000 --max-requests=500
+#    env_file:
+#      - .env
+#    ports:
+#      - "8001:8000"
+#    volumes:
+#      - .:/var/www
+#      - storage_data:/var/www/storage
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#      redis:
+#        condition: service_healthy
+#    networks:
+#      - elasticcost-network
 
 networks:
   elasticcost-network:

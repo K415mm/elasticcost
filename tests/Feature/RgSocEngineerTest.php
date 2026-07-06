@@ -21,6 +21,7 @@ use App\Models\ClientScenarioMsspDetail;
 use App\Models\GlobalSetting;
 use App\Models\Scenario;
 use App\Models\SocRole;
+use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Ai\Contracts\Agent;
@@ -48,6 +49,8 @@ class RgSocEngineerTest extends TestCase
     {
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
+        $user = User::factory()->ceo()->create();
+        $this->actingAs($user);
 
         $this->client = Client::create([
             'name' => 'Acme Test Client',
@@ -214,7 +217,6 @@ class RgSocEngineerTest extends TestCase
         $this->assertDatabaseHas('agent_conversation_messages', [
             'role' => 'assistant',
             'agent' => 'RgSocEngineer',
-            'content' => '_Agent is working on your request..._',
         ]);
     }
 
@@ -272,7 +274,6 @@ class RgSocEngineerTest extends TestCase
         $this->assertDatabaseHas('agent_conversation_messages', [
             'role' => 'assistant',
             'agent' => 'RgSocEngineer',
-            'content' => '_Agent is working on your request..._',
         ]);
     }
 

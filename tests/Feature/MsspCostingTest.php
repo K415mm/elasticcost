@@ -8,8 +8,10 @@ use App\Models\ClientAsset;
 use App\Models\ClientScenarioAnalystAllocation;
 use App\Models\ClientScenarioMsspDetail;
 use App\Models\Scenario;
+use App\Models\User;
 use App\Services\MsspCostingEngine;
 use Database\Seeders\MsspSeeder;
+use Database\Seeders\PermissionSeeder;
 use Database\Seeders\SizingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Ai\Embeddings;
@@ -22,10 +24,13 @@ class MsspCostingTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Seed both standard sizing and MSSP role templates
+        // Seed standard sizing, permissions, and MSSP role templates
+        $this->seed(PermissionSeeder::class);
         $this->seed(SizingSeeder::class);
         $this->seed(MsspSeeder::class);
         Embeddings::fake();
+        $user = User::factory()->ceo()->create();
+        $this->actingAs($user);
     }
 
     public function test_mssp_costing_calculates_correct_prices(): void
