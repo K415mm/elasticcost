@@ -352,8 +352,8 @@
         </div>
         <div class="col-md-4">
             <div class="mode-card p-3 h-100 mb-0">
-                <div class="d-flex justify-content-between"><h5 style="color:#c084fc;font-size:.95rem;margin:0;">📚 Ontology RAG</h5><span class="badge" style="background:#9333ea;color:#fff;">pgvector</span></div>
-                <p class="text-muted small mb-2 mt-1">Semantic document chunk injection from PostgreSQL</p>
+                <div class="d-flex justify-content-between"><h5 style="color:#c084fc;font-size:.95rem;margin:0;">📚 Ontology RAG</h5><span class="badge" style="background:#9333ea;color:#fff;">SQLite</span></div>
+                <p class="text-muted small mb-2 mt-1">Semantic document chunk injection from SQLite</p>
                 <div class="metric-row"><span class="metric-label">Requests w/ Injection</span><span class="metric-value">{{ $fm['ontology_rag']['executed_count'] }}</span></div>
                 <div class="metric-row"><span class="metric-label">Total Chunks Injected</span><span class="metric-value">{{ $fm['ontology_rag']['total_chunks_injected'] }}</span></div>
             </div>

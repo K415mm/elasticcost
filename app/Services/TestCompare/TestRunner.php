@@ -419,8 +419,8 @@ class TestRunner
                     ]);
 
                     $messageId = $pendingMessage->id;
-
-                    $agent->phpSessionId = 'phpsess_'.(session()->isStarted() ? session()->getId() : 'test_compare');
+                    $sessionId = "testcmp_{$this->runId}_{$mode}_{$index}";
+                    $agent->phpSessionId = $sessionId;
                     // Dispatch to Horizon — callbacks update the DB message inside the worker
                     $agent->queue($data['prompt'], [], $lightProvider, $lightModel)
                         ->then(function ($response) use ($messageId, $conversation) {
@@ -628,7 +628,7 @@ class TestRunner
             }
         }
 
-        $sessionId = 'testcmp_'.uniqid();
+        $sessionId = "testcmp_{$probe->runId}_{$probe->testMode}_{$probe->requestIndex}";
         $sessionManager = app(SessionManager::class);
         $sessionManager->activateSession($sessionId);
         $analytics = new LaravelAnalyticsCollector($sessionManager->resolveMonitorDbPath($sessionId));
@@ -883,12 +883,186 @@ class TestRunner
 
         foreach ($traces as $trace) {
             $trace['run_id'] = $this->runId;
+
+            // Enrich trace using predictable request session ID
+            $sessionId = "testcmp_{$this->runId}_{$mode}_{$trace['request_index']}";
+            $trace = $this->enrichTraceFromSqlite($trace, $sessionId);
+
             $filename = sprintf('%s/request-%02d-%s.json', $dir, $trace['request_index'] + 1, strtolower($trace['agent']));
             file_put_contents($filename, json_encode($trace, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         }
 
         // Update latest symlink after each mode is saved (so progress is visible)
         $this->updateLatestSymlink();
+    }
+
+    /**
+     * Enrich a trace using the session's SQLite monitor database and prompt structure.
+     */
+    private function enrichTraceFromSqlite(array $trace, string $sessionId): array
+    {
+        $sessionDbPath = storage_path("app/phpkaiharness/sessions/{$sessionId}/monitor.db");
+        if (file_exists($sessionDbPath)) {
+            try {
+                $pdo = new \PDO('sqlite:'.$sessionDbPath);
+                $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+                $pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
+
+                // 1. Query the main session info
+                $stmt = $pdo->prepare('SELECT * FROM harness_sessions ORDER BY created_at DESC LIMIT 1');
+                $stmt->execute();
+                $session = $stmt->fetch();
+
+                if ($session) {
+                    $trace['iterations'] = $session['iterations'] ?? $trace['iterations'];
+                }
+
+                // 2. Query details/events
+                $stmt = $pdo->prepare('SELECT * FROM harness_details ORDER BY id ASC');
+                $stmt->execute();
+                $details = $stmt->fetchAll();
+
+                $cacheHit = false;
+                $toolCalls = [];
+                $pipelineStages = [];
+                $llmCalls = 0;
+                $totalPromptTokens = 0;
+                $totalCompletionTokens = 0;
+
+                foreach ($details as $detail) {
+                    $type = $detail['type'];
+                    $name = $detail['name'];
+                    $payload = json_decode($detail['payload'] ?? '{}', true) ?: [];
+                    $response = json_decode($detail['response'] ?? '{}', true) ?: [];
+                    if (empty($response) && !empty($detail['response'])) {
+                        $response = ['message' => $detail['response']];
+                    }
+
+                    // Track pipeline stages
+                    $pipelineStages[] = [
+                        'stage' => $type,
+                        'status' => $name,
+                        'detail' => $detail['response'] ?? null,
+                    ];
+
+                    if ($type === 'llm_call') {
+                        $llmCalls++;
+                        $totalPromptTokens += (int) ($detail['tokens_prompt'] ?? 0);
+                        $totalCompletionTokens += (int) ($detail['tokens_completion'] ?? 0);
+                    }
+
+                    if ($type === 'tool_call') {
+                        $toolCalls[] = [
+                            'name' => $name,
+                            'arguments' => $payload,
+                            'result_length' => strlen($detail['response'] ?? ''),
+                            'result_preview' => mb_substr($detail['response'] ?? '', 0, 500),
+                        ];
+                    }
+
+                    if ($type === 'cache') {
+                        if ($name === 'hit') {
+                            $cacheHit = true;
+                        }
+                    }
+                }
+
+                if ($cacheHit) {
+                    $trace['cache']['hit'] = true;
+                }
+
+                if (! empty($toolCalls)) {
+                    $trace['tool_calls']['count'] = count($toolCalls);
+                    $trace['tool_calls']['calls'] = $toolCalls;
+                }
+
+                if (! empty($pipelineStages)) {
+                    $trace['pipeline_stages'] = $pipelineStages;
+                }
+
+                if ($llmCalls > 0) {
+                    $trace['llm_calls'] = $llmCalls;
+                }
+                if ($totalPromptTokens > 0) {
+                    $trace['tokens']['prompt_tokens'] = $totalPromptTokens;
+                    $trace['tokens']['completion_tokens'] = $totalCompletionTokens;
+                    $trace['tokens']['total_tokens'] = $totalPromptTokens + $totalCompletionTokens;
+                }
+
+                $pdo = null;
+            } catch (\Throwable $e) {
+                // Ignore DB query errors
+            }
+        }
+
+        // Always apply the reliable prompt/system prompt parsing for quantum memory & ontology RAG
+        $promptToCheck = ($trace['prompts']['effective_user_prompt'] ?? '') . "\n" . ($trace['prompts']['optimized_system_prompt'] ?? '');
+        
+        // 1. Quantum memory
+        if (str_contains($promptToCheck, '[QUANTUM-HARNESS MEMORY ENVELOPE]:')) {
+            $parts = explode('[QUANTUM-HARNESS MEMORY ENVELOPE]:', $promptToCheck);
+            $envelope = end($parts);
+            $nodes = [];
+            if (preg_match_all('/-\s+\[([^\]]+)\]\s+\[Type:\s*([^\]]+)\]/i', $envelope, $matches, PREG_SET_ORDER)) {
+                foreach ($matches as $match) {
+                    $nodes[] = [
+                        'id' => $match[1],
+                        'type' => $match[2],
+                    ];
+                }
+            }
+            if (! empty($nodes)) {
+                $trace['quantum_memory']['nodes_retrieved'] = count($nodes);
+                $trace['quantum_memory']['nodes'] = array_slice($nodes, 0, 5);
+            }
+        }
+
+        // 2. Ontology RAG
+        if (str_contains($promptToCheck, '## ONTOLOGICAL CONTEXT SECTION')) {
+            $parts = explode('## ONTOLOGICAL CONTEXT SECTION', $promptToCheck);
+            $section = end($parts);
+            $records = [];
+            if (preg_match_all('/-\s+\[Record ID:\s*([^\]]+)\]/i', $section, $matches, PREG_SET_ORDER)) {
+                foreach ($matches as $match) {
+                    $records[] = [
+                        'source' => 'ontology',
+                        'record_count' => 1,
+                        'preview' => $match[0],
+                    ];
+                }
+            }
+            if (! empty($records)) {
+                $trace['context_injected'] = $records;
+            }
+        }
+
+        // Update the feature matrix enablement statuses based on the run data
+        if (str_contains($trace['test_mode'], 'B-')) {
+            $trace['features_eval']['draft_verification']['enabled'] = true;
+            $trace['features_eval']['draft_verification']['draft_generated'] = ! empty($trace['draft_verification']['draft']);
+            $trace['features_eval']['draft_verification']['evidence_verified'] = ! empty($trace['draft_verification']['evidence']);
+
+            $trace['features_eval']['ontology_rag']['enabled'] = true;
+            $trace['features_eval']['ontology_rag']['injected'] = count($trace['context_injected'] ?? []) > 0;
+            $trace['features_eval']['ontology_rag']['record_count'] = array_sum(array_column($trace['context_injected'] ?? [], 'record_count'));
+
+            $trace['features_eval']['semantic_cache']['enabled'] = true;
+            $trace['features_eval']['semantic_cache']['hit'] = $trace['cache']['hit'] ?? false;
+
+            $trace['features_eval']['quantum_memory']['enabled'] = true;
+            $trace['features_eval']['quantum_memory']['nodes_retrieved'] = $trace['quantum_memory']['nodes_retrieved'] ?? 0;
+
+            $trace['features_eval']['context_compression']['enabled'] = true;
+            $trace['features_eval']['context_compression']['prompt_tokens'] = $trace['tokens']['prompt_tokens'] ?? 0;
+
+            $trace['features_eval']['compaction']['enabled'] = true;
+            $trace['features_eval']['compaction']['iterations'] = $trace['iterations'] ?? 1;
+
+            $trace['features_eval']['cognitive_graph_memory']['enabled'] = true;
+            $trace['features_eval']['cognitive_graph_memory']['tools_used'] = count(array_filter($trace['tool_calls']['calls'] ?? [], fn ($t) => ($t['name'] ?? '') === 'query_graph_memory'));
+        }
+
+        return $trace;
     }
 
     /**
