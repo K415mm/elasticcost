@@ -195,11 +195,25 @@ class SemanticCache
      *
      * Returns the cached response string on success, or null on cache miss.
      */
+    /**
+     * Normalize prompt by stripping task wrappers and whitespace.
+     */
+    public static function normalizePrompt(string $prompt): string
+    {
+        $clean = trim($prompt);
+        if (preg_match('/TASK:\s*(.*?)(?:\n\nCONVERSATION CONTEXT:|$)/s', $clean, $m)) {
+            $clean = trim($m[1]);
+        }
+
+        return mb_strtolower($clean);
+    }
+
     public function lookup(string $prompt): ?string
     {
         $cleanPrompt = trim($prompt);
+        $normPrompt = self::normalizePrompt($cleanPrompt);
 
-        // 1. Vector semantic search (Palantir AIP-style AI-native caching)
+        // 1. Vector semantic search (AI-native matching)
         if ($this->semanticMemory !== null) {
             $semanticResult = $this->lookupSemantic($cleanPrompt);
             if ($semanticResult !== null) {
@@ -273,25 +287,31 @@ class SemanticCache
     private function lookupInPdo(PDO $db, string $cleanPrompt): ?string
     {
         $reject = $this->rejectClause();
+        $normTarget = self::normalizePrompt($cleanPrompt);
 
-        // Try exact match
+        // Try exact match on raw and normalized prompt
         try {
             $stmt = $db->prepare(
-                "SELECT response FROM harness_sessions
-                 WHERE prompt = :prompt
-                   AND {$reject}
-                 ORDER BY created_at DESC LIMIT 1"
+                "SELECT prompt, response FROM harness_sessions
+                 WHERE {$reject}
+                 ORDER BY created_at DESC LIMIT 150"
             );
-            $stmt->execute([':prompt' => $cleanPrompt]);
-            $row = $stmt->fetch();
-            if ($row && ! empty($row['response'])) {
-                return $row['response'];
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            foreach ($rows as $row) {
+                if (empty($row['response'])) {
+                    continue;
+                }
+                $storedPrompt = trim($row['prompt'] ?? '');
+                if ($storedPrompt === $cleanPrompt || self::normalizePrompt($storedPrompt) === $normTarget) {
+                    return $row['response'];
+                }
             }
         } catch (\Throwable $e) {
             // Table might not exist
         }
 
-        // Try Levenshtein fuzzy match on recent sessions (limit to 150)
+        // Try Levenshtein fuzzy match on normalized prompts
         try {
             $stmt = $db->query(
                 "SELECT prompt, response FROM harness_sessions
@@ -301,12 +321,12 @@ class SemanticCache
             $sessions = $stmt->fetchAll();
 
             foreach ($sessions as $session) {
-                $cachedPrompt = trim($session['prompt'] ?? '');
+                $cachedPrompt = self::normalizePrompt($session['prompt'] ?? '');
                 if (empty($cachedPrompt)) {
                     continue;
                 }
 
-                $lenNew = strlen($cleanPrompt);
+                $lenNew = strlen($normTarget);
                 $lenCached = strlen($cachedPrompt);
                 $maxLen = max($lenNew, $lenCached);
                 if ($maxLen === 0) {
@@ -319,7 +339,7 @@ class SemanticCache
                 }
 
                 if ($maxLen <= 255) {
-                    $dist = levenshtein($cleanPrompt, $cachedPrompt);
+                    $dist = levenshtein($normTarget, $cachedPrompt);
                     $similarity = 1.0 - ($dist / $maxLen);
 
                     if ($similarity >= $this->threshold) {

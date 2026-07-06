@@ -90,13 +90,13 @@ class OntologicalContextInjector
                     && method_exists($allRecords->first(), 'getAttribute')
                     && $allRecords->first()->getAttribute($embeddingColumn) !== null;
 
-                $records = $allRecords->map(function ($record) use ($queryVector, &$evaluated, $hasSimilarityMethod, $provider) {
+                $records = $allRecords->map(function ($record) use ($queryVector, &$evaluated, $hasSimilarityMethod, $provider, $model, $query) {
                     $similarity = 0.0;
 
                     if ($hasSimilarityMethod) {
                         $similarity = (float) $record->similarity($queryVector);
                     } else {
-                        // Fallback: generate embedding on-the-fly for the record's text representation
+                        // Attempt embedding cosine similarity
                         $recordText = $this->recordToText($record);
                         if (! empty($recordText)) {
                             try {
@@ -106,7 +106,20 @@ class OntologicalContextInjector
                                     $similarity = $this->cosineSimilarity($queryVector, $recordVector);
                                 }
                             } catch (\Throwable $e) {
-                                // Embedding generation failed for this record — skip
+                                // Embedding failed — fallback to text overlap score
+                            }
+
+                            // Fallback: Token overlap similarity (Jaccard) for robust context matching
+                            if ($similarity <= 0.05) {
+                                $queryTokens = array_filter(explode(' ', strtolower(preg_replace('/[^\w\s]/', '', $query))));
+                                $recordTokens = array_filter(explode(' ', strtolower(preg_replace('/[^\w\s]/', '', $recordText))));
+                                if (! empty($queryTokens) && ! empty($recordTokens)) {
+                                    $intersection = count(array_intersect($queryTokens, $recordTokens));
+                                    $union = count(array_unique(array_merge($queryTokens, $recordTokens)));
+                                    if ($union > 0) {
+                                        $similarity = round($intersection / $union, 4);
+                                    }
+                                }
                             }
                         }
                     }

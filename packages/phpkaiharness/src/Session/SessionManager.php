@@ -253,7 +253,7 @@ class SessionManager
                 'size_bytes' => $size,
                 'size_human' => $this->formatBytes($size),
                 'monitor_db' => File::exists($dir.DIRECTORY_SEPARATOR.'monitor.db'),
-                'quantum_db' => File::exists($dir.DIRECTORY_SEPARATOR.'agent_memory.sqlite'),
+                'quantum_db' => File::exists($dir.DIRECTORY_SEPARATOR.'agent_memory.sqlite') || (function_exists('storage_path') && File::exists(storage_path('app/phpkaiharness/agent_memory.sqlite'))),
                 'context' => File::exists($dir.DIRECTORY_SEPARATOR.'context.json'),
                 'created_at' => date('Y-m-d H:i:s', $mtime),
                 'last_modified' => date('Y-m-d H:i:s', $mtime),

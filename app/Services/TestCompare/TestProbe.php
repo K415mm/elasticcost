@@ -170,12 +170,14 @@ class TestProbe
             'agent' => $this->agent,
             'category' => $this->category,
             'description' => $this->description,
-            'model' => $this->model,
-            'provider' => $this->provider,
             'timing' => [
+                'start_time' => $this->startTime,
+                'end_time' => $this->endTime,
                 'latency_ms' => $this->latencyMs,
-                'start_time' => date('c', (int) $this->startTime),
-                'end_time' => date('c', (int) $this->endTime),
+            ],
+            'model' => [
+                'name' => $this->model,
+                'provider' => $this->provider,
             ],
             'tokens' => [
                 'prompt_tokens' => $this->promptTokens,
@@ -191,7 +193,7 @@ class TestProbe
             'pipeline_stages' => $this->pipelineStages,
             'context_injected' => $this->contextInjected,
             'quantum_memory' => [
-                'nodes_retrieved' => count($this->quantumMemoryNodes),
+                'nodes_retrieved' => $quantumCount,
                 'nodes' => array_slice($this->quantumMemoryNodes, 0, 5),
             ],
             'tool_calls' => [
@@ -219,7 +221,7 @@ class TestProbe
                 ],
                 'quantum_memory' => [
                     'enabled' => str_contains($this->testMode, 'B-'),
-                    'nodes_retrieved' => count($this->quantumMemoryNodes),
+                    'nodes_retrieved' => $quantumCount,
                 ],
                 'context_compression' => [
                     'enabled' => str_contains($this->testMode, 'B-'),
