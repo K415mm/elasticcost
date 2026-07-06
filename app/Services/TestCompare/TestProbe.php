@@ -221,7 +221,7 @@ class TestProbe
                 ],
                 'quantum_memory' => [
                     'enabled' => str_contains($this->testMode, 'B-'),
-                    'nodes_retrieved' => $quantumCount,
+                    'nodes_retrieved' => count($this->quantumMemoryNodes),
                 ],
                 'context_compression' => [
                     'enabled' => str_contains($this->testMode, 'B-'),
