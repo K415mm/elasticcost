@@ -300,6 +300,9 @@
                     <button id="runBtn" class="run-btn" onclick="runTests()">
                         <i class="icon-play"></i> Run Full Test Suite
                     </button>
+                    <button id="purgeBtn" class="btn btn-outline-danger btn-sm ms-2" onclick="purgeOldRuns()">
+                        🗑️ Purge Old Runs
+                    </button>
                     <a href="{{ route('test-compare.index') }}" class="btn btn-outline-secondary btn-sm ms-2">Refresh Results</a>
                 </div>
             </div>
@@ -756,7 +759,7 @@
                     const status = await statusResp.json();
 
                     // Update progress bar based on trace counts
-                    const total = 68; // 17 requests × 4 modes
+                    const total = 80; // 20 requests × 4 modes
                     const done = (status.trace_counts['A1-direct-api'] || 0)
                                + (status.trace_counts['A2-loop-no-features'] || 0)
                                + (status.trace_counts['B-full-harness'] || 0)
@@ -776,9 +779,9 @@
                     Object.keys(stageMap).forEach(mode => {
                         const el = document.getElementById(stageMap[mode]);
                         const count = status.trace_counts[mode] || 0;
-                        el.querySelector('.stage-count').textContent = count + '/17';
+                        el.querySelector('.stage-count').textContent = count + '/20';
                         el.classList.remove('stage-pending', 'stage-running', 'stage-done', 'stage-error');
-                        if (count >= 17) {
+                        if (count >= 20) {
                             el.classList.add('stage-done');
                             el.querySelector('.stage-icon').textContent = '✓';
                         } else if (mode === currentStage) {
@@ -795,7 +798,7 @@
 
                     // Show current stage in log
                     if (currentStage && currentStage !== 'starting' && currentStage !== 'completed') {
-                        log('Stage: ' + currentStage + ' (' + done + '/68 total)');
+                        log('Stage: ' + currentStage + ' (' + done + '/80 total)');
                     }
 
                     // Append new log lines
@@ -810,12 +813,12 @@
                     if (!status.running || status.marker_done) {
                         clearInterval(pollInterval);
                         if (done < total && !status.marker_done) {
-                            log('⚠ Process terminated early — only ' + done + '/68 traces generated.');
+                            log('⚠ Process terminated early — only ' + done + '/80 traces generated.');
                             log('Check server logs for errors. Reloading to show partial results...');
                         } else {
                             progressBar.style.width = '100%';
                             progressBar.innerText = '100%';
-                            log('✓ Test suite completed! (' + done + '/68 traces)');
+                            log('✓ Test suite completed! (' + done + '/80 traces)');
                             log('Reloading page to show results...');
                         }
                         setTimeout(() => location.reload(), 3000);
@@ -830,6 +833,30 @@
             btn.disabled = false;
             btn.innerHTML = '<i class="icon-play"></i> Run Full Test Suite';
         }
+    }
+
+    function purgeOldRuns() {
+        if (!confirm('Are you sure you want to purge all old test runs and traces? This will clear all data for a fresh start.')) {
+            return;
+        }
+        fetch('{{ route("test-compare.purge") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert('Purge failed: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(err => alert('Purge request error: ' + err.message));
     }
 </script>
 @endsection

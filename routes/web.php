@@ -128,6 +128,7 @@ Route::middleware('auth')->group(function () {
         Route::get('test-compare/status', [TestCompareController::class, 'status'])->name('test-compare.status');
         Route::get('test-compare/dataset', [TestCompareController::class, 'dataset'])->name('test-compare.dataset');
         Route::get('test-compare/trace/{mode}/{index}', [TestCompareController::class, 'trace'])->name('test-compare.trace');
+        Route::post('test-compare/purge', [TestCompareController::class, 'purge'])->name('test-compare.purge');
     });
 
     // AI Agents Registry & Orchestration

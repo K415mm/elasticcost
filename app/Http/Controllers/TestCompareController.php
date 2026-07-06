@@ -321,13 +321,13 @@ class TestCompareController extends Controller
         $bcTraces = $traces['B-full-harness'] ?? [];
         $bwTraces = $traces['B-warm-harness'] ?? [];
 
-        $draftCount = count(array_filter($bcTraces, fn ($t) => ! empty($t['draft_verification']['draft'])));
-        $ragCount = count(array_filter($bcTraces, fn ($t) => ! empty($t['context_injected'])));
-        $cacheHitCold = count(array_filter($bcTraces, fn ($t) => ($t['cache']['hit'] ?? false) === true));
-        $cacheHitWarm = count(array_filter($bwTraces, fn ($t) => ($t['cache']['hit'] ?? false) === true));
-        $quantumNodesTotal = array_sum(array_map(fn ($t) => count($t['quantum_memory']['nodes'] ?? []), $bcTraces));
+        $draftCount = count(array_filter($bcTraces, fn ($t) => ! empty($t['features_eval']['draft_verification']['draft_generated']) || ! empty($t['draft_verification']['draft'])));
+        $ragCount = count(array_filter($bcTraces, fn ($t) => ! empty($t['features_eval']['ontology_rag']['injected']) || ! empty($t['context_injected'])));
+        $cacheHitCold = count(array_filter($bcTraces, fn ($t) => ($t['cache']['hit'] ?? $t['features_eval']['semantic_cache']['hit'] ?? false) === true));
+        $cacheHitWarm = count(array_filter($bwTraces, fn ($t) => ($t['cache']['hit'] ?? $t['features_eval']['semantic_cache']['hit'] ?? false) === true));
+        $quantumNodesTotal = array_sum(array_map(fn ($t) => $t['quantum_memory']['nodes_retrieved'] ?? $t['features_eval']['quantum_memory']['nodes_retrieved'] ?? count($t['quantum_memory']['nodes'] ?? []), $bcTraces));
         $compressedCount = count(array_filter($bcTraces, fn ($t) => ($t['features_eval']['context_compression']['enabled'] ?? false) === true));
-        $compactionCount = count(array_filter($bcTraces, fn ($t) => ($t['iterations'] ?? 0) > 1));
+        $compactionCount = count(array_filter($bcTraces, fn ($t) => ($t['iterations'] ?? 1) > 1));
         $graphMemoryTools = array_sum(array_map(fn ($t) => count(array_filter($t['tool_calls']['calls'] ?? [], fn ($c) => ($c['name'] ?? '') === 'query_graph_memory')), $bcTraces));
 
         $result['features_matrix'] = [
@@ -378,6 +378,46 @@ class TestCompareController extends Controller
         ];
 
         return $result;
+    }
+
+    /**
+     * Purge all old runs and traces.
+     */
+    public function purge()
+    {
+        $baseDir = base_path('testandcompare');
+        $runsDir = $baseDir.'/runs';
+
+        if (is_dir($runsDir)) {
+            File::cleanDirectory($runsDir);
+        }
+
+        if (is_link($baseDir.'/latest') || is_file($baseDir.'/latest')) {
+            @unlink($baseDir.'/latest');
+        } elseif (is_dir($baseDir.'/latest')) {
+            File::deleteDirectory($baseDir.'/latest');
+        }
+
+        if (is_dir($baseDir.'/traces')) {
+            File::deleteDirectory($baseDir.'/traces');
+        }
+
+        $filesToClean = [
+            storage_path('logs/test-compare-run.pid'),
+            storage_path('logs/test-compare-run.log'),
+            storage_path('logs/test-compare-run.marker'),
+            storage_path('logs/test-compare-run.id'),
+        ];
+        foreach ($filesToClean as $file) {
+            if (file_exists($file)) {
+                @unlink($file);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'All old test runs and traces have been purged successfully.',
+        ]);
     }
 
     /**
