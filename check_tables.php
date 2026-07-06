@@ -1,6 +1,6 @@
 <?php
 
-$dir = '/var/www/storage/app/phpkaiharness/sessions/testcmp_20260706-172239_B-full-harness_0';
+$dir = '/var/www/storage/app/phpkaiharness/sessions/testcmp__B-full-harness_0';
 $dbPath = $dir . '/monitor.db';
 
 if (!file_exists($dbPath)) {
