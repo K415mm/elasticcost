@@ -129,6 +129,11 @@ Route::middleware('auth')->group(function () {
         Route::get('test-compare/dataset', [TestCompareController::class, 'dataset'])->name('test-compare.dataset');
         Route::get('test-compare/trace/{mode}/{index}', [TestCompareController::class, 'trace'])->name('test-compare.trace');
         Route::post('test-compare/purge', [TestCompareController::class, 'purge'])->name('test-compare.purge');
+        // Saved runs
+        Route::post('test-compare/save-run', [TestCompareController::class, 'saveRun'])->name('test-compare.save-run');
+        Route::get('test-compare/saved-runs', [TestCompareController::class, 'savedRuns'])->name('test-compare.saved-runs');
+        Route::get('test-compare/saved-runs/{slug}/report', [TestCompareController::class, 'savedRunReport'])->name('test-compare.saved-run-report');
+        Route::delete('test-compare/saved-runs/{slug}', [TestCompareController::class, 'deleteSavedRun'])->name('test-compare.delete-saved-run');
     });
 
     // AI Agents Registry & Orchestration

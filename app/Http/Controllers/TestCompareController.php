@@ -123,6 +123,30 @@ class TestCompareController extends Controller
             }
         }
 
+        // List saved (archived) runs
+        $savedRunsDir = $baseDir.'/saved';
+        $savedRuns = [];
+        if (is_dir($savedRunsDir)) {
+            $savedDirs = glob($savedRunsDir.'/*', GLOB_ONLYDIR);
+            rsort($savedDirs);
+            foreach ($savedDirs as $savedDir) {
+                $meta = [];
+                $metaFile = $savedDir.'/save-meta.json';
+                if (file_exists($metaFile)) {
+                    $meta = json_decode(file_get_contents($metaFile), true) ?? [];
+                }
+                $savedRuns[] = [
+                    'slug' => basename($savedDir),
+                    'label' => $meta['label'] ?? basename($savedDir),
+                    'saved_at' => $meta['saved_at'] ?? null,
+                    'run_id' => $meta['run_id'] ?? null,
+                    'has_report' => file_exists($savedDir.'/comparison-report.md'),
+                    'trace_count' => is_dir($savedDir.'/traces') ? count(glob($savedDir.'/traces/*/request-*.json')) : 0,
+                    'model' => $meta['model'] ?? 'unknown',
+                ];
+            }
+        }
+
         // Compute cross-mode analytics
         $analytics = $this->computeAnalytics($summary, $traces);
 
@@ -139,6 +163,7 @@ class TestCompareController extends Controller
             'traceFreshness',
             'analytics',
             'availableRuns',
+            'savedRuns',
         ));
     }
 
@@ -449,6 +474,151 @@ class TestCompareController extends Controller
                 'success' => false,
                 'message' => 'Purge failed: '.$e->getMessage(),
             ], 500);
+        }
+    }
+
+    /**
+     * Save (archive) the current test run with a label.
+     * POST /test-compare/save-run
+     */
+    public function saveRun(Request $request)
+    {
+        try {
+            $baseDir = base_path('testandcompare');
+            $latestDir = is_link($baseDir.'/latest')
+                ? readlink($baseDir.'/latest')
+                : null;
+
+            if (! $latestDir || ! is_dir($latestDir)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No active test run found to save.',
+                ], 422);
+            }
+
+            $label = trim($request->input('label', ''));
+            if ($label === '') {
+                $label = 'Run '.date('Y-m-d H:i');
+            }
+
+            // Build a slug from the label + timestamp
+            $slug = date('Ymd-His').'-'.preg_replace('/[^a-z0-9]+/', '-', strtolower($label));
+            $slug = trim($slug, '-');
+
+            $savedDir = $baseDir.'/saved/'.$slug;
+            File::ensureDirectoryExists($baseDir.'/saved');
+
+            // Copy the entire run directory into saved/
+            File::copyDirectory($latestDir, $savedDir);
+
+            // Write save metadata
+            $runId = basename($latestDir);
+            $metaFile = $savedDir.'/save-meta.json';
+            file_put_contents($metaFile, json_encode([
+                'slug' => $slug,
+                'label' => $label,
+                'run_id' => $runId,
+                'saved_at' => now()->toIso8601String(),
+                'model' => $request->input('model', 'qwen-plus'),
+                'notes' => $request->input('notes', ''),
+            ], JSON_PRETTY_PRINT));
+
+            return response()->json([
+                'success' => true,
+                'message' => "Run saved as: {$label}",
+                'slug' => $slug,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Save failed: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * List all saved runs (JSON API).
+     * GET /test-compare/saved-runs
+     */
+    public function savedRuns()
+    {
+        $baseDir = base_path('testandcompare');
+        $savedRunsDir = $baseDir.'/saved';
+        $runs = [];
+
+        if (is_dir($savedRunsDir)) {
+            $dirs = glob($savedRunsDir.'/*', GLOB_ONLYDIR);
+            rsort($dirs);
+            foreach ($dirs as $dir) {
+                $meta = [];
+                $metaFile = $dir.'/save-meta.json';
+                if (file_exists($metaFile)) {
+                    $meta = json_decode(file_get_contents($metaFile), true) ?? [];
+                }
+                $reportFile = $dir.'/comparison-report.md';
+                $runs[] = [
+                    'slug' => basename($dir),
+                    'label' => $meta['label'] ?? basename($dir),
+                    'saved_at' => $meta['saved_at'] ?? null,
+                    'run_id' => $meta['run_id'] ?? null,
+                    'model' => $meta['model'] ?? 'unknown',
+                    'notes' => $meta['notes'] ?? '',
+                    'has_report' => file_exists($reportFile),
+                    'trace_count' => is_dir($dir.'/traces') ? count(glob($dir.'/traces/*/request-*.json')) : 0,
+                ];
+            }
+        }
+
+        return response()->json(['runs' => $runs]);
+    }
+
+    /**
+     * Load a saved run's report (JSON API).
+     * GET /test-compare/saved-runs/{slug}/report
+     */
+    public function savedRunReport(string $slug)
+    {
+        $baseDir = base_path('testandcompare');
+        $savedDir = $baseDir.'/saved/'.basename($slug);
+
+        if (! is_dir($savedDir)) {
+            return response()->json(['success' => false, 'message' => 'Saved run not found.'], 404);
+        }
+
+        $reportFile = $savedDir.'/comparison-report.md';
+        $metaFile = $savedDir.'/save-meta.json';
+
+        $meta = file_exists($metaFile)
+            ? (json_decode(file_get_contents($metaFile), true) ?? [])
+            : [];
+
+        return response()->json([
+            'success' => true,
+            'slug' => $slug,
+            'meta' => $meta,
+            'report' => file_exists($reportFile) ? file_get_contents($reportFile) : null,
+        ]);
+    }
+
+    /**
+     * Delete a saved run.
+     * DELETE /test-compare/saved-runs/{slug}
+     */
+    public function deleteSavedRun(string $slug)
+    {
+        try {
+            $baseDir = base_path('testandcompare');
+            $savedDir = $baseDir.'/saved/'.basename($slug);
+
+            if (! is_dir($savedDir)) {
+                return response()->json(['success' => false, 'message' => 'Saved run not found.'], 404);
+            }
+
+            File::deleteDirectory($savedDir);
+
+            return response()->json(['success' => true, 'message' => 'Saved run deleted.']);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 

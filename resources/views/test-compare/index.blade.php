@@ -154,6 +154,7 @@
         </div>
         <div>
             <button id="runBtn" class="run-btn" onclick="runTests()">▶ Run Full Test Suite</button>
+            <button class="btn btn-outline-success btn-sm ms-2" onclick="openSaveRunModal()">💾 Save This Run</button>
             <button class="btn btn-outline-danger btn-sm ms-2" onclick="purgeOldRuns()">🗑 Purge Old Runs</button>
             <a href="{{ route('test-compare.index') }}" class="btn btn-outline-secondary btn-sm ms-2">↻ Refresh</a>
         </div>
@@ -617,6 +618,75 @@
 </div>
 @endif
 
+{{-- ── Save Run Modal ── --}}
+<div id="saveRunModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;">
+    <div style="background:#1e1e2e;border:1px solid #3b82f6;border-radius:12px;padding:32px;min-width:420px;max-width:520px;width:90%;">
+        <h4 style="color:#f0f0f0;margin-bottom:16px;">💾 Save Current Test Run</h4>
+        <p style="color:#aaa;font-size:.875rem;margin-bottom:20px;">Archive this run so you can compare it later against other models.</p>
+        <div style="margin-bottom:14px;">
+            <label style="color:#ccc;font-size:.85rem;display:block;margin-bottom:6px;">Label</label>
+            <input type="text" id="saveRunLabel" placeholder="e.g. Qwen-Plus baseline July 2026" style="width:100%;padding:8px 12px;background:#2a2a3e;border:1px solid #444;border-radius:6px;color:#f0f0f0;font-size:.9rem;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:14px;">
+            <label style="color:#ccc;font-size:.85rem;display:block;margin-bottom:6px;">Model used</label>
+            <input type="text" id="saveRunModel" value="qwen-plus" style="width:100%;padding:8px 12px;background:#2a2a3e;border:1px solid #444;border-radius:6px;color:#f0f0f0;font-size:.9rem;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:20px;">
+            <label style="color:#ccc;font-size:.85rem;display:block;margin-bottom:6px;">Notes (optional)</label>
+            <textarea id="saveRunNotes" rows="2" placeholder="Any notes about this run..." style="width:100%;padding:8px 12px;background:#2a2a3e;border:1px solid #444;border-radius:6px;color:#f0f0f0;font-size:.9rem;resize:vertical;box-sizing:border-box;"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button onclick="closeSaveRunModal()" style="padding:8px 18px;background:#333;color:#ccc;border:1px solid #555;border-radius:6px;cursor:pointer;">Cancel</button>
+            <button onclick="doSaveRun()" style="padding:8px 20px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">💾 Save Run</button>
+        </div>
+    </div>
+</div>
+
+{{-- ── Saved Runs Archive Panel ── --}}
+@if(!empty($savedRuns))
+<div class="mode-card mt-4" id="savedRunsPanel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h3 style="margin:0;">📚 Saved Test Runs</h3>
+        <span style="color:#aaa;font-size:.85rem;">{{ count($savedRuns) }} archived run{{ count($savedRuns) !== 1 ? 's' : '' }}</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+        @foreach($savedRuns as $sr)
+        <div style="background:#1e1e2e;border:1px solid #333;border-radius:8px;padding:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div style="flex:1;min-width:200px;">
+                <div style="font-weight:600;color:#f0f0f0;margin-bottom:4px;">{{ $sr['label'] }}</div>
+                <div style="font-size:.8rem;color:#aaa;">
+                    🤖 {{ $sr['model'] }}
+                    @if($sr['saved_at']) &nbsp;·&nbsp; 🕐 {{ \Illuminate\Support\Carbon::parse($sr['saved_at'])->format('M j, Y H:i') }} @endif
+                    @if($sr['trace_count'] > 0) &nbsp;·&nbsp; 📊 {{ $sr['trace_count'] }} traces @endif
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-shrink:0;">
+                @if($sr['has_report'])
+                <button onclick="loadSavedRunReport('{{ $sr['slug'] }}')"
+                    style="padding:6px 14px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.85rem;">📄 View Report</button>
+                @endif
+                <button onclick="deleteSavedRun('{{ $sr['slug'] }}', '{{ addslashes($sr['label']) }}')"
+                    style="padding:6px 12px;background:#1e1e2e;border:1px solid #ef4444;color:#ef4444;border-radius:6px;cursor:pointer;font-size:.85rem;">🗑</button>
+            </div>
+        </div>
+        @endforeach
+    </div>
+</div>
+@endif
+
+{{-- ── Saved Run Report Viewer ── --}}
+<div id="savedRunReportViewer" style="display:none;" class="mode-card mt-4">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div>
+            <h3 style="margin:0;" id="savedRunReportTitle">Saved Run Report</h3>
+            <div style="color:#aaa;font-size:.85rem;margin-top:4px;" id="savedRunReportMeta"></div>
+        </div>
+        <button onclick="document.getElementById('savedRunReportViewer').style.display='none'"
+            style="padding:6px 14px;background:#333;color:#ccc;border:1px solid #555;border-radius:6px;cursor:pointer;">✕ Close</button>
+    </div>
+    <div class="report-content" id="savedRunReportContent"></div>
+</div>
+
 @endsection
 
 @section('scripts')
@@ -737,6 +807,75 @@ function purgeOldRuns() {
         if (d.success) { alert(d.message); location.reload(); }
         else alert('Purge failed: '+(d.message||'error'));
     }).catch(e=>alert('Error: '+e.message));
+}
+
+// ── Save Run ──────────────────────────────────────────────────────────────────
+function openSaveRunModal() {
+    document.getElementById('saveRunModal').style.display = 'flex';
+    const d = new Date();
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    document.getElementById('saveRunLabel').value = 'Run ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+}
+function closeSaveRunModal() {
+    document.getElementById('saveRunModal').style.display = 'none';
+}
+
+async function doSaveRun() {
+    const label = document.getElementById('saveRunLabel').value.trim() || 'Unnamed Run';
+    const model = document.getElementById('saveRunModel').value.trim() || 'qwen-plus';
+    const notes = document.getElementById('saveRunNotes').value.trim();
+    try {
+        const resp = await fetch('{{ route("test-compare.save-run") }}', {
+            method: 'POST',
+            headers: {'X-CSRF-TOKEN':'{{ csrf_token() }}','Content-Type':'application/json','Accept':'application/json'},
+            body: JSON.stringify({label, model, notes}),
+        });
+        const data = await resp.json();
+        closeSaveRunModal();
+        if (data.success) { alert('✅ ' + data.message); location.reload(); }
+        else alert('❌ ' + (data.message || 'Save failed'));
+    } catch(e) { alert('Error: ' + e.message); }
+}
+
+// ── Load Saved Run Report ─────────────────────────────────────────────────────
+async function loadSavedRunReport(slug) {
+    const viewer  = document.getElementById('savedRunReportViewer');
+    const content = document.getElementById('savedRunReportContent');
+    const title   = document.getElementById('savedRunReportTitle');
+    const meta    = document.getElementById('savedRunReportMeta');
+    content.innerHTML = '<div style="color:#aaa;padding:24px;">Loading...</div>';
+    viewer.style.display = 'block';
+    viewer.scrollIntoView({behavior:'smooth'});
+    try {
+        const resp = await fetch('{{ url("test-compare/saved-runs") }}/' + encodeURIComponent(slug) + '/report', {
+            headers:{'Accept':'application/json'}
+        });
+        const data = await resp.json();
+        if (data.success) {
+            title.textContent = '📄 ' + (data.meta?.label || slug);
+            const savedAt = data.meta?.saved_at ? new Date(data.meta.saved_at).toLocaleString() : '';
+            meta.innerHTML = '🤖 ' + (data.meta?.model || 'unknown') + (savedAt ? ' &nbsp;·&nbsp; 🕐 ' + savedAt : '');
+            content.innerHTML = '<pre style="white-space:pre-wrap;word-break:break-word;font-family:inherit;font-size:.88rem;line-height:1.7;color:#ddd;">'
+                + (data.report || 'No report found.').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                + '</pre>';
+        } else {
+            content.innerHTML = '<div style="color:#ef4444;">Failed to load: ' + (data.message||'unknown error') + '</div>';
+        }
+    } catch(e) { content.innerHTML = '<div style="color:#ef4444;">Error: ' + e.message + '</div>'; }
+}
+
+// ── Delete Saved Run ──────────────────────────────────────────────────────────
+async function deleteSavedRun(slug, label) {
+    if (!confirm('Delete saved run "' + label + '"? This cannot be undone.')) return;
+    try {
+        const resp = await fetch('{{ url("test-compare/saved-runs") }}/' + encodeURIComponent(slug), {
+            method: 'DELETE',
+            headers: {'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'},
+        });
+        const data = await resp.json();
+        if (data.success) location.reload();
+        else alert('Delete failed: ' + (data.message||'error'));
+    } catch(e) { alert('Error: ' + e.message); }
 }
 </script>
 @endsection
