@@ -91,6 +91,10 @@ class HarnessConfigController extends Controller
     private function varExportPretty(mixed $value, int $indent = 1): string
     {
         if (is_array($value)) {
+            if (empty($value)) {
+                return '[]';
+            }
+
             $isAssoc = ! array_is_list($value);
             $pad = str_repeat('    ', $indent);
             $lines = [];
