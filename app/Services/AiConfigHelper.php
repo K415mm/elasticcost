@@ -106,7 +106,7 @@ class AiConfigHelper
 
                 if ($providerKey === 'qwen') {
                     $model = GlobalSetting::getValue('qwen_model', 'qwen-plus');
-                    $apiKey = GlobalSetting::getValue('qwen_api_key', '');
+                    $apiKey = GlobalSetting::getValue('qwen_api_key') ?: (env('PHPKAIHARNESS_QWEN_KEY') ?: (env('QWEN_API_KEY') ?: env('DASHSCOPE_API_KEY', '')));
                     $url = GlobalSetting::getValue('qwen_url', 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1');
 
                     config([
@@ -269,7 +269,7 @@ class AiConfigHelper
                         app(AiManager::class)->forgetInstance('openrouter');
                     }
                 } elseif ($providerKey === 'qwen') {
-                    $apiKey = GlobalSetting::getValue('qwen_api_key', '');
+                    $apiKey = GlobalSetting::getValue('qwen_api_key') ?: (env('PHPKAIHARNESS_QWEN_KEY') ?: (env('QWEN_API_KEY') ?: env('DASHSCOPE_API_KEY', '')));
                     $url = GlobalSetting::getValue('qwen_url', 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1');
 
                     config([
