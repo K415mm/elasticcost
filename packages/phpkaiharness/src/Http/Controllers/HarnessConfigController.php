@@ -44,7 +44,10 @@ class HarnessConfigController extends Controller
 
         $updated = $this->buildUpdatedConfig($request);
 
-        // Write overrides JSON (for service provider to load at boot)
+        // Write overrides JSON (for service provider to load at boot).
+        // This is the primary persistence mechanism — storage/ is always
+        // writable by the web server user, unlike config/ which may be
+        // owned by a deploy user (e.g. root) after a git pull.
         $overridePath = storage_path('app/phpkaiharness/config_overrides.json');
         $directory = dirname($overridePath);
         if (! File::isDirectory($directory)) {
@@ -52,14 +55,24 @@ class HarnessConfigController extends Controller
         }
         File::put($overridePath, json_encode($updated, JSON_PRETTY_PRINT));
 
-        // Write directly to config/harness.php so changes persist even with config cache
-        $phpConfig = $this->buildPhpConfigString($updated);
-        File::put($configPath, $phpConfig);
+        // Best-effort: also write directly to config/harness.php so changes
+        // are visible in the file itself. This can fail with a permission
+        // error if config/ is owned by a different user (e.g. after a
+        // deploy script running as root/deploy-user overwrote ownership).
+        // We do not let that failure surface as a 500 — the overrides JSON
+        // above already guarantees the settings take effect.
+        $configWriteWarning = null;
+        try {
+            $phpConfig = $this->buildPhpConfigString($updated);
+            File::put($configPath, $phpConfig);
 
-        // Clear config cache so the new file is read on next request
-        $cachedConfigPath = base_path('bootstrap/cache/config.php');
-        if (File::exists($cachedConfigPath)) {
-            File::delete($cachedConfigPath);
+            // Clear config cache so the new file is read on next request
+            $cachedConfigPath = base_path('bootstrap/cache/config.php');
+            if (File::exists($cachedConfigPath)) {
+                File::delete($cachedConfigPath);
+            }
+        } catch (\Throwable $e) {
+            $configWriteWarning = 'Note: config/harness.php could not be updated directly ('.$e->getMessage().'). Settings were saved to overrides and will still apply.';
         }
 
         // Reload config in current process
@@ -67,8 +80,10 @@ class HarnessConfigController extends Controller
             config([$key => $value]);
         }
 
+        $message = $configWriteWarning ?? 'Configuration saved and config cache cleared.';
+
         return redirect()->route('harness.config')
-            ->with('success', 'Configuration saved and config cache cleared.');
+            ->with($configWriteWarning ? 'warning' : 'success', $message);
     }
 
     /**
@@ -85,8 +100,6 @@ class HarnessConfigController extends Controller
 
     /**
      * Export a PHP array with clean indentation (no numeric keys for associative arrays).
-     *
-     * @param  mixed  $value
      */
     private function varExportPretty(mixed $value, int $indent = 1): string
     {
