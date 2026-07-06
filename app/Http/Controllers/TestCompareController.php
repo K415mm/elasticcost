@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\TestCompare\TestDataset;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 
 class TestCompareController extends Controller
 {
@@ -385,39 +386,46 @@ class TestCompareController extends Controller
      */
     public function purge()
     {
-        $baseDir = base_path('testandcompare');
-        $runsDir = $baseDir.'/runs';
+        try {
+            $baseDir = base_path('testandcompare');
+            $runsDir = $baseDir.'/runs';
 
-        if (is_dir($runsDir)) {
-            File::cleanDirectory($runsDir);
-        }
-
-        if (is_link($baseDir.'/latest') || is_file($baseDir.'/latest')) {
-            @unlink($baseDir.'/latest');
-        } elseif (is_dir($baseDir.'/latest')) {
-            File::deleteDirectory($baseDir.'/latest');
-        }
-
-        if (is_dir($baseDir.'/traces')) {
-            File::deleteDirectory($baseDir.'/traces');
-        }
-
-        $filesToClean = [
-            storage_path('logs/test-compare-run.pid'),
-            storage_path('logs/test-compare-run.log'),
-            storage_path('logs/test-compare-run.marker'),
-            storage_path('logs/test-compare-run.id'),
-        ];
-        foreach ($filesToClean as $file) {
-            if (file_exists($file)) {
-                @unlink($file);
+            if (is_dir($runsDir)) {
+                File::cleanDirectory($runsDir);
             }
-        }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'All old test runs and traces have been purged successfully.',
-        ]);
+            if (is_link($baseDir.'/latest') || is_file($baseDir.'/latest')) {
+                @unlink($baseDir.'/latest');
+            } elseif (is_dir($baseDir.'/latest')) {
+                File::deleteDirectory($baseDir.'/latest');
+            }
+
+            if (is_dir($baseDir.'/traces')) {
+                File::deleteDirectory($baseDir.'/traces');
+            }
+
+            $filesToClean = [
+                storage_path('logs/test-compare-run.pid'),
+                storage_path('logs/test-compare-run.log'),
+                storage_path('logs/test-compare-run.marker'),
+                storage_path('logs/test-compare-run.id'),
+            ];
+            foreach ($filesToClean as $file) {
+                if (file_exists($file)) {
+                    @unlink($file);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'All old test runs and traces have been purged successfully.',
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Purge failed: '.$e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
