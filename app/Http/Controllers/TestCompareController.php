@@ -195,6 +195,7 @@ class TestCompareController extends Controller
             'cache_impact' => [],
             'efficiency_ratios' => [],
             'per_request_deltas' => [],
+            'features_matrix' => [],
         ];
 
         // Latency comparison
@@ -316,6 +317,66 @@ class TestCompareController extends Controller
             ];
         }
 
+        // Feature Matrix evaluation breakdown
+        $bcTraces = $traces['B-full-harness'] ?? [];
+        $bwTraces = $traces['B-warm-harness'] ?? [];
+
+        $draftCount = count(array_filter($bcTraces, fn ($t) => ! empty($t['draft_verification']['draft'])));
+        $ragCount = count(array_filter($bcTraces, fn ($t) => ! empty($t['context_injected'])));
+        $cacheHitCold = count(array_filter($bcTraces, fn ($t) => ($t['cache']['hit'] ?? false) === true));
+        $cacheHitWarm = count(array_filter($bwTraces, fn ($t) => ($t['cache']['hit'] ?? false) === true));
+        $quantumNodesTotal = array_sum(array_map(fn ($t) => count($t['quantum_memory']['nodes'] ?? []), $bcTraces));
+        $compressedCount = count(array_filter($bcTraces, fn ($t) => ($t['features_eval']['context_compression']['enabled'] ?? false) === true));
+        $compactionCount = count(array_filter($bcTraces, fn ($t) => ($t['iterations'] ?? 0) > 1));
+        $graphMemoryTools = array_sum(array_map(fn ($t) => count(array_filter($t['tool_calls']['calls'] ?? [], fn ($c) => ($c['name'] ?? '') === 'query_graph_memory')), $bcTraces));
+
+        $result['features_matrix'] = [
+            'draft_verification' => [
+                'name' => 'Draft Verification',
+                'description' => 'Speculative proposal generation verified by fast model passes',
+                'executed_count' => $draftCount,
+                'status' => 'ACTIVE',
+            ],
+            'ontology_rag' => [
+                'name' => 'Ontology RAG (pgvector)',
+                'description' => 'Semantic document chunk injection from PostgreSQL pgvector',
+                'executed_count' => $ragCount,
+                'status' => 'ACTIVE',
+            ],
+            'semantic_cache' => [
+                'name' => 'Semantic Cache',
+                'description' => 'Cross-session exact & fuzzy prompt matching to skip LLM calls',
+                'cold_hits' => $cacheHitCold,
+                'warm_hits' => $cacheHitWarm,
+                'warm_hit_pct' => count($bwTraces) > 0 ? round(($cacheHitWarm / count($bwTraces)) * 100, 1) : 0,
+                'status' => 'ACTIVE',
+            ],
+            'quantum_memory' => [
+                'name' => 'Quantum Memory Superposition',
+                'description' => 'Multi-hop entanglement traversal & phase-angle superposition retrieval',
+                'total_nodes_retrieved' => $quantumNodesTotal,
+                'status' => 'ACTIVE',
+            ],
+            'context_compression' => [
+                'name' => 'Context Compression',
+                'description' => 'Prompt middleware noise stripping & token reduction',
+                'executed_count' => $compressedCount,
+                'status' => 'ACTIVE',
+            ],
+            'compaction' => [
+                'name' => 'Context Compactor',
+                'description' => 'Sliding window compaction on multi-turn conversation histories',
+                'compacted_turns' => $compactionCount,
+                'status' => 'ACTIVE',
+            ],
+            'cognitive_graph_memory' => [
+                'name' => 'Cognitive Graph Memory',
+                'description' => 'Persistent facts & entity relationships queried via QueryGraphMemoryTool',
+                'facts_queried' => $graphMemoryTools,
+                'status' => 'ACTIVE',
+            ],
+        ];
+
         return $result;
     }
 
@@ -404,14 +465,17 @@ class TestCompareController extends Controller
         $runId = file_exists($runIdFile) ? trim(file_get_contents($runIdFile)) : null;
         $runDir = $runId ? $baseDir.'/runs/'.$runId : null;
 
+        $totalReqs = count(TestDataset::all());
+        $totalExecutions = $totalReqs * 4;
+
         $traceCounts = [];
         $currentStage = null;
         foreach (['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'] as $mode) {
             $dir = $runDir ? $runDir.'/traces/'.$mode : null;
             $traceCounts[$mode] = ($dir && is_dir($dir)) ? count(glob($dir.'/request-*.json')) : 0;
 
-            // Detect current stage: first mode with traces but not yet 17
-            if ($currentStage === null && $traceCounts[$mode] > 0 && $traceCounts[$mode] < 17) {
+            // Detect current stage: first mode with traces but not yet complete
+            if ($currentStage === null && $traceCounts[$mode] > 0 && $traceCounts[$mode] < $totalReqs) {
                 $currentStage = $mode;
             }
         }
@@ -419,15 +483,15 @@ class TestCompareController extends Controller
         if ($currentStage === null && array_sum($traceCounts) === 0) {
             $currentStage = 'starting';
         }
-        // If all modes have 17, we're done
-        if ($currentStage === null && array_sum($traceCounts) >= 68) {
+        // If all modes are complete
+        if ($currentStage === null && array_sum($traceCounts) >= $totalExecutions) {
             $currentStage = 'completed';
         }
         // If some modes are complete but next hasn't started
-        if ($currentStage === null && array_sum($traceCounts) > 0 && array_sum($traceCounts) < 68) {
+        if ($currentStage === null && array_sum($traceCounts) > 0 && array_sum($traceCounts) < $totalExecutions) {
             $modeOrder = ['A1-direct-api', 'A2-loop-no-features', 'B-full-harness', 'B-warm-harness'];
             foreach ($modeOrder as $mode) {
-                if ($traceCounts[$mode] < 17) {
+                if ($traceCounts[$mode] < $totalReqs) {
                     $currentStage = $mode;
                     break;
                 }

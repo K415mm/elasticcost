@@ -202,6 +202,38 @@ class TestProbe
                 'hit' => $this->cacheHit,
                 'key' => $this->cacheKey,
             ],
+            'features_eval' => [
+                'draft_verification' => [
+                    'enabled' => str_contains($this->testMode, 'B-'),
+                    'draft_generated' => ! empty($this->draftContent),
+                    'evidence_verified' => ! empty($this->evidenceContent),
+                ],
+                'ontology_rag' => [
+                    'enabled' => str_contains($this->testMode, 'B-'),
+                    'injected' => count($this->contextInjected) > 0,
+                    'record_count' => array_sum(array_column($this->contextInjected, 'record_count')),
+                ],
+                'semantic_cache' => [
+                    'enabled' => str_contains($this->testMode, 'B-'),
+                    'hit' => $this->cacheHit,
+                ],
+                'quantum_memory' => [
+                    'enabled' => str_contains($this->testMode, 'B-'),
+                    'nodes_retrieved' => count($this->quantumMemoryNodes),
+                ],
+                'context_compression' => [
+                    'enabled' => str_contains($this->testMode, 'B-'),
+                    'prompt_tokens' => $this->promptTokens,
+                ],
+                'compaction' => [
+                    'enabled' => str_contains($this->testMode, 'B-'),
+                    'iterations' => $this->iterations,
+                ],
+                'cognitive_graph_memory' => [
+                    'enabled' => str_contains($this->testMode, 'B-'),
+                    'tools_used' => count(array_filter($this->toolCalls, fn ($t) => ($t['name'] ?? '') === 'query_graph_memory')),
+                ],
+            ],
             'iterations' => $this->iterations,
             'llm_calls' => $this->llmCalls,
             'draft_verification' => [

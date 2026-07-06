@@ -3,138 +3,195 @@
 namespace App\Services\TestCompare;
 
 /**
- * 20 test requests: 10 ElasticCost Assistant + 10 RG SOC Engineer.
- * Varied complexity, languages (English, French, Tunisian Arabic), and tool-call requirements.
+ * Enhanced Benchmark Dataset specifically targeting all 7 phpkaiharness options:
+ * 1. Draft Verification (Speculative draft + fast model verification)
+ * 2. Ontology RAG (pgvector document chunks retrieval from documentation_chunks)
+ * 3. Semantic Cache (Warm hits & exact/fuzzy semantic cache matching)
+ * 4. Quantum Memory (Superposition interference & multi-hop entanglement context synthesis)
+ * 5. Context Compression (Prompt compression middleware token reduction)
+ * 6. Compaction (Sliding window context compaction across multi-turn interactions)
+ * 7. Cognitive Graph Memory (Fact/entity extraction & querying via QueryGraphMemoryTool)
  */
 class TestDataset
 {
     /**
-     * @return array<int, array{agent: string, prompt: string, category: string, description: string, expects_tools: bool}>
+     * @return array<int, array{agent: string, prompt: string, category: string, description: string, expects_tools: bool, target_feature: string}>
      */
     public static function all(): array
     {
         return [
-            // ── ElasticCost Assistant (10) ──────────────────────────────────
+            // ── 1. Draft Verification Benchmarks ───────────────────────────────
+            [
+                'agent' => 'ElasticCostAssistant',
+                'prompt' => 'Provide a complex 4-tier Elasticsearch architecture plan for 2TB/day of logs with 365 days retention. Include draft specs, node allocations, and cost estimates.',
+                'category' => 'draft-verification',
+                'description' => 'Draft Verification: Speculative proposal generation verified by fast verification pass',
+                'expects_tools' => false,
+                'target_feature' => 'draft_verification',
+            ],
+            [
+                'agent' => 'ElasticCostAssistant',
+                'prompt' => 'Propose a complete MSSP pricing structure for a financial enterprise with 1,500 endpoints and 50 firewalls. Draft the L1/L2/L3 analyst breakdown and verify margins.',
+                'category' => 'draft-verification',
+                'description' => 'Draft Verification: Enterprise MSSP costing proposal verification',
+                'expects_tools' => false,
+                'target_feature' => 'draft_verification',
+            ],
+
+            // ── 2. Ontology RAG Benchmarks ────────────────────────────────────
+            [
+                'agent' => 'ElasticCostAssistant',
+                'prompt' => 'What does the RaiseGuard MDR 360 specification say about 4-Tier Index Lifecycle Management (ILM) for log retention?',
+                'category' => 'ontology-rag',
+                'description' => 'Ontology RAG: Document chunk retrieval from RaiseGuard MDR 360 specification',
+                'expects_tools' => false,
+                'target_feature' => 'ontology_rag',
+            ],
+            [
+                'agent' => 'ElasticCostAssistant',
+                'prompt' => 'According to the uploaded architecture documentation, what are the exact storage tiering rules for Hot, Warm, Cold, and Frozen nodes?',
+                'category' => 'ontology-rag',
+                'description' => 'Ontology RAG: Semantic search over documentation_chunks table',
+                'expects_tools' => false,
+                'target_feature' => 'ontology_rag',
+            ],
+
+            // ── 3. Semantic Cache Benchmarks ──────────────────────────────────
             [
                 'agent' => 'ElasticCostAssistant',
                 'prompt' => 'What is the RAM-to-disk ratio for Hot tier in Elasticsearch?',
-                'category' => 'sizing-basic',
-                'description' => 'Simple factual question about ES sizing ratios',
+                'category' => 'semantic-cache-exact',
+                'description' => 'Semantic Cache: Exact prompt query (cold run populates cache, warm run hits cache)',
                 'expects_tools' => false,
+                'target_feature' => 'semantic_cache',
             ],
             [
                 'agent' => 'ElasticCostAssistant',
-                'prompt' => 'I need to size an Elasticsearch cluster for 500GB/day of logs with 30 days retention. Hot tier only. What hardware do I need?',
-                'category' => 'sizing-calculation',
-                'description' => 'Multi-step sizing calculation requiring ratios and formulas',
+                'prompt' => 'Tell me the RAM to disk ratio in Hot tier for ES clusters.',
+                'category' => 'semantic-cache-fuzzy',
+                'description' => 'Semantic Cache: Fuzzy prompt match for Levenshtein/semantic vector lookup',
                 'expects_tools' => false,
-            ],
-            [
-                'agent' => 'ElasticCostAssistant',
-                'prompt' => 'Quelle est la différence entre les tiers Hot, Warm, Cold et Frozen en termes de ratio RAM-disque?',
-                'category' => 'sizing-french',
-                'description' => 'French language question about ES tier differences',
-                'expects_tools' => false,
-            ],
-            [
-                'agent' => 'ElasticCostAssistant',
-                'prompt' => 'How do I calculate the MSSP SOC staffing cost for a client with 200 devices across 3 asset types? Explain the L1, L2, L3 pricing model.',
-                'category' => 'costing-calculation',
-                'description' => 'SOC costing calculation with staffing tiers',
-                'expects_tools' => false,
-            ],
-            [
-                'agent' => 'ElasticCostAssistant',
-                'prompt' => '3andi cluster ES ken n7eb 1TB log nhar w 90 jour retention, chnou lazem men hardware? hot w warm tiers',
-                'category' => 'sizing-tunisian',
-                'description' => 'Tunisian Arabic dialect — sizing 1TB/day 90-day retention',
-                'expects_tools' => false,
-            ],
-            [
-                'agent' => 'ElasticCostAssistant',
-                'prompt' => 'What is the impact of replica shards on storage requirements? If I have 500GB of primary data with 1 replica, what is my total storage need?',
-                'category' => 'sizing-replicas',
-                'description' => 'Replica impact calculation',
-                'expects_tools' => false,
-            ],
-            [
-                'agent' => 'ElasticCostAssistant',
-                'prompt' => 'Explain the assurance markup benefit in MSSP costing. How does it affect the final client MRC?',
-                'category' => 'costing-concept',
-                'description' => 'Conceptual question about MSSP pricing model',
-                'expects_tools' => false,
-            ],
-            [
-                'agent' => 'ElasticCostAssistant',
-                'prompt' => 'Je veux convertir un coût de 5000 USD en EUR et TND. Quels sont les taux de change actuels dans le système?',
-                'category' => 'costing-currency-french',
-                'description' => 'French — currency conversion question',
-                'expects_tools' => false,
-            ],
-            [
-                'agent' => 'ElasticCostAssistant',
-                'prompt' => 'What shard size do you recommend for optimal Elasticsearch performance? Explain why 30-50GB is the sweet spot.',
-                'category' => 'sizing-shards',
-                'description' => 'Shard sizing best practices explanation',
-                'expects_tools' => false,
-            ],
-            [
-                'agent' => 'ElasticCostAssistant',
-                'prompt' => 'knwa 3andi client jdid w n7eb na7seb el SOC cost mt3ou. 3andou 150 device Active Directory w 50 FortiGate. chnou el cout mensuel?',
-                'category' => 'costing-tunisian',
-                'description' => 'Tunisian Arabic — SOC cost calculation for a new client',
-                'expects_tools' => false,
+                'target_feature' => 'semantic_cache',
             ],
 
-            // ── RG SOC Engineer (10) ────────────────────────────────────────
+            // ── 4. Quantum Memory Benchmarks ─────────────────────────────────
+            [
+                'agent' => 'ElasticCostAssistant',
+                'prompt' => 'Synthesize the current quantum memory state and phase angle superposition for Security and DataProcessing agent interactions.',
+                'category' => 'quantum-memory',
+                'description' => 'Quantum Memory: Multi-hop entanglement traversal and phase-angle superposition retrieval',
+                'expects_tools' => false,
+                'target_feature' => 'quantum_memory',
+            ],
+            [
+                'agent' => 'ElasticCostAssistant',
+                'prompt' => 'What entangled cognitive nodes exist in the quantum memory graph regarding client sizing constraints?',
+                'category' => 'quantum-memory',
+                'description' => 'Quantum Memory: Retrieval of superpositioned context envelope',
+                'expects_tools' => false,
+                'target_feature' => 'quantum_memory',
+            ],
+
+            // ── 5. Context Compression Benchmarks ─────────────────────────────
+            [
+                'agent' => 'ElasticCostAssistant',
+                'prompt' => 'IMPORTANT NOTICE: Please read this entire detailed system instruction carefully before responding. System context: ElasticCost is an enterprise AI-assisted Elasticsearch sizing and MSSP costing platform. Below are extensive details, guidelines, rules, and background information that you must adhere to strictly. Rule 1: Always be precise. Rule 2: Always output JSON or markdown tables when requested. Rule 3: Use official RAM-to-disk ratios (Hot 1:30, Warm 1:100, Cold 1:500, Frozen 1:1000). Now, given 500GB/day of logs with 30 days retention in Hot tier only, what is the exact hardware requirement?',
+                'category' => 'context-compression',
+                'description' => 'Context Compression: Verbose prompt testing compression middleware token reduction',
+                'expects_tools' => false,
+                'target_feature' => 'context_compression',
+            ],
+            [
+                'agent' => 'ElasticCostAssistant',
+                'prompt' => 'Background Overview: We are conducting an in-depth infrastructure audit for our managed security operations center (SOC). The client has multiple branches across Europe and North Africa with diverse log volumes, compliance requirements, and retention mandates. Question: How do we calculate the MSSP SOC staffing cost for a client with 200 devices across 3 asset types? Explain the L1, L2, L3 pricing model in detail.',
+                'category' => 'context-compression',
+                'description' => 'Context Compression: Multi-paragraph prompt testing noise stripping',
+                'expects_tools' => false,
+                'target_feature' => 'context_compression',
+            ],
+
+            // ── 6. Compaction Benchmarks ──────────────────────────────────────
+            [
+                'agent' => 'ElasticCostAssistant',
+                'prompt' => 'I have a 10-node cluster. Turn 1: Add 500GB/day log intake. Turn 2: Change retention to 60 days. Turn 3: Add 1 replica shard. What is the total storage requirement after all turns?',
+                'category' => 'compaction',
+                'description' => 'Compaction: Multi-turn interaction scenario testing sliding window compaction',
+                'expects_tools' => false,
+                'target_feature' => 'compaction',
+            ],
+
+            // ── 7. Cognitive Graph Memory Benchmarks ──────────────────────────
+            [
+                'agent' => 'RgSocEngineer',
+                'prompt' => 'Query the cognitive graph memory for any recorded facts about client device inventories or global pricing rates.',
+                'category' => 'cognitive-graph-memory',
+                'description' => 'Cognitive Graph Memory: Executing QueryGraphMemoryTool to search harness_facts',
+                'expects_tools' => true,
+                'target_feature' => 'cognitive_graph_memory',
+            ],
             [
                 'agent' => 'RgSocEngineer',
                 'prompt' => 'List all clients in the system with their current device counts.',
                 'category' => 'db-query-simple',
-                'description' => 'Simple database query — requires GetSystemDetailsTool',
+                'description' => 'Database Query: Simple database query via GetSystemDetailsTool',
                 'expects_tools' => true,
+                'target_feature' => 'db_tools',
             ],
             [
                 'agent' => 'RgSocEngineer',
                 'prompt' => 'What are the current global settings? Show me all configured rates and prices.',
                 'category' => 'db-query-settings',
-                'description' => 'Query global settings table',
+                'description' => 'Database Query: Query global settings table via GetSystemDetailsTool',
                 'expects_tools' => true,
+                'target_feature' => 'db_tools',
             ],
             [
                 'agent' => 'RgSocEngineer',
                 'prompt' => 'Add 2 FortiGate firewalls to Acme Corp device count.',
                 'category' => 'db-update-simple',
-                'description' => 'Simple device count update — requires GetClientInventoryTool + UpdateClientInventoryTool',
+                'description' => 'Database Update: Update device counts via UpdateClientInventoryTool',
                 'expects_tools' => true,
+                'target_feature' => 'db_tools',
             ],
             [
                 'agent' => 'RgSocEngineer',
                 'prompt' => 'Set the SIEM agent monthly cost per device to 25 USD.',
                 'category' => 'db-update-setting',
-                'description' => 'Update a global setting — requires UpdateGlobalSettingTool',
+                'description' => 'Database Update: Update global setting via UpdateGlobalSettingTool',
                 'expects_tools' => true,
-            ],
-            [
-                'agent' => 'RgSocEngineer',
-                'prompt' => '3tini el liste mta3 el clients w chnou 3andhom men devices b kol type.',
-                'category' => 'db-query-tunisian',
-                'description' => 'Tunisian Arabic — list clients and device counts by type',
-                'expects_tools' => true,
+                'target_feature' => 'db_tools',
             ],
             [
                 'agent' => 'RgSocEngineer',
                 'prompt' => 'Create a new client named "TechCorp Industries" with 100 Active Directory devices, 30 FortiGate firewalls, and 50 EDR endpoints.',
                 'category' => 'db-create-client',
-                'description' => 'Multi-step client creation — requires GetSystemDetailsTool + CreateClientTool',
+                'description' => 'Database Create: Multi-step client creation via CreateClientTool',
                 'expects_tools' => true,
+                'target_feature' => 'db_tools',
             ],
             [
                 'agent' => 'RgSocEngineer',
-                'prompt' => 'Show me the complete system state: all clients, their inventory, global settings, scenarios, and available asset types. Format as a comprehensive report.',
-                'category' => 'db-query-comprehensive',
-                'description' => 'Comprehensive system state query — requires GetSystemDetailsTool with large output',
+                'prompt' => '3tini el liste mta3 el clients w chnou 3andhom men devices b kol type.',
+                'category' => 'db-query-tunisian',
+                'description' => 'Tunisian Arabic DB Query: Query inventory in dialect',
                 'expects_tools' => true,
+                'target_feature' => 'db_tools',
+            ],
+            [
+                'agent' => 'ElasticCostAssistant',
+                'prompt' => 'Quelle est la différence entre les tiers Hot, Warm, Cold et Frozen en termes de ratio RAM-disque?',
+                'category' => 'sizing-french',
+                'description' => 'French Sizing Query: Tier differences in French',
+                'expects_tools' => false,
+                'target_feature' => 'multilingual',
+            ],
+            [
+                'agent' => 'ElasticCostAssistant',
+                'prompt' => '3andi cluster ES ken n7eb 1TB log nhar w 90 jour retention, chnou lazem men hardware? hot w warm tiers',
+                'category' => 'sizing-tunisian',
+                'description' => 'Tunisian Sizing Query: Sizing calculation in Tunisian Arabic',
+                'expects_tools' => false,
+                'target_feature' => 'multilingual',
             ],
         ];
     }

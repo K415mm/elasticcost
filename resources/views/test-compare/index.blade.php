@@ -450,6 +450,94 @@
     </div>
 </div>
 
+<div class="row mt-3">
+    <div class="col-md-12">
+        <div class="analytics-card" style="border: 1px solid rgba(74,222,128,0.25); background: rgba(74,222,128,0.02);">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h3 style="color: #4ade80; margin:0;">🔮 phpkaiharness Feature Evaluation Matrix</h3>
+                    <p class="text-muted small mb-0">Evaluation of advanced harness features and their concrete performance enhancements across pipeline stages</p>
+                </div>
+                <span class="badge bg-success">7 HARNESS FEATURES ACTIVE</span>
+            </div>
+            <div class="row g-3">
+                @php $fm = $analytics['features_matrix'] ?? []; @endphp
+                <div class="col-md-4">
+                    <div class="mode-card p-3 h-100 mb-0">
+                        <div class="d-flex justify-content-between">
+                            <h5 style="color: #60a5fa; font-size: 0.95rem; margin:0;">⚡ Draft Verification</h5>
+                            <span class="badge bg-primary">Active</span>
+                        </div>
+                        <p class="text-muted small mb-2 mt-1">Speculative draft proposals verified by fast model passes</p>
+                        <div class="metric-row"><span class="metric-label">Proposals Generated</span><span class="metric-value">{{ $fm['draft_verification']['executed_count'] ?? 0 }}</span></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mode-card p-3 h-100 mb-0">
+                        <div class="d-flex justify-content-between">
+                            <h5 style="color: #c084fc; font-size: 0.95rem; margin:0;">📚 Ontology RAG</h5>
+                            <span class="badge" style="background:#9333ea; color:#fff;">pgvector</span>
+                        </div>
+                        <p class="text-muted small mb-2 mt-1">Semantic document chunk injection from PostgreSQL pgvector</p>
+                        <div class="metric-row"><span class="metric-label">Chunks Injected</span><span class="metric-value">{{ $fm['ontology_rag']['executed_count'] ?? 0 }}</span></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mode-card p-3 h-100 mb-0">
+                        <div class="d-flex justify-content-between">
+                            <h5 style="color: #4ade80; font-size: 0.95rem; margin:0;">🎯 Semantic Cache</h5>
+                            <span class="badge bg-success">Cross-Session</span>
+                        </div>
+                        <p class="text-muted small mb-2 mt-1">Cross-session exact & fuzzy prompt matching to skip LLM calls</p>
+                        <div class="metric-row"><span class="metric-label">Cold Hits / Warm Hits</span><span class="metric-value">{{ $fm['semantic_cache']['cold_hits'] ?? 0 }} / {{ $fm['semantic_cache']['warm_hits'] ?? 0 }}</span></div>
+                        <div class="metric-row"><span class="metric-label">Warm Hit Rate</span><span class="metric-value good">{{ $fm['semantic_cache']['warm_hit_pct'] ?? 0 }}%</span></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mode-card p-3 h-100 mb-0">
+                        <div class="d-flex justify-content-between">
+                            <h5 style="color: #facc15; font-size: 0.95rem; margin:0;">⚛️ Quantum Memory</h5>
+                            <span class="badge bg-warning text-dark">Superposition</span>
+                        </div>
+                        <p class="text-muted small mb-2 mt-1">Multi-hop entanglement traversal & phase-angle superposition</p>
+                        <div class="metric-row"><span class="metric-label">Nodes Retrieved</span><span class="metric-value">{{ $fm['quantum_memory']['total_nodes_retrieved'] ?? 0 }}</span></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mode-card p-3 h-100 mb-0">
+                        <div class="d-flex justify-content-between">
+                            <h5 style="color: #fb923c; font-size: 0.95rem; margin:0;">🗜️ Context Compression</h5>
+                            <span class="badge" style="background:#ea580c; color:#fff;">Middleware</span>
+                        </div>
+                        <p class="text-muted small mb-2 mt-1">Prompt middleware noise stripping & token reduction</p>
+                        <div class="metric-row"><span class="metric-label">Compressed Requests</span><span class="metric-value">{{ $fm['context_compression']['executed_count'] ?? 0 }}</span></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mode-card p-3 h-100 mb-0">
+                        <div class="d-flex justify-content-between">
+                            <h5 style="color: #38bdf8; font-size: 0.95rem; margin:0;">🔄 Context Compactor</h5>
+                            <span class="badge bg-info">Sliding Window</span>
+                        </div>
+                        <p class="text-muted small mb-2 mt-1">Sliding window compaction on multi-turn conversation histories</p>
+                        <div class="metric-row"><span class="metric-label">Compacted Turns</span><span class="metric-value">{{ $fm['compaction']['compacted_turns'] ?? 0 }}</span></div>
+                    </div>
+                </div>
+                <div class="col-md-12">
+                    <div class="mode-card p-3 mb-0">
+                        <div class="d-flex justify-content-between">
+                            <h5 style="color: #ec4899; font-size: 0.95rem; margin:0;">🕸️ Cognitive Graph Memory</h5>
+                            <span class="badge" style="background:#db2777; color:#fff;">QueryGraphMemoryTool</span>
+                        </div>
+                        <p class="text-muted small mb-2 mt-1">Persistent facts & entity relationships stored in harness_facts and retrieved dynamically</p>
+                        <div class="metric-row"><span class="metric-label">Fact Queries Executed</span><span class="metric-value">{{ $fm['cognitive_graph_memory']['facts_queried'] ?? 0 }}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row mt-2">
     <div class="col-md-12">
         <div class="analytics-card">

@@ -9,12 +9,12 @@ use Illuminate\Console\Command;
 class TestPhpkaiharnessCommand extends Command
 {
     protected $signature = 'test:phpkaiharness
-                            {--run : Execute the full test suite (68 executions: 17 requests × 4 modes)}
+                            {--run : Execute the full test suite (80 executions: 20 requests × 4 modes)}
                             {--report-only : Generate report from existing traces without running tests}
                             {--mode= : Run only a specific mode (A1-direct-api, A2-loop-no-features, B-full-harness, B-warm-harness)}
                             {--dir= : Output directory name (default: testandcompare)}';
 
-    protected $description = 'Run phpkaiharness comparison tests (17 requests × 4 modes) and generate report';
+    protected $description = 'Run phpkaiharness comparison tests (20 requests × 4 modes) and generate report';
 
     public function handle(): int
     {
@@ -26,7 +26,7 @@ class TestPhpkaiharnessCommand extends Command
             $this->info('Use --run to execute the test suite, or --report-only to generate a report from existing traces.');
             $this->info('');
             $this->info('Available options:');
-            $this->info('  --run              Execute all 68 test executions (17 requests × 4 modes)');
+            $this->info('  --run              Execute all 80 test executions (20 requests × 4 modes)');
             $this->info('  --report-only      Generate report from existing traces');
             $this->info('  --mode=B-full-harness  Run only a specific mode');
             $this->info('  --mode=B-warm-harness   Run only warm mode');
