@@ -153,6 +153,9 @@ class SessionManager
 
         $this->ensureSession($sessionId);
 
+        $monitorDbPath = $this->getMonitorDbPath($sessionId);
+        $quantumDbPath = $this->getQuantumDbPath($sessionId);
+
         $globalQuantumDb = function_exists('storage_path')
             ? storage_path('app/phpkaiharness/agent_memory.sqlite')
             : $quantumDbPath;
