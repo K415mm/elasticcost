@@ -377,7 +377,7 @@ class TestCompareController extends Controller
                     : 0,
             ],
             'cognitive_graph_memory' => [
-                'facts_queried' => count(array_filter(
+                'facts_queried' => empty($allBTraces) ? 0 : count(array_filter(
                     array_merge(...array_map(fn ($t) => $t['tool_calls']['calls'] ?? [], $allBTraces)),
                     fn ($tc) => ($tc['name'] ?? '') === 'query_graph_memory'
                 )),
