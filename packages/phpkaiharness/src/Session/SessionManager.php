@@ -118,7 +118,6 @@ class SessionManager
             new SqliteMonitorStore($monitorDb);
         }
 
-
         // 2. Quantum memory DB — bootstrap schema via QuantumInferenceEngine
         $quantumDb = $this->getQuantumDbPath($sessionId);
         if (! File::exists($quantumDb) || (int) File::size($quantumDb) === 0) {
@@ -154,13 +153,14 @@ class SessionManager
 
         $this->ensureSession($sessionId);
 
-        $monitorDbPath = $this->getMonitorDbPath($sessionId);
-        $quantumDbPath = $this->getQuantumDbPath($sessionId);
+        $globalQuantumDb = function_exists('storage_path')
+            ? storage_path('app/phpkaiharness/agent_memory.sqlite')
+            : $quantumDbPath;
 
         config([
             'harness.cache.db_path' => $monitorDbPath,
-            'harness.quantum_harness.db_path' => $quantumDbPath,
-            'database.connections.agent_memory_sqlite.database' => $quantumDbPath,
+            'harness.quantum_harness.db_path' => $globalQuantumDb,
+            'database.connections.agent_memory_sqlite.database' => $globalQuantumDb,
         ]);
 
         if (function_exists('app')) {
@@ -522,7 +522,7 @@ class SessionManager
         foreach (File::directories($this->baseSessionsPath) as $dir) {
             $phpSessionId = basename($dir);
             $monitorDb = $dir.DIRECTORY_SEPARATOR.'monitor.db';
-            
+
             $stats = [
                 'php_session_id' => $phpSessionId,
                 'sub_session_count' => 0,
@@ -538,7 +538,7 @@ class SessionManager
                 try {
                     $pdo = new \PDO('sqlite:'.$monitorDb);
                     $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-                    
+
                     // Fetch all sub-sessions with their details aggregates from this monitor db
                     $query = 'SELECT s.id, s.total_duration_ms, s.created_at, s.method, s.status,
                                      COALESCE(SUM(d.tokens_prompt), 0) as prompt,
@@ -548,9 +548,9 @@ class SessionManager
                               FROM harness_sessions s
                               LEFT JOIN harness_details d ON d.session_id = s.id
                               GROUP BY s.id';
-                    
+
                     $rows = $pdo->query($query)->fetchAll(\PDO::FETCH_ASSOC);
-                    
+
                     // Filter the rows in PHP
                     $matchingRows = array_filter($rows, function ($row) use ($method, $status, $minLlm, $minTool) {
                         if ($method && ($row['method'] ?? '') !== $method) {
@@ -565,6 +565,7 @@ class SessionManager
                         if ($minTool !== null && (int) $row['tools'] < $minTool) {
                             return false;
                         }
+
                         return true;
                     });
 
@@ -579,6 +580,7 @@ class SessionManager
                     } else {
                         // Skip this PHP session entirely if no sub-sessions match the filter!
                         $pdo = null;
+
                         continue;
                     }
                     $pdo = null;

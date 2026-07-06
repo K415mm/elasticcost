@@ -5,6 +5,7 @@ namespace Phpkaiharness\Optimize;
 use PDO;
 use Phpkaiharness\Contracts\SemanticMemoryInterface;
 use Phpkaiharness\Monitor\SqliteMonitorStore;
+use Phpkaiharness\Session\SessionManager;
 
 /**
  * Semantic Caching with vector-based matching (Palantir AIP-inspired).
@@ -186,6 +187,14 @@ class SemanticCache
      *
      * Returns the cached response string on success, or null on cache miss.
      */
+    /**
+     * Lookup a prompt in the cache using three-tier matching:
+     * 1. Vector semantic search (AI-native matching) - if SemanticMemoryInterface available
+     * 2. Exact string match across current session, global DB, and all isolated sessions
+     * 3. Levenshtein fuzzy string similarity across all sessions
+     *
+     * Returns the cached response string on success, or null on cache miss.
+     */
     public function lookup(string $prompt): ?string
     {
         $cleanPrompt = trim($prompt);
@@ -198,14 +207,74 @@ class SemanticCache
             }
         }
 
-        $db = $this->getPdo();
-        if (! $db) {
-            return null;
+        // 2. Lookup in primary session PDO connection
+        $primaryPdo = $this->getPdo();
+        if ($primaryPdo !== null) {
+            $hit = $this->lookupInPdo($primaryPdo, $cleanPrompt);
+            if ($hit !== null) {
+                return $hit;
+            }
         }
 
+        // 3. Fallback to global shared monitor database
+        $globalDbPath = SqliteMonitorStore::defaultDbPath();
+        if (file_exists($globalDbPath) && realpath($globalDbPath) !== realpath($this->dbPath)) {
+            try {
+                $globalPdo = new PDO('sqlite:'.$globalDbPath);
+                $globalPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                $globalPdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+                $hit = $this->lookupInPdo($globalPdo, $cleanPrompt);
+                if ($hit !== null) {
+                    return $hit;
+                }
+            } catch (\Throwable $e) {
+                // Non-fatal
+            }
+        }
+
+        // 4. Cross-session lookup across all isolated session folders
+        if (class_exists(SessionManager::class)) {
+            try {
+                $sm = new SessionManager;
+                $basePath = $sm->getBasePath();
+                if (is_dir($basePath)) {
+                    $dirs = glob($basePath.DIRECTORY_SEPARATOR.'*', GLOB_ONLYDIR);
+                    if ($dirs) {
+                        foreach ($dirs as $dir) {
+                            $monDb = $dir.DIRECTORY_SEPARATOR.'monitor.db';
+                            if (! file_exists($monDb) || realpath($monDb) === realpath($this->dbPath)) {
+                                continue;
+                            }
+                            try {
+                                $sessionPdo = new PDO('sqlite:'.$monDb);
+                                $sessionPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                                $sessionPdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+                                $hit = $this->lookupInPdo($sessionPdo, $cleanPrompt);
+                                if ($hit !== null) {
+                                    return $hit;
+                                }
+                            } catch (\Throwable $e) {
+                                // Non-fatal
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Non-fatal
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Perform exact and Levenshtein fuzzy string lookup against a specific PDO SQLite connection.
+     */
+    private function lookupInPdo(PDO $db, string $cleanPrompt): ?string
+    {
         $reject = $this->rejectClause();
 
-        // 2. Try exact match (exclude cache hits and ineligible responses)
+        // Try exact match
         try {
             $stmt = $db->prepare(
                 "SELECT response FROM harness_sessions
@@ -218,12 +287,11 @@ class SemanticCache
             if ($row && ! empty($row['response'])) {
                 return $row['response'];
             }
-        } catch (\Exception $e) {
-            // Table might not exist yet
-            return null;
+        } catch (\Throwable $e) {
+            // Table might not exist
         }
 
-        // 3. Try Levenshtein fuzzy match on recent sessions (limit to 150 to keep it fast)
+        // Try Levenshtein fuzzy match on recent sessions (limit to 150)
         try {
             $stmt = $db->query(
                 "SELECT prompt, response FROM harness_sessions
@@ -233,12 +301,11 @@ class SemanticCache
             $sessions = $stmt->fetchAll();
 
             foreach ($sessions as $session) {
-                $cachedPrompt = trim($session['prompt']);
+                $cachedPrompt = trim($session['prompt'] ?? '');
                 if (empty($cachedPrompt)) {
                     continue;
                 }
 
-                // If prompts are very different in length, skip to save computation
                 $lenNew = strlen($cleanPrompt);
                 $lenCached = strlen($cachedPrompt);
                 $maxLen = max($lenNew, $lenCached);
@@ -251,9 +318,6 @@ class SemanticCache
                     continue;
                 }
 
-                // Compute levenshtein distance
-                // Note: levenshtein has a limit of 255 characters. For longer strings,
-                // we check a substring or exact match only.
                 if ($maxLen <= 255) {
                     $dist = levenshtein($cleanPrompt, $cachedPrompt);
                     $similarity = 1.0 - ($dist / $maxLen);
@@ -263,7 +327,7 @@ class SemanticCache
                     }
                 }
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return null;
         }
 
