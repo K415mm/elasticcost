@@ -68,9 +68,11 @@ class RgSocEngineer implements Agent, HasMiddleware, HasTools
         $lightProvider = $provider ?? $config['light']['provider'];
         $lightModel = $model ?? $config['light']['model'];
 
-        $sessionId = function_exists('app') && app()->bound('harness.active_session_id')
-            ? app('harness.active_session_id')
-            : (string) Str::uuid7();
+        $sessionId = $this->phpSessionId ?: (
+            function_exists('app') && app()->bound('harness.active_session_id')
+                ? app('harness.active_session_id')
+                : (string) Str::uuid7()
+        );
         Log::info('RgSocEngineer::prompt() called', ['session_id' => $sessionId, 'isFaked' => static::isFaked(), 'prompt_preview' => mb_substr($prompt, 0, 100, 'UTF-8')]);
         try {
             $analytics = new LaravelAnalyticsCollector;
