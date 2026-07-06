@@ -3,8 +3,9 @@
 namespace Phpkaiharness\Tests;
 
 use PDO;
-use Phpkaiharness\Optimize\SemanticCache;
+use Phpkaiharness\Contracts\SemanticMemoryInterface;
 use Phpkaiharness\Monitor\SqliteMonitorStore;
+use Phpkaiharness\Optimize\SemanticCache;
 
 class CacheEligibilityTest extends PhpkaiharnessTestCase
 {
@@ -83,7 +84,7 @@ class CacheEligibilityTest extends PhpkaiharnessTestCase
     public function test_store_rejects_ineligible_responses(): void
     {
         // Use a mock semantic memory to track what gets stored
-        $mockMemory = new class implements \Phpkaiharness\Contracts\SemanticMemoryInterface
+        $mockMemory = new class implements SemanticMemoryInterface
         {
             public array $stored = [];
 
@@ -92,7 +93,7 @@ class CacheEligibilityTest extends PhpkaiharnessTestCase
                 $this->stored[] = $text;
             }
 
-            public function search(string $query, float $threshold, int $limit = 5): array
+            public function search(string $query, float $threshold = 0.3, int $limit = 3): array
             {
                 return [];
             }
@@ -139,5 +140,23 @@ class CacheEligibilityTest extends PhpkaiharnessTestCase
 
         $invalidated = $cache->invalidate();
         $this->assertGreaterThan(0, $invalidated);
+    }
+
+    public function test_match_digits_compares_numbers_properly(): void
+    {
+        // Identical prompts
+        $this->assertTrue(SemanticCache::matchDigits('client id 2', 'client id 2'));
+
+        // Different numeric values
+        $this->assertFalse(SemanticCache::matchDigits('client id 2', 'client id 1'));
+
+        // No digits present
+        $this->assertTrue(SemanticCache::matchDigits('hello world', 'hello universe'));
+
+        // One has digits, other does not
+        $this->assertFalse(SemanticCache::matchDigits('hello world 5', 'hello universe'));
+
+        // Different order but same digits should match (digits set)
+        $this->assertTrue(SemanticCache::matchDigits('clients 1 and 2', 'clients 2 and 1'));
     }
 }

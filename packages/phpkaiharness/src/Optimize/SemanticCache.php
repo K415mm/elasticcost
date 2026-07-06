@@ -201,6 +201,25 @@ class SemanticCache
     }
 
     /**
+     * Check if numbers/digits inside the two prompts are compatible.
+     * If the set of numbers/digits present in the query does not exactly match
+     * the set of numbers/digits in the cached prompt, we reject the match.
+     */
+    public static function matchDigits(string $promptA, string $promptB): bool
+    {
+        preg_match_all('/\d+/', $promptA, $matchesA);
+        preg_match_all('/\d+/', $promptB, $matchesB);
+
+        $digitsA = array_map('intval', $matchesA[0] ?? []);
+        $digitsB = array_map('intval', $matchesB[0] ?? []);
+
+        sort($digitsA);
+        sort($digitsB);
+
+        return array_values(array_unique($digitsA)) === array_values(array_unique($digitsB));
+    }
+
+    /**
      * Extract semantic core tokens (the "poetry filter").
      *
      * Strips filler/stop words and returns only high-value nouns, action verbs,
@@ -442,7 +461,9 @@ class SemanticCache
                 // Check non-commutative hash first — same concepts in same order
                 $cachedHash = self::semanticCoreHash($cachedPrompt);
                 if ($cachedHash === $queryHash && ! empty($session['response'])) {
-                    return $session['response'];
+                    if (self::matchDigits($cleanPrompt, $cachedPrompt)) {
+                        return $session['response'];
+                    }
                 }
             }
         } catch (\Throwable $e) {
@@ -491,7 +512,7 @@ class SemanticCache
                         // Require both string similarity AND semantic core overlap
                         // The overlap threshold scales with the string threshold
                         $overlapThreshold = $this->threshold - 0.05;
-                        if ($overlap >= $overlapThreshold) {
+                        if ($overlap >= $overlapThreshold && self::matchDigits($cleanPrompt, $cachedPromptRaw)) {
                             return $session['response'];
                         }
                     }
@@ -546,6 +567,10 @@ class SemanticCache
                     $overlap = self::coreOverlap($queryCore, $cachedCore);
                     if ($overlap < ($this->threshold - 0.05)) {
                         // Semantic cores don't overlap enough — this is a false hit
+                        return null;
+                    }
+                    if (! self::matchDigits($prompt, $sourcePrompt)) {
+                        // Digits mismatched — different parameters/IDs
                         return null;
                     }
                 }
