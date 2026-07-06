@@ -238,33 +238,46 @@ class AgentLoop
             try {
                 // 1. Auto-configure Semantic Cache (check feature_graph first, then legacy)
                 $cacheEnabled = config('harness.feature_graph.nodes.semantic_cache.enabled', config('harness.cache.enabled', config('harness.semantic_cache.enabled', false)));
-                if ($this->semanticCache === null && $cacheEnabled) {
-                    $dbPath = config('harness.cache.db_path', config('harness.semantic_cache.db_path')) ?: SqliteMonitorStore::defaultDbPath();
-                    $semanticMemory = null;
-                    if (function_exists('app') && app()->bound(SemanticMemoryInterface::class)) {
-                        $semanticMemory = app(SemanticMemoryInterface::class);
+                if ($cacheEnabled) {
+                    if ($this->semanticCache === null) {
+                        $dbPath = config('harness.cache.db_path', config('harness.semantic_cache.db_path')) ?: SqliteMonitorStore::defaultDbPath();
+                        $semanticMemory = null;
+                        if (function_exists('app') && app()->bound(SemanticMemoryInterface::class)) {
+                            $semanticMemory = app(SemanticMemoryInterface::class);
+                        }
+                        $this->semanticCache = new SemanticCache(
+                            pdo: new \PDO('sqlite:'.$dbPath),
+                            threshold: (float) config('harness.cache.threshold', config('harness.semantic_cache.threshold', 0.88)),
+                            semanticMemory: $semanticMemory
+                        );
                     }
-                    $this->semanticCache = new SemanticCache(
-                        pdo: new \PDO('sqlite:'.$dbPath),
-                        threshold: (float) config('harness.cache.threshold', config('harness.semantic_cache.threshold', 0.88)),
-                        semanticMemory: $semanticMemory
-                    );
+                } else {
+                    // Teardown: disable cache if it was previously enabled but now turned off
+                    $this->semanticCache = null;
                 }
 
                 // 2. Auto-configure Context Compactor (check feature_graph first)
                 $compactionEnabled = config('harness.feature_graph.nodes.context_compactor.enabled', config('harness.compaction.enabled', config('harness.context_compactor.enabled', true)));
-                if ($this->contextCompactor === null && $compactionEnabled) {
-                    $this->contextCompactor = new ContextCompactor(
-                        strategy: (string) config('harness.compaction.strategy', config('harness.context_compactor.strategy', 'sliding_window')),
-                        maxTurns: (int) config('harness.compaction.max_turns', config('harness.context_compactor.max_turns', config('harness.context_compactor.window_size', 6))),
-                        maxTokensThreshold: (int) config('harness.compaction.max_tokens_threshold', config('harness.context_compactor.max_tokens_threshold', 4000))
-                    );
+                if ($compactionEnabled) {
+                    if ($this->contextCompactor === null) {
+                        $this->contextCompactor = new ContextCompactor(
+                            strategy: (string) config('harness.compaction.strategy', config('harness.context_compactor.strategy', 'sliding_window')),
+                            maxTurns: (int) config('harness.compaction.max_turns', config('harness.context_compactor.max_turns', config('harness.context_compactor.window_size', 6))),
+                            maxTokensThreshold: (int) config('harness.compaction.max_tokens_threshold', config('harness.context_compactor.max_tokens_threshold', 4000))
+                        );
+                    }
+                } else {
+                    $this->contextCompactor = null;
                 }
 
                 // 3. Auto-configure Guardrails (check feature_graph first)
                 $guardrailsEnabled = config('harness.feature_graph.nodes.guardrails.enabled', config('harness.guardrails.enabled', false));
-                if ($this->guardrails === null && $guardrailsEnabled) {
-                    $this->guardrails = new Guardrails;
+                if ($guardrailsEnabled) {
+                    if ($this->guardrails === null) {
+                        $this->guardrails = new Guardrails;
+                    }
+                } else {
+                    $this->guardrails = null;
                 }
 
                 // Auto-configure QueryGraphMemoryTool (check feature_graph first)
@@ -272,6 +285,10 @@ class AgentLoop
                 if ($cognitiveMemoryEnabled) {
                     if (! $this->registry->has('query_graph_memory')) {
                         $this->registry->attach(new QueryGraphMemoryTool);
+                    }
+                } else {
+                    if ($this->registry->has('query_graph_memory')) {
+                        $this->registry->remove('query_graph_memory');
                     }
                 }
             } catch (\Throwable $e) {

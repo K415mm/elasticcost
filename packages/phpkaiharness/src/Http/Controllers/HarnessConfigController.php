@@ -44,13 +44,23 @@ class HarnessConfigController extends Controller
 
         $updated = $this->buildUpdatedConfig($request);
 
+        // Write overrides JSON (for service provider to load at boot)
         $overridePath = storage_path('app/phpkaiharness/config_overrides.json');
         $directory = dirname($overridePath);
         if (! File::isDirectory($directory)) {
             File::makeDirectory($directory, 0755, true, true);
         }
-
         File::put($overridePath, json_encode($updated, JSON_PRETTY_PRINT));
+
+        // Write directly to config/harness.php so changes persist even with config cache
+        $phpConfig = $this->buildPhpConfigString($updated);
+        File::put($configPath, $phpConfig);
+
+        // Clear config cache so the new file is read on next request
+        $cachedConfigPath = base_path('bootstrap/cache/config.php');
+        if (File::exists($cachedConfigPath)) {
+            File::delete($cachedConfigPath);
+        }
 
         // Reload config in current process
         foreach ($this->flattenConfig($updated, 'harness') as $key => $value) {
@@ -58,7 +68,55 @@ class HarnessConfigController extends Controller
         }
 
         return redirect()->route('harness.config')
-            ->with('success', 'Configuration saved successfully.');
+            ->with('success', 'Configuration saved and config cache cleared.');
+    }
+
+    /**
+     * Build a PHP config file string from the config array.
+     *
+     * @param  array<string, mixed>  $config
+     */
+    private function buildPhpConfigString(array $config): string
+    {
+        $export = $this->varExportPretty($config, 1);
+
+        return "<?php\n\nreturn {$export};\n";
+    }
+
+    /**
+     * Export a PHP array with clean indentation (no numeric keys for associative arrays).
+     *
+     * @param  mixed  $value
+     */
+    private function varExportPretty(mixed $value, int $indent = 1): string
+    {
+        if (is_array($value)) {
+            $isAssoc = ! array_is_list($value);
+            $pad = str_repeat('    ', $indent);
+            $lines = [];
+            foreach ($value as $key => $item) {
+                $keyStr = $isAssoc ? "'{$key}' => " : '';
+                $lines[] = $pad.$keyStr.$this->varExportPretty($item, $indent + 1);
+            }
+
+            $closePad = str_repeat('    ', $indent - 1);
+
+            return "[\n".implode(",\n", $lines).",\n".$closePad.']';
+        }
+        if (is_string($value)) {
+            return "'".str_replace("'", "\\'", $value)."'";
+        }
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+        if (is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+        if ($value === null) {
+            return 'null';
+        }
+
+        return var_export($value, true);
     }
 
     /**

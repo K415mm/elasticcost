@@ -188,14 +188,6 @@ class SemanticCache
      * Returns the cached response string on success, or null on cache miss.
      */
     /**
-     * Lookup a prompt in the cache using three-tier matching:
-     * 1. Vector semantic search (AI-native matching) - if SemanticMemoryInterface available
-     * 2. Exact string match across current session, global DB, and all isolated sessions
-     * 3. Levenshtein fuzzy string similarity across all sessions
-     *
-     * Returns the cached response string on success, or null on cache miss.
-     */
-    /**
      * Normalize prompt by stripping task wrappers and whitespace.
      */
     public static function normalizePrompt(string $prompt): string
@@ -208,10 +200,125 @@ class SemanticCache
         return mb_strtolower($clean);
     }
 
+    /**
+     * Extract semantic core tokens (the "poetry filter").
+     *
+     * Strips filler/stop words and returns only high-value nouns, action verbs,
+     * and core entities — the "semantic eigenvalues" that define the true intent.
+     *
+     * @return array<string>
+     */
+    public static function extractSemanticCore(string $prompt): array
+    {
+        $norm = self::normalizePrompt($prompt);
+
+        // Common English + French stop words and filler expressions
+        $stopWords = [
+            // English
+            'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+            'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+            'should', 'may', 'might', 'must', 'can', 'shall', 'to', 'of', 'in',
+            'on', 'at', 'by', 'for', 'with', 'about', 'as', 'into', 'like',
+            'through', 'after', 'over', 'between', 'out', 'against', 'during',
+            'without', 'before', 'under', 'around', 'among', 'from', 'up',
+            'down', 'or', 'and', 'but', 'if', 'then', 'else', 'when', 'where',
+            'why', 'how', 'all', 'each', 'every', 'both', 'few', 'more', 'most',
+            'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same',
+            'so', 'than', 'too', 'very', 'just', 'also', 'now', 'here', 'there',
+            'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those',
+            'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her',
+            'us', 'them', 'my', 'your', 'his', 'its', 'our', 'their',
+            'please', 'tell', 'give', 'show', 'help', 'need', 'want', 'know',
+            'think', 'make', 'use', 'get', 'let', 'hey', 'hi', 'hello',
+            'task', 'context', 'conversation',
+            // French
+            'le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'ou',
+            'dans', 'sur', 'pour', 'avec', 'par', 'que', 'qui', 'ne', 'pas',
+            'est', 'sont', 'avez', 'donnez', 'montrez', 'aidez', 'besoin',
+            'veut', 'savoir', 'pense', 'faire', 'utiliser', 'obtenir',
+            'comment', 'pourquoi', 'quand', 'où', 'tout', 'chaque',
+            'je', 'tu', 'il', 'elle', 'nous', 'vous', 'ils', 'elles',
+            'mon', 'ma', 'mes', 'ton', 'ta', 'tes', 'son', 'sa', 'ses',
+            'notre', 'votre', 'leur',
+        ];
+
+        // Split into words, filter stop words and short tokens
+        $words = preg_split('/[\s\p{P}]+/u', $norm, -1, PREG_SPLIT_NO_EMPTY);
+        if (! $words) {
+            return [];
+        }
+
+        $core = [];
+        foreach ($words as $word) {
+            $word = trim($word);
+            if (mb_strlen($word) < 3) {
+                continue;
+            }
+            if (in_array($word, $stopWords, true)) {
+                continue;
+            }
+            $core[] = $word;
+        }
+
+        return $core;
+    }
+
+    /**
+     * Compute a non-commutative sequence hash of the semantic core.
+     *
+     * The order of tokens matters (A×B ≠ B×A), so "user hacked system"
+     * produces a different hash than "system hacked user".
+     * This implements the non-commutative cognition concept from the
+     * quantum matrix matching research.
+     */
+    public static function semanticCoreHash(string $prompt): string
+    {
+        $core = self::extractSemanticCore($prompt);
+        if (empty($core)) {
+            return md5(self::normalizePrompt($prompt));
+        }
+
+        // Non-commutative rolling hash: position-weighted XOR
+        $hash = 0;
+        foreach ($core as $i => $token) {
+            $tokenHash = crc32($token);
+            // Position weight: shift by position so order matters
+            $shifted = ($tokenHash << ($i % 16)) | ($tokenHash >> (32 - ($i % 16)));
+            $hash ^= $shifted;
+        }
+
+        return dechex($hash);
+    }
+
+    /**
+     * Compute the overlap ratio between two semantic cores.
+     *
+     * This is the "overlap probability" P = ⟨ψ|ρ|ψ⟩ — the quantum measurement
+     * of resonance between the incoming query vector and the cached state.
+     *
+     * @param  array<string>  $coreA
+     * @param  array<string>  $coreB
+     */
+    public static function coreOverlap(array $coreA, array $coreB): float
+    {
+        if (empty($coreA) || empty($coreB)) {
+            return 0.0;
+        }
+
+        $setA = array_unique($coreA);
+        $setB = array_unique($coreB);
+        $intersection = array_intersect($setA, $setB);
+        $union = array_unique(array_merge($setA, $setB));
+
+        return (float) count($intersection) / (float) count($union);
+    }
+
     public function lookup(string $prompt): ?string
     {
         $cleanPrompt = trim($prompt);
         $normPrompt = self::normalizePrompt($cleanPrompt);
+        $queryCore = self::extractSemanticCore($cleanPrompt);
+        $queryHash = self::semanticCoreHash($cleanPrompt);
 
         // 1. Vector semantic search (AI-native matching)
         if ($this->semanticMemory !== null) {
@@ -224,7 +331,7 @@ class SemanticCache
         // 2. Lookup in primary session PDO connection
         $primaryPdo = $this->getPdo();
         if ($primaryPdo !== null) {
-            $hit = $this->lookupInPdo($primaryPdo, $cleanPrompt);
+            $hit = $this->lookupInPdo($primaryPdo, $cleanPrompt, $queryCore, $queryHash);
             if ($hit !== null) {
                 return $hit;
             }
@@ -237,7 +344,7 @@ class SemanticCache
                 $globalPdo = new PDO('sqlite:'.$globalDbPath);
                 $globalPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                 $globalPdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-                $hit = $this->lookupInPdo($globalPdo, $cleanPrompt);
+                $hit = $this->lookupInPdo($globalPdo, $cleanPrompt, $queryCore, $queryHash);
                 if ($hit !== null) {
                     return $hit;
                 }
@@ -263,7 +370,7 @@ class SemanticCache
                                 $sessionPdo = new PDO('sqlite:'.$monDb);
                                 $sessionPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                                 $sessionPdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-                                $hit = $this->lookupInPdo($sessionPdo, $cleanPrompt);
+                                $hit = $this->lookupInPdo($sessionPdo, $cleanPrompt, $queryCore, $queryHash);
                                 if ($hit !== null) {
                                     return $hit;
                                 }
@@ -283,8 +390,14 @@ class SemanticCache
 
     /**
      * Perform exact and Levenshtein fuzzy string lookup against a specific PDO SQLite connection.
+     *
+     * Now uses semantic core overlap and non-commutative hash to prevent
+     * cross-prompt false cache hits. A fuzzy match is only accepted when:
+     * 1. The exact normalized prompt matches, OR
+     * 2. The semantic core hash matches (same concepts in same order), OR
+     * 3. Both the Levenshtein similarity AND the core overlap exceed threshold
      */
-    private function lookupInPdo(PDO $db, string $cleanPrompt): ?string
+    private function lookupInPdo(PDO $db, string $cleanPrompt, array $queryCore, string $queryHash): ?string
     {
         $reject = $this->rejectClause();
         $normTarget = self::normalizePrompt($cleanPrompt);
@@ -311,7 +424,7 @@ class SemanticCache
             // Table might not exist
         }
 
-        // Try Levenshtein fuzzy match on normalized prompts
+        // Try semantic core hash match (non-commutative, order-sensitive)
         try {
             $stmt = $db->query(
                 "SELECT prompt, response FROM harness_sessions
@@ -321,7 +434,33 @@ class SemanticCache
             $sessions = $stmt->fetchAll();
 
             foreach ($sessions as $session) {
-                $cachedPrompt = self::normalizePrompt($session['prompt'] ?? '');
+                $cachedPrompt = $session['prompt'] ?? '';
+                if (empty($cachedPrompt)) {
+                    continue;
+                }
+
+                // Check non-commutative hash first — same concepts in same order
+                $cachedHash = self::semanticCoreHash($cachedPrompt);
+                if ($cachedHash === $queryHash && ! empty($session['response'])) {
+                    return $session['response'];
+                }
+            }
+        } catch (\Throwable $e) {
+            // Continue to fuzzy
+        }
+
+        // Try Levenshtein fuzzy match with semantic core overlap guard
+        try {
+            $stmt = $db->query(
+                "SELECT prompt, response FROM harness_sessions
+                 WHERE {$reject}
+                 ORDER BY created_at DESC LIMIT 150"
+            );
+            $sessions = $stmt->fetchAll();
+
+            foreach ($sessions as $session) {
+                $cachedPromptRaw = $session['prompt'] ?? '';
+                $cachedPrompt = self::normalizePrompt($cachedPromptRaw);
                 if (empty($cachedPrompt)) {
                     continue;
                 }
@@ -343,7 +482,18 @@ class SemanticCache
                     $similarity = 1.0 - ($dist / $maxLen);
 
                     if ($similarity >= $this->threshold) {
-                        return $session['response'];
+                        // Quantum-inspired guard: verify semantic core overlap
+                        // This prevents false hits where string similarity is high
+                        // but the actual semantic intent is different
+                        $cachedCore = self::extractSemanticCore($cachedPromptRaw);
+                        $overlap = self::coreOverlap($queryCore, $cachedCore);
+
+                        // Require both string similarity AND semantic core overlap
+                        // The overlap threshold scales with the string threshold
+                        $overlapThreshold = $this->threshold - 0.05;
+                        if ($overlap >= $overlapThreshold) {
+                            return $session['response'];
+                        }
                     }
                 }
             }
@@ -378,6 +528,26 @@ class SemanticCache
                 // Don't return ineligible cached responses
                 if (! $this->isCacheable($text)) {
                     return null;
+                }
+
+                // Quantum-inspired guard: verify semantic core overlap
+                // The embedding similarity alone can produce false positives
+                // when prompts share domain vocabulary but ask different questions.
+                // We extract the semantic core from the source prompt stored in
+                // the memory metadata and compare it to the incoming prompt's core.
+                $sourcePrompt = $results[0]['source'] ?? '';
+                // Strip the 'semantic-cache:' prefix to get the original prompt
+                if (str_starts_with($sourcePrompt, 'semantic-cache:')) {
+                    $sourcePrompt = substr($sourcePrompt, 15);
+                }
+                if (! empty($sourcePrompt)) {
+                    $queryCore = self::extractSemanticCore($prompt);
+                    $cachedCore = self::extractSemanticCore($sourcePrompt);
+                    $overlap = self::coreOverlap($queryCore, $cachedCore);
+                    if ($overlap < ($this->threshold - 0.05)) {
+                        // Semantic cores don't overlap enough — this is a false hit
+                        return null;
+                    }
                 }
 
                 return $text;
