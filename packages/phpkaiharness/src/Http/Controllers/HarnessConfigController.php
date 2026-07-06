@@ -61,12 +61,12 @@ class HarnessConfigController extends Controller
         // deploy script running as root/deploy-user overwrote ownership).
         // We do not let that failure surface as a 500 — the overrides JSON
         // above already guarantees the settings take effect.
+        // Clear config cache so the new file is read on next request
         $configWriteWarning = null;
         try {
             $phpConfig = $this->buildPhpConfigString($updated);
             File::put($configPath, $phpConfig);
 
-            // Clear config cache so the new file is read on next request
             $cachedConfigPath = base_path('bootstrap/cache/config.php');
             if (File::exists($cachedConfigPath)) {
                 File::delete($cachedConfigPath);
@@ -80,7 +80,22 @@ class HarnessConfigController extends Controller
             config([$key => $value]);
         }
 
-        $message = $configWriteWarning ?? 'Configuration saved and config cache cleared.';
+        // Programmatically reload Octane and Horizon workers to apply changes to all long-running processes
+        if (function_exists('app')) {
+            try {
+                \Illuminate\Support\Facades\Artisan::call('config:clear');
+            } catch (\Throwable $e) {}
+            try {
+                if (app()->bound('octane') || config('octane.server')) {
+                    \Illuminate\Support\Facades\Artisan::call('octane:reload');
+                }
+            } catch (\Throwable $e) {}
+            try {
+                \Illuminate\Support\Facades\Artisan::call('horizon:terminate');
+            } catch (\Throwable $e) {}
+        }
+
+        $message = $configWriteWarning ?? 'Configuration saved, config cache cleared, and workers reloaded.';
 
         return redirect()->route('harness.config')
             ->with($configWriteWarning ? 'warning' : 'success', $message);
