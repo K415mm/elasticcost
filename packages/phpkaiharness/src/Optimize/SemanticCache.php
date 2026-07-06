@@ -2,6 +2,7 @@
 
 namespace Phpkaiharness\Optimize;
 
+use Illuminate\Support\Facades\Redis;
 use PDO;
 use Phpkaiharness\Contracts\SemanticMemoryInterface;
 use Phpkaiharness\Monitor\SqliteMonitorStore;
@@ -339,6 +340,46 @@ class SemanticCache
         $queryCore = self::extractSemanticCore($cleanPrompt);
         $queryHash = self::semanticCoreHash($cleanPrompt);
 
+        // ── L1 Redis Superposition Layer ──
+        if (config('harness.cache.redis.enabled', true) && class_exists(Redis::class)) {
+            try {
+                $redis = Redis::connection(config('harness.cache.redis.connection', 'default'));
+
+                // 1. Decay other cached keys (Environmental Noise Decay)
+                if (config('harness.cache.redis.decay_mode', 'dissipative') === 'dissipative') {
+                    $this->decayRedisCoherence($redis, $queryHash);
+                }
+
+                // 2. Lookup by semantic core hash
+                $redisKey = "harness:cache:core:{$queryHash}";
+                $cachedJson = $redis->get($redisKey);
+                if ($cachedJson) {
+                    $cached = json_decode($cachedJson, true);
+                    if ($cached && ! empty($cached['response']) && self::matchDigits($cleanPrompt, $cached['prompt'])) {
+                        // Boost coherence on hit (Zeno effect)
+                        $redis->zadd('harness:cache:coherence', 1.0, $queryHash);
+
+                        return $cached['response'];
+                    }
+                }
+
+                // 3. Ambient resonance search in Redis (Superposition state match)
+                $candidates = $this->searchRedisCandidates($redis, $cleanPrompt, $queryCore);
+                if (! empty($candidates)) {
+                    // Spontaneous Symmetry Breaking using Subjective Field
+                    $best = $this->breakSymmetry($candidates);
+                    if ($best['score'] >= $this->threshold) {
+                        $bestHash = self::semanticCoreHash($best['prompt']);
+                        $redis->zadd('harness:cache:coherence', 1.0, $bestHash);
+
+                        return $best['response'];
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Silently fallback to L2 (SQLite)
+            }
+        }
+
         // 1. Vector semantic search (AI-native matching)
         if ($this->semanticMemory !== null) {
             $semanticResult = $this->lookupSemantic($cleanPrompt);
@@ -597,11 +638,31 @@ class SemanticCache
      */
     public function store(string $prompt, string $response, array $embedding): void
     {
-        if ($this->semanticMemory === null) {
+        if (! $this->isCacheable($response)) {
             return;
         }
 
-        if (! $this->isCacheable($response)) {
+        // ── L1 Redis Superposition Layer Store ──
+        if (config('harness.cache.redis.enabled', true) && class_exists(Redis::class)) {
+            try {
+                $redis = Redis::connection(config('harness.cache.redis.connection', 'default'));
+                $queryHash = self::semanticCoreHash($prompt);
+
+                $redisKey = "harness:cache:core:{$queryHash}";
+                $redis->set($redisKey, json_encode([
+                    'prompt' => $prompt,
+                    'response' => $response,
+                    'created_at' => time(),
+                ]));
+
+                // Add to coherence ZSET with initial coherence = 1.0 (fully coherent)
+                $redis->zadd('harness:cache:coherence', 1.0, $queryHash);
+            } catch (\Throwable $e) {
+                // Silently ignore
+            }
+        }
+
+        if ($this->semanticMemory === null) {
             return;
         }
 
@@ -614,5 +675,147 @@ class SemanticCache
         } catch (\Exception $e) {
             // Silently ignore storage failures - caching is best-effort
         }
+    }
+
+    /**
+     * Get active context keywords (Subjective Field) to bias ambiguous cache lookups.
+     */
+    public static function getSubjectiveField(): array
+    {
+        $keywords = [];
+
+        if (function_exists('config') && config('harness.active_agent')) {
+            $keywords[] = strtolower((string) config('harness.active_agent'));
+        }
+
+        if (function_exists('app') && app()->bound('request') && function_exists('request')) {
+            $req = request();
+            if ($req->route('client')) {
+                $keywords[] = 'client';
+            }
+            if ($req->input('client_id')) {
+                $keywords[] = 'client';
+            }
+        }
+
+        if (function_exists('app') && app()->bound('auth') && function_exists('auth') && auth()->user()) {
+            $role = auth()->user()->role ?? '';
+            if ($role) {
+                $keywords[] = strtolower((string) $role);
+            }
+        }
+
+        return array_unique($keywords);
+    }
+
+    /**
+     * Spontaneous Symmetry Breaking (SSB) resolver.
+     * Collapses ambiguous cache matches into a single outcome based on active context bias.
+     */
+    public function breakSymmetry(array $candidates): array
+    {
+        $subjectiveField = self::getSubjectiveField();
+        if (empty($subjectiveField)) {
+            return $candidates[0];
+        }
+
+        // Split subjective field terms into individual words for broader semantic matching
+        $fieldWords = [];
+        foreach ($subjectiveField as $term) {
+            $words = preg_split('/[\s\p{P}_]+/u', strtolower((string) $term), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $fieldWords = array_merge($fieldWords, $words);
+        }
+        $fieldWords = array_unique($fieldWords);
+
+        $bestCandidate = $candidates[0];
+        $maxResonance = -1.0;
+        $biasWeight = (float) config('harness.cache.redis.subjective_field.bias_weight', 0.15);
+
+        foreach ($candidates as $candidate) {
+            $promptWords = preg_split('/[\s\p{P}]+/u', strtolower($candidate['prompt']), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $responseWords = preg_split('/[\s\p{P}]+/u', strtolower($candidate['response']), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $allWords = array_unique(array_merge($promptWords, $responseWords));
+
+            $overlap = count(array_intersect($allWords, $fieldWords));
+            $resonance = (float) $candidate['score'] + ($overlap * $biasWeight);
+
+            if ($resonance > $maxResonance) {
+                $maxResonance = $resonance;
+                $bestCandidate = $candidate;
+            }
+        }
+
+        return $bestCandidate;
+    }
+
+    /**
+     * Decrements the coherence of cached elements in Redis (Environmental Noise Decay).
+     */
+    private function decayRedisCoherence($redis, string $excludeHash): void
+    {
+        $coherenceKey = 'harness:cache:coherence';
+        $entries = $redis->zrangebyscore($coherenceKey, '-inf', '+inf', ['WITHSCORES' => true]);
+        if (empty($entries)) {
+            return;
+        }
+
+        foreach ($entries as $hash => $score) {
+            if ($hash === $excludeHash) {
+                continue; // Stabilized by active query (Necker-Zeno effect)
+            }
+
+            $newScore = (float) $score * 0.95;
+
+            if ($newScore < 0.2) {
+                $redis->zrem($coherenceKey, $hash);
+                $redis->del("harness:cache:core:{$hash}");
+            } else {
+                $redis->zadd($coherenceKey, $newScore, $hash);
+            }
+        }
+    }
+
+    /**
+     * Search Redis L1 cache for semantically overlapping candidates.
+     */
+    private function searchRedisCandidates($redis, string $cleanPrompt, array $queryCore): array
+    {
+        if (empty($queryCore)) {
+            return [];
+        }
+
+        $candidates = [];
+        $coherenceKey = 'harness:cache:coherence';
+
+        $hashes = $redis->zrevrange($coherenceKey, 0, 50);
+        if (empty($hashes)) {
+            return [];
+        }
+
+        foreach ($hashes as $hash) {
+            $cachedJson = $redis->get("harness:cache:core:{$hash}");
+            if (! $cachedJson) {
+                continue;
+            }
+
+            $cached = json_decode($cachedJson, true);
+            if (! $cached || empty($cached['response'])) {
+                continue;
+            }
+
+            $cachedPrompt = $cached['prompt'] ?? '';
+            $cachedCore = self::extractSemanticCore($cachedPrompt);
+            $overlap = self::coreOverlap($queryCore, $cachedCore);
+
+            if ($overlap > 0.0) {
+                $candidates[] = [
+                    'prompt' => $cachedPrompt,
+                    'response' => $cached['response'],
+                    'score' => $overlap,
+                ];
+            }
+        }
+
+        return $candidates;
     }
 }

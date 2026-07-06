@@ -59,6 +59,25 @@ return [
             'enabled' => env('PHPKAIHARNESS_CACHE_NAMESPACES', true),
         ],
         'ttl_seconds' => env('PHPKAIHARNESS_CACHE_TTL', 0),
+        /*
+        |--------------------------------------------------------------------------
+        | Redis L1 Cache (Quantum Field Superposition Layer)
+        |--------------------------------------------------------------------------
+        |
+        | Configures active concept density matrices, spontaneous symmetry breaking
+        | via Subjective Field contexts, and dissipative temporal decay.
+        |
+        */
+        'redis' => [
+            'enabled' => env('PHPKAIHARNESS_CACHE_REDIS_ENABLED', true),
+            'connection' => env('PHPKAIHARNESS_CACHE_REDIS_CONNECTION', 'default'),
+            'decay_mode' => env('PHPKAIHARNESS_CACHE_DECAY_MODE', 'dissipative'),
+            'subjective_field' => [
+                'enabled' => env('PHPKAIHARNESS_CACHE_SUBJECTIVE_FIELD', true),
+                'bias_weight' => env('PHPKAIHARNESS_CACHE_BIAS_WEIGHT', 0.15),
+            ],
+            'order_sensitive' => env('PHPKAIHARNESS_CACHE_ORDER_SENSITIVE', true),
+        ],
     ],
 
     /*

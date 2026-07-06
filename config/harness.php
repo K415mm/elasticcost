@@ -23,6 +23,16 @@ return [
             'enabled' => true,
         ],
         'ttl_seconds' => 0,
+        'redis' => [
+            'enabled' => env('PHPKAIHARNESS_CACHE_REDIS_ENABLED', true),
+            'connection' => env('PHPKAIHARNESS_CACHE_REDIS_CONNECTION', 'default'),
+            'decay_mode' => env('PHPKAIHARNESS_CACHE_DECAY_MODE', 'dissipative'),
+            'subjective_field' => [
+                'enabled' => env('PHPKAIHARNESS_CACHE_SUBJECTIVE_FIELD', true),
+                'bias_weight' => env('PHPKAIHARNESS_CACHE_BIAS_WEIGHT', 0.15),
+            ],
+            'order_sensitive' => env('PHPKAIHARNESS_CACHE_ORDER_SENSITIVE', true),
+        ],
     ],
     'pii_masking' => [
         'enabled' => true,

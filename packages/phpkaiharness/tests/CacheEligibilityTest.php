@@ -159,4 +159,37 @@ class CacheEligibilityTest extends PhpkaiharnessTestCase
         // Different order but same digits should match (digits set)
         $this->assertTrue(SemanticCache::matchDigits('clients 1 and 2', 'clients 2 and 1'));
     }
+
+    public function test_get_subjective_field_extracts_agent_and_user_context(): void
+    {
+        // Set active agent in config
+        config(['harness.active_agent' => 'RgSocEngineer']);
+
+        $field = SemanticCache::getSubjectiveField();
+        $this->assertContains('rgsocengineer', $field);
+    }
+
+    public function test_break_symmetry_selects_best_candidate_based_on_context(): void
+    {
+        config(['harness.active_agent' => 'fruit_picker']);
+
+        $cache = new SemanticCache(pdo: $this->pdo, threshold: 0.80, dbPath: $this->dbPath);
+
+        $candidates = [
+            [
+                'prompt' => 'Tell me about apple',
+                'response' => 'Apple Inc. is a major technology company.',
+                'score' => 0.85,
+            ],
+            [
+                'prompt' => 'Tell me about apple',
+                'response' => 'Apple is a delicious round fruit that grows on trees.',
+                'score' => 0.85,
+            ],
+        ];
+
+        $winner = $cache->breakSymmetry($candidates);
+        // The winner should be the one about fruit because active_agent is fruit_picker
+        $this->assertStringContainsString('fruit', $winner['response']);
+    }
 }
