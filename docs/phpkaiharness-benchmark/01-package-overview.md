@@ -6,14 +6,15 @@
 
 ## What is phpkaiharness?
 
-**phpkaiharness** is a production-grade AI orchestration package built for Laravel. It sits between your application and any LLM API (Qwen, OpenAI, Anthropic, etc.) and provides a complete cognitive pipeline including:
+**phpkaiharness** is a production-grade AI orchestration package and standalone Web App telemetry engine. It sits between your application views/controllers and any LLM API (such as Qwen Cloud) and provides a complete cognitive pipeline focusing on:
 
-- Semantic caching with quantum-graph memory
-- Ontological RAG (Retrieval-Augmented Generation) from your own SQLite databases
-- Draft verification and hallucination prevention
-- PII masking, policy guardrails, and budget enforcement
-- Context compression and multi-turn conversation management
-- Real-time telemetry via per-session `monitor.db` SQLite files
+* **Dirac-Inspired Complexity Routing**: Projects and measures query state vectors in a Hilbert superposition to route prompts dynamically to direct, RAG, or cached loops.
+* **Quantum-Inspired Ontological Memory**: Uses cosine + phase wave interference ($S_{fused}$) and entanglement twin pairing to retrieve highly correlated context.
+* **Dissipative Cache Decay**: Represents prompt states as concept density matrices ($\rho$) that decay exponentially over time, guarding against stale cache hits.
+* **L1/L2 Cache Verification Loop**: Multi-stage validation checking candidates against Redis L1, database model existences, and semantic LLM verification passes.
+* **Cognitive Graph Memory**: Triplet extraction, dedup checks, and coherence weights decay that persists relationships across multi-session interactions.
+* **Ontological RAG Injector**: Hydrates agent prompts with real database models and structural schemas dynamically.
+* **Observability HUD Telemetry**: Animated real-time session traces, active status badges, and standalone Web App interfaces.
 
 It is **not** a chatbot wrapper. It is a cognitive middleware layer that makes LLMs production-safe, cost-efficient, and domain-aware.
 
