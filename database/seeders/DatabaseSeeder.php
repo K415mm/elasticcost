@@ -20,6 +20,16 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Test User',
                 'password' => bcrypt('password'),
+                'role' => 'ceo',
+            ]
+        );
+
+        User::firstOrCreate(
+            ['email' => 'demo@elasticcost.com'],
+            [
+                'name' => 'Demo Guest User',
+                'password' => bcrypt('password'),
+                'role' => 'ceo',
             ]
         );
 
