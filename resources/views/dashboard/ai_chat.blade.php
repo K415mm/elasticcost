@@ -331,7 +331,7 @@
             position: 'top',
             icon: 'info',
             title: '🛡️ RG SOC Engineer is working...',
-            html: 'Checking for results every 30 seconds. The app remains fully responsive.',
+            html: 'Checking for results every 5 seconds. The app remains fully responsive.',
             showConfirmButton: false,
             allowOutsideClick: false,
             allowEscapeKey: false,
@@ -341,7 +341,7 @@
             customClass: { popup: 'border border-warning border-opacity-50 shadow-lg' },
             didOpen: function() {
                 // Update countdown in subtitle
-                var secondsLeft = 30;
+                var secondsLeft = 5;
                 var countdownEl = Swal.getHtmlContainer();
 
                 agentPollInterval = setInterval(function() {
@@ -350,7 +350,7 @@
                         countdownEl.innerHTML = 'Next check in <strong>' + secondsLeft + 's</strong>...';
                     }
                     if (secondsLeft <= 0) {
-                        secondsLeft = 30;
+                        secondsLeft = 5;
                         checkAgentJobStatus(messageId);
                         if (countdownEl) {
                             countdownEl.innerHTML = 'Checking now...';
