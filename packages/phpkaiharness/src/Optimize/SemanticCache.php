@@ -3,7 +3,12 @@
 namespace Phpkaiharness\Optimize;
 
 use Illuminate\Support\Facades\Redis;
+use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Contracts\Providers\TextProvider;
+use Laravel\Ai\Promptable;
+use Laravel\Ai\Prompts\AgentPrompt;
 use PDO;
+use Phpkaiharness\Contracts\LlmClientInterface;
 use Phpkaiharness\Contracts\SemanticMemoryInterface;
 use Phpkaiharness\Monitor\SqliteMonitorStore;
 use Phpkaiharness\Session\SessionManager;
@@ -334,6 +339,33 @@ class SemanticCache
     }
 
     public function lookup(string $prompt): ?string
+    {
+        $cachedResponse = $this->performLookup($prompt);
+
+        if ($cachedResponse !== null) {
+            // 1. Verify existence of referenced entities in DB
+            if (! self::verifyOntologyExistence($prompt)) {
+                if (function_exists('info')) {
+                    info("Semantic Cache Hit rejected: Entity in prompt '{$prompt}' does not exist in host database.");
+                }
+
+                return null;
+            }
+
+            // 2. Perform fast LLM validation (Draft-Verification)
+            if (! $this->verifyCacheWithLlm($prompt, $cachedResponse)) {
+                if (function_exists('info')) {
+                    info("Semantic Cache Hit rejected: LLM verification failed for prompt '{$prompt}'.");
+                }
+
+                return null;
+            }
+        }
+
+        return $cachedResponse;
+    }
+
+    protected function performLookup(string $prompt): ?string
     {
         $cleanPrompt = trim($prompt);
         $normPrompt = self::normalizePrompt($cleanPrompt);
@@ -807,7 +839,7 @@ class SemanticCache
             $cachedCore = self::extractSemanticCore($cachedPrompt);
             $overlap = self::coreOverlap($queryCore, $cachedCore);
 
-            if ($overlap > 0.0) {
+            if ($overlap > 0.0 && self::matchDigits($cleanPrompt, $cachedPrompt)) {
                 $candidates[] = [
                     'prompt' => $cachedPrompt,
                     'response' => $cached['response'],
@@ -817,5 +849,154 @@ class SemanticCache
         }
 
         return $candidates;
+    }
+
+    /**
+     * Check if the entities (e.g. client ID, scenario ID) referenced in the prompt
+     * actually exist in the database.
+     */
+    public static function verifyOntologyExistence(string $prompt): bool
+    {
+        // Extract key entity IDs (e.g. client 3, scenario 12, id 784555)
+        preg_match_all('/\b(client|scenario|asset|user|id)\s*(?:with\s+)?(?:id\s*)?[:=]?\s*(\d+)/i', $prompt, $matches, PREG_SET_ORDER);
+
+        if (empty($matches)) {
+            return true; // No explicit entity IDs mentioned, skip validation
+        }
+
+        foreach ($matches as $match) {
+            $type = strtolower($match[1]);
+            $id = intval($match[2]);
+            $found = false;
+
+            // Define which models to check based on the entity type
+            $modelsToCheck = [];
+            if ($type === 'client') {
+                $modelsToCheck = ['App\Models\Client'];
+            } elseif ($type === 'scenario') {
+                $modelsToCheck = ['App\Models\Scenario'];
+            } elseif ($type === 'asset') {
+                $modelsToCheck = ['App\Models\ClientAsset'];
+            } elseif ($type === 'user') {
+                $modelsToCheck = ['App\Models\User'];
+            } else {
+                // 'id' - fallback to all primary models
+                $modelsToCheck = ['App\Models\Client', 'App\Models\Scenario', 'App\Models\ClientAsset'];
+            }
+
+            foreach ($modelsToCheck as $modelClass) {
+                if (class_exists($modelClass)) {
+                    try {
+                        if ($modelClass::where('id', $id)->exists()) {
+                            $found = true;
+                            break;
+                        }
+                    } catch (\Throwable $e) {
+                        // Silently ignore DB errors
+                    }
+                }
+            }
+
+            // If we identified a requested entity ID that is completely missing, reject the cache hit
+            if (! $found) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Use a fast LLM verification loop (Draft-Verification pattern) to validate
+     * if the cached response (acting as the draft) is correct relative to the prompt.
+     */
+    public function verifyCacheWithLlm(string $prompt, string $cachedResponse): bool
+    {
+        if (! config('harness.cache.verify_with_llm', false)) {
+            return true; // Verification disabled, accept cache hit
+        }
+
+        // 1. Retrieve Ontological Context (Evidence)
+        $evidence = '';
+        $ontologyModelClass = config('harness.ontology.model_class', 'App\Models\ClientAsset');
+        $similarityThreshold = (float) config('harness.ontology.similarity_threshold', 0.30);
+
+        if (class_exists($ontologyModelClass)) {
+            try {
+                // We create a dummy agent prompt and inject it using the OntologicalContextInjector
+                $dummyAgent = new class implements Agent
+                {
+                    use Promptable;
+
+                    public function instructions(): \Stringable|string
+                    {
+                        return '';
+                    }
+                };
+
+                // Construct a temporary prompt with the user query
+                $tempPrompt = new AgentPrompt(
+                    $dummyAgent,
+                    $prompt,
+                    [],
+                    app(TextProvider::class),
+                    config('harness.qwen_provider.light_model', 'qwen-turbo')
+                );
+
+                $injector = new OntologicalContextInjector;
+                $injected = $injector->inject(
+                    $tempPrompt,
+                    $ontologyModelClass,
+                    'embedding',
+                    $similarityThreshold,
+                    3
+                );
+
+                if ($injected->prompt !== $prompt) {
+                    $evidence = trim(str_replace($prompt, '', $injected->prompt));
+                }
+            } catch (\Throwable $e) {
+                // Fallback to empty evidence
+            }
+        }
+
+        // 2. Perform fast LLM validation
+        try {
+            if (function_exists('app') && app()->bound(LlmClientInterface::class)) {
+                $client = app(LlmClientInterface::class);
+
+                $verificationPrompt = "User Query: \"{$prompt}\"\n\n".
+                    "Cached Response Draft: \"{$cachedResponse}\"\n\n";
+
+                if (! empty($evidence)) {
+                    $verificationPrompt .= "Real-time Database Context:\n{$evidence}\n\n";
+                }
+
+                $verificationPrompt .= 'Task: Validate if the Cached Response Draft is 100% correct, matches the user query, and aligns with the database context. '.
+                    'Respond with ONLY a JSON object: { "valid": true } or { "valid": false, "reason": "explanation" }.';
+
+                $response = $client->chat(
+                    systemPrompt: 'You are a strict cache verification unit. Validate the cached response against current query and database context.',
+                    messages: [['role' => 'user', 'content' => $verificationPrompt]],
+                    tools: [],
+                    model: config('harness.qwen_provider.light_model', 'qwen-turbo'),
+                    sessionId: 'cache_verify'
+                );
+
+                $content = trim($response['content'] ?? '');
+                // Parse JSON
+                if (preg_match('/\{.*\}/s', $content, $m)) {
+                    $json = json_decode($m[0], true);
+                    if (isset($json['valid'])) {
+                        return (bool) $json['valid'];
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // In case of any validation errors, fail-safe to accepting the cache hit
+            return true;
+        }
+
+        return true;
     }
 }

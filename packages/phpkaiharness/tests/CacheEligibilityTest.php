@@ -192,4 +192,14 @@ class CacheEligibilityTest extends PhpkaiharnessTestCase
         // The winner should be the one about fruit because active_agent is fruit_picker
         $this->assertStringContainsString('fruit', $winner['response']);
     }
+
+    public function test_verify_ontology_existence_rejects_missing_ids(): void
+    {
+        $this->assertFalse(SemanticCache::verifyOntologyExistence('give me client with id 784555'));
+    }
+
+    public function test_verify_ontology_existence_allows_clean_prompt(): void
+    {
+        $this->assertTrue(SemanticCache::verifyOntologyExistence('hello, what is the weather today?'));
+    }
 }

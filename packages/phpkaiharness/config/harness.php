@@ -78,6 +78,8 @@ return [
             ],
             'order_sensitive' => env('PHPKAIHARNESS_CACHE_ORDER_SENSITIVE', true),
         ],
+        'verify_with_llm' => env('PHPKAIHARNESS_CACHE_VERIFY_WITH_LLM', true),
+        'verify_model' => env('PHPKAIHARNESS_CACHE_VERIFY_MODEL', 'qwen-turbo'),
     ],
 
     /*
