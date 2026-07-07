@@ -1,17 +1,17 @@
-# Technical Blog — phpkaiharness: Beating Raw LLM Costs by 84% with a Quantum Graph Cache
+# Technical Blog — phpkaiharness: A Quantum-Inspired MemoryAgent for Persistent, Cross-Session AI Intelligence
 
 **Published**: July 6, 2026  
 **Author**: phpkaiharness Team  
-**Reading time**: ~12 minutes  
-**Audience**: PHP/Laravel developers, AI engineers, ML engineers
+**Reading time**: ~14 minutes  
+**Audience**: AI engineers, ML engineers, web developers, hackathon judges (Qwen Cloud MemoryAgent Track)
 
 ---
 
 ## Introduction
 
-Every team building AI-powered applications faces the same inflection point: the moment when LLM API costs stop being "startup rounding error" and start showing up in board meetings.
+Building an AI agent that truly *remembers* is not about adding a simple conversation buffer. It requires a fundamentally different architecture — one where memories are structured entities with phase states, interference patterns, and temporal decay. An agent that accumulates experience, recognizes semantically similar situations, and makes decisions informed by entangled context across sessions.
 
-This post describes the architecture of **phpkaiharness** — a cognitive middleware framework we built for Laravel — and the results of a controlled benchmark we ran this week on our production server. The short version: in B-Warm mode (full pipeline with a populated semantic cache), **85% of AI requests return in 0 milliseconds at zero API cost**, with a 79% reduction in tokens sent to the LLM.
+This post describes **phpkaiharness** — a production-grade AI orchestration harness built for the **Qwen Cloud MemoryAgent Track (Global AI Hackathon Series)** — and what we discovered after running a controlled benchmark on our production server. The short version: **85% of requests return in 0ms at zero API cost**, tokens dropped 79%, and response quality *improved* — all driven by our Quantum-Inspired Ontological Memory Harness.
 
 The long version follows.
 
@@ -44,17 +44,35 @@ phpkaiharness solves all four problems simultaneously.
 
 ## The Architecture
 
-phpkaiharness implements a **10-stage cognitive pipeline** that executes between the user request and the LLM API call:
+`phpkaiharness` replaces linear pipeline models with a dual-engine architecture: a **Dirac-Inspired Complexity Router** that evaluates and collapses request states, and a **Quantum-Inspired Ontological Memory Harness** that manages persistent multi-session knowledge.
 
 ```
-Request → [PII Mask] → [Cache Check] → [Ontology Inject] → [Quantum Memory] 
-       → [Compress] → [LLM Call*] → [Draft Verify] → [Guardrails] 
-       → [Budget Check] → [Cache Store] → Response
-
-* Skipped entirely on cache hits (85% of B-Warm requests)
+                       Query Prompt Input
+                                │
+                                ▼
+                  ┌──────────────────────────┐
+                  │  Dirac Complexity Router │
+                  └──────────────────────────┘
+                                │
+          ┌─────────────────────┼─────────────────────┐
+          ▼                     ▼                     ▼
+   [|Simple> Path]      [|Complicated> Path]    [|Complex> Path]
+   Direct LLM Call       Ontological RAG RAG    Full Pipeline Loop
+                                                      │
+                                                      ▼
+                                          ┌───────────────────────┐
+                                          │  L1/L2 Semantic Cache │
+                                          └───────────────────────┘
+                                                      │
+                                           (Miss) ──┼── (Hit) ──► Verified Cache
+                                                      │
+                                                      ▼
+                                          ┌───────────────────────┐
+                                          │   Multi-Turn Agent    │
+                                          └───────────────────────┘
 ```
 
-Each stage communicates via a shared `$context` object. If the cache resolves the request at stage 2, all downstream stages are skipped. This is the key to zero-latency responses.
+Each stage communicates via a shared `$context` object. If the cache resolves the request in the Complex loop, all downstream generation steps are skipped, serving the response instantly.
 
 ### The Dirac Complexity Router & Pipeline
 
@@ -162,48 +180,77 @@ At Qwen-Plus pricing ($0.002/1K prompt tokens):
 
 ## Key Implementation Details
 
-### SQLite Only — No pgvector, No Vector Database
+### Memory Architecture — The Core Innovation
 
-All persistence (cache, quantum memory, telemetry) uses SQLite files. This is an intentional design choice:
+The memory system is what separates `phpkaiharness` from simple LLM wrappers. It is structured across three interoperating layers:
 
-- Zero additional infrastructure required
-- Each session gets an isolated database (no cross-contamination)
-- Works in any PHP environment (shared hosting, Docker, serverless)
-- SQLite is fast enough for per-request operations at this scale
+**Layer 1 — Quantum Ontological Memory (episodic)**  
+Each memory node stores a semantic embedding vector plus a phase angle $\theta$ representing its operational domain (errors, pricing, sizing, etc.). Retrieval uses **cosine + phase wave interference**:
+$$S_{fused} = \alpha \cdot S_{cos} + \beta \cdot \cos(\theta_q - \theta_m)$$
+Constructive interference amplifies domain-relevant memories. Destructive interference suppresses unrelated nodes even when word-level similarity is high.
+
+**Layer 2 — Entanglement Pair Propagation**  
+Highly correlated memory pairs (e.g. a sizing config and its benchmark result) are linked with an entanglement force $F_{ent}$. Retrieving one instantly propagates to its twin:
+$$S_{fused}'(B) = \max(S_{fused}(B),\ S_{fused}(A) \cdot F_{ent})$$
+This ensures critical dependent context is never lost when only part of the related information is explicitly referenced.
+
+**Layer 3 — Cognitive Graph Memory (semantic relationships)**  
+Agent tool execution outputs are parsed into triplet facts: `(Subject) → [Relationship] → (Object)`. These populate a persistent knowledge graph with coherence weights. Redundant edges are amplified, novel edges are created, and stale edges decay over time:
+$$W(t) = W_0 \cdot e^{-\lambda t}$$
+Below-threshold edges are pruned, keeping the graph sharp and focused on current context.
+
+### L1/L2 Cache Architecture — No pgvector, No Vector Database
+
+All cache and memory persistence uses Redis (L1 hot-tier) and SQLite files (L2 persistent-tier). This is an intentional design choice:
+
+- **L1 Redis**: Sub-millisecond hot lookups for recently accessed embeddings
+- **L2 SQLite**: Zero additional infrastructure, isolated per session, full portability
+- **QFT Verification Pass**: Before any L1/L2 cache hit is returned, entity IDs are validated against live DB models, then a fast `qwen-turbo` verification call confirms semantic accuracy
+- Works in any web environment (shared hosting, Docker, serverless, VPS)
+
+### Dissipative Cache Decay
+
+Instead of hard TTL expiration, cache entries behave as concept density matrices ($\rho$) that lose coherence over time:
+$$\rho(t) = e^{-\Gamma t} \rho(0)$$
+The similarity threshold required for a cache match rises as entries age, naturally filtering stale data without blunt deletion.
 
 ### Isolated Per-Session Telemetry
 
-Each phpkaiharness session writes to its own `monitor.db` file:
+Each session writes to an isolated telemetry database:
 ```
 storage/app/phpkaiharness/sessions/{session_id}/monitor.db
 ```
 
-Tables: `harness_sessions`, `harness_details`, `harness_memories`, `harness_facts`
+Tables: `harness_sessions`, `harness_details`, `agent_memory` (quantum nodes + graph edges), `harness_facts`
 
-This isolation means you can inspect any individual session's full pipeline history without interference from other sessions. It also enables the phpkaiharness telemetry dashboard (`/harness/dashboard`) to show per-session execution traces.
+This isolation enables the full-featured Telemetry HUD dashboard (`/harness/dashboard`) to replay complete session traces, inspect memory graph nodes, and verify entanglement pairs — without any cross-session contamination.
 
 ---
 
-## What I Would Tune Next
+## What We Would Tune Next
 
 Based on the benchmark data:
 
-1. **Raise cache threshold from 0.60 → 0.82.** The current threshold is too permissive — cosine similarity of 0.60 allows quite different queries to hit the same cache entry. Raising to 0.82 would eliminate potential false matches while maintaining the 85% hit rate (since most real matches score above 0.90 in our data).
+1. **Raise cache similarity threshold 0.60 → 0.82.** The current threshold is too permissive. Raising it eliminates marginal false matches while preserving the 85% hit rate (real matches score above 0.90 in our data).
 
-2. **Persist quantum memory globally.** Currently, memory nodes are isolated per session. A shared `global_memory.sqlite` for high-confidence nodes would allow the cache to benefit from across all past sessions, not just the current one.
+2. **Global cross-session Quantum Memory.** Currently nodes are isolated per session. A shared `global_agent_memory.sqlite` for high-confidence entanglement pairs and high-coherence graph edges would allow the cache to benefit from all past sessions — enabling true continuous learning.
 
-3. **Parallelize ontology + quantum retrieval.** These run sequentially today. Running them concurrently (via PHP Fibers) would reduce B-Cold pipeline latency by ~40%.
+3. **Parallelize Ontology Injector + Quantum Memory retrieval.** Running them concurrently (via PHP Fibers or Laravel Jobs) would cut B-Cold pipeline latency by ~40%.
+
+4. **Dynamic phase angle assignment.** Currently phase domains are manually classified (errors / sizing / pricing / chat). An ML-driven phase classifier trained on historical session telemetry would improve interference scoring accuracy.
 
 ---
 
 ## Conclusion
 
-phpkaiharness turns an LLM from a necessity into a fallback. At 85% semantic cache hit rate, the LLM API is the minority case. The system is a domain-expert knowledge retrieval engine that uses an LLM only when it genuinely needs to reason over new territory.
+`phpkaiharness` reimagines what a MemoryAgent can be. By modelling queries as Dirac state vectors, grounding memories in QFT phase interference, and decaying caches like quantum density matrices, the agent builds a persistent, evolving knowledge field — not just a conversation buffer.
 
-The 79% token reduction isn't a performance trick — it's evidence that the architecture is working correctly. Most of your users' questions are variations of questions you've already answered and verified. The cognitive middleware layer recognizes this and responds accordingly.
+At 85% semantic cache hit rate, the LLM API is the minority case. The system functions as a domain-expert knowledge retrieval harness that uses Qwen Cloud only when it genuinely needs to reason over unexplored territory. The 79% token reduction isn't a performance trick — it is evidence that memories are being structured correctly, and that the quantum-inspired retrieval system is recognizing semantic equivalence across rephrased queries, languages, and sessions.
+
+This is what makes `phpkaiharness` a MemoryAgent — not just an LLM chatbot.
 
 ---
 
-*All benchmark data from live production telemetry. Raw SQLite queries available on request.*
+*All benchmark data from live production telemetry on Alibaba Cloud (47.251.180.213). Raw SQLite queries and session monitor.db files available on request.*
 
-*phpkaiharness — cognitive middleware for PHP/Laravel AI applications.*
+*phpkaiharness — Quantum-Inspired MemoryAgent Harness for Web Applications, built on Qwen Cloud.*
