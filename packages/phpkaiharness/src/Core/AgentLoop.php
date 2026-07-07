@@ -18,6 +18,7 @@ use Phpkaiharness\Events\ToolCallFinished;
 use Phpkaiharness\Events\ToolCallStarted;
 use Phpkaiharness\Llm\LlmClientPipelineBuilder;
 use Phpkaiharness\Optimize\CognitiveGraphMemory;
+use Phpkaiharness\Optimize\ComplexityClassifier;
 use Phpkaiharness\Optimize\ContextCompactor;
 use Phpkaiharness\Optimize\Guardrails;
 use Phpkaiharness\Optimize\QuantumInferenceEngine;
@@ -46,6 +47,8 @@ class AgentLoop
     protected ?ContextCompactor $contextCompactor = null;
 
     protected ?Guardrails $guardrails = null;
+
+    protected string $complexityDomain = '';
 
     protected string $agentName = 'agent';
 
@@ -233,6 +236,50 @@ class AgentLoop
             }
         }
 
+        // ── Cynefin Complexity Classification using Dirac Wave Projection ────
+        $registeredToolNames = array_keys($this->registry->serializeSchemas());
+        $this->complexityDomain = ComplexityClassifier::classify($userPrompt, $registeredToolNames);
+        $this->logger->info('Cynefin Complexity Classification resolved to: '.strtoupper($this->complexityDomain));
+
+        // Dynamically adjust pipeline flags based on the domain
+        if (function_exists('config')) {
+            try {
+                if ($this->complexityDomain === ComplexityClassifier::DOMAIN_SIMPLE) {
+                    // Simple Domain: Direct LLM execution, disable RAG, loops, cache
+                    config(['harness.feature_graph.nodes.semantic_cache.enabled' => false]);
+                    config(['harness.feature_graph.nodes.ontology_injection.enabled' => false]);
+                    config(['harness.feature_graph.nodes.cognitive_memory.enabled' => false]);
+                    config(['harness.feature_graph.nodes.quantum_harness.enabled' => false]);
+                    config(['harness.feature_graph.nodes.draft_verification.enabled' => false]);
+
+                    config(['harness.cache.enabled' => false]);
+                    config(['harness.ontology.enabled' => false]);
+                    config(['harness.cognitive_memory.enabled' => false]);
+                    config(['harness.quantum_harness.enabled' => false]);
+                    config(['harness.draft_verification.enabled' => false]);
+
+                    $effectiveMaxIterations = 1;
+                } elseif ($this->complexityDomain === ComplexityClassifier::DOMAIN_COMPLICATED) {
+                    // Complicated Domain: Enable Ontology/RAG, disable tool loops
+                    config(['harness.feature_graph.nodes.ontology_injection.enabled' => true]);
+                    config(['harness.feature_graph.nodes.semantic_cache.enabled' => false]);
+                    config(['harness.feature_graph.nodes.cognitive_memory.enabled' => false]);
+                    config(['harness.feature_graph.nodes.quantum_harness.enabled' => false]);
+                    config(['harness.feature_graph.nodes.draft_verification.enabled' => false]);
+
+                    config(['harness.ontology.enabled' => true]);
+                    config(['harness.cache.enabled' => false]);
+                    config(['harness.cognitive_memory.enabled' => false]);
+                    config(['harness.quantum_harness.enabled' => false]);
+                    config(['harness.draft_verification.enabled' => false]);
+
+                    $effectiveMaxIterations = 1;
+                }
+            } catch (\Throwable $e) {
+                $this->logger->debug('Failed to dynamically route pipeline config: '.$e->getMessage());
+            }
+        }
+
         // ── Auto-configure features from host application harness.php config ──
         if (function_exists('config')) {
             try {
@@ -318,8 +365,8 @@ class AgentLoop
                     $resolvedSessionId,
                     'feature_matrix',
                     'ResolvedFeatureMatrix',
-                    ['features' => $featureMatrix, 'model' => $this->model, 'agent' => $this->agentName],
-                    json_encode(['status' => 'Feature matrix resolved at run start'], JSON_UNESCAPED_UNICODE) ?: '{}'
+                    ['features' => $featureMatrix, 'model' => $this->model, 'agent' => $this->agentName, 'complexity_domain' => $this->complexityDomain],
+                    json_encode(['status' => 'Feature matrix resolved at run start. Complexity: '.$this->complexityDomain], JSON_UNESCAPED_UNICODE) ?: '{}'
                 );
                 $this->recordedDetailTypes[] = 'feature_matrix';
             } catch (\Throwable $e) {
