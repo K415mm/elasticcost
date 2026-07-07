@@ -86,7 +86,6 @@ return [
         'embedding_column' => 'embedding',
         'similarity_threshold' => 0.3,
         'max_records' => 3,
-        'db_path' => null,
         'namespaces' => [
             'enabled' => true,
         ],

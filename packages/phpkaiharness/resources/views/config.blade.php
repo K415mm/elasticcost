@@ -427,7 +427,6 @@
                             ['type' => 'text', 'name' => 'ontology_embedding_column', 'label' => 'Embedding DB Column', 'config_key' => 'ontology.embedding_column', 'value' => $config['ontology']['embedding_column'] ?? 'embedding'],
                             ['type' => 'number', 'name' => 'ontology_similarity_threshold', 'label' => 'Similarity Threshold (0.0–1.0)', 'config_key' => 'ontology.similarity_threshold', 'value' => $config['ontology']['similarity_threshold'] ?? 0.30, 'step' => '0.01', 'min' => '0', 'max' => '1'],
                             ['type' => 'number', 'name' => 'ontology_max_records', 'label' => 'Max Records Injected', 'config_key' => 'ontology.max_records', 'value' => $config['ontology']['max_records'] ?? 3, 'min' => '1', 'max' => '20'],
-                            ['type' => 'text', 'name' => 'ontology_db_path', 'label' => 'Ontology Database Path', 'config_key' => 'ontology.db_path', 'value' => $config['ontology']['db_path'] ?? ''],
                             ['type' => 'toggle', 'name' => 'ontology_namespaces_enabled', 'label' => 'Namespaces Filtering', 'config_key' => 'ontology.namespaces.enabled', 'value' => $config['ontology']['namespaces']['enabled'] ?? true],
                         ]],
                         'semantic_cache' => ['label' => 'Semantic Cache', 'desc' => 'Returns cached responses for semantically similar prompts', 'icon' => 'bi-lightning-charge', 'color' => '#f59e0b', 'fields' => [
@@ -440,7 +439,6 @@
                             ['type' => 'number', 'name' => 'cache_redis_subjective_field_bias_weight', 'label' => 'Subjective Bias Weight (0.0–1.0)', 'config_key' => 'cache.redis.subjective_field.bias_weight', 'value' => $config['cache']['redis']['subjective_field']['bias_weight'] ?? 0.15, 'step' => '0.01', 'min' => '0', 'max' => '1'],
                             ['type' => 'toggle', 'name' => 'cache_redis_order_sensitive', 'label' => 'Order Sensitive', 'config_key' => 'cache.redis.order_sensitive', 'value' => $config['cache']['redis']['order_sensitive'] ?? true],
                             ['type' => 'toggle', 'name' => 'cache_verify_with_llm', 'label' => 'Verify Cache with LLM', 'config_key' => 'cache.verify_with_llm', 'value' => $config['cache']['verify_with_llm'] ?? true],
-                            ['type' => 'text', 'name' => 'cache_verify_model', 'label' => 'LLM Verification Model', 'config_key' => 'cache.verify_model', 'value' => $config['cache']['verify_model'] ?? 'qwen-turbo'],
                         ]],
                         'context_compactor' => ['label' => 'Context Compactor', 'desc' => 'Prunes oldest conversation history to fit context windows', 'icon' => 'bi-archive', 'color' => '#06b6d4', 'fields' => [
                             ['type' => 'select', 'name' => 'compaction_strategy', 'label' => 'Strategy', 'config_key' => 'compaction.strategy', 'value' => $config['compaction']['strategy'] ?? 'sliding_window', 'options' => ['sliding_window', 'summarize', 'trim_oldest']],
@@ -769,10 +767,6 @@
                             <div class="col-md-6">
                                 <label class="form-label small text-inverse text-opacity-50">Density Matrix Bias</label>
                                 <input type="number" class="form-control form-control-sm" step="0.01" min="0" max="1" name="quantum_density_matrix_bias" value="{{ $config['quantum_harness']['density_matrix_bias'] ?? 0.10 }}">
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label small text-inverse text-opacity-50">SQLite Database Path</label>
-                                <input class="form-control form-control-sm" name="quantum_db_path" value="{{ $config['quantum_harness']['db_path'] ?? '' }}" placeholder="storage_path('app/phpkaiharness/agent_memory.sqlite')">
                             </div>
                         </div>
                     </div>

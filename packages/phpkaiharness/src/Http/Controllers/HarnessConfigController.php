@@ -201,7 +201,7 @@ class HarnessConfigController extends Controller
                     'order_sensitive' => $request->boolean('cache_redis_order_sensitive'),
                 ],
                 'verify_with_llm' => $request->boolean('cache_verify_with_llm'),
-                'verify_model' => $request->input('cache_verify_model', config('harness.cache.verify_model', 'qwen-turbo')),
+                'verify_model' => config('harness.cache.verify_model', 'qwen-turbo'),
             ],
             'pii_masking' => [
                 'enabled' => $request->boolean('pii_masking_enabled'),
@@ -226,7 +226,7 @@ class HarnessConfigController extends Controller
                 'embedding_column' => $request->input('ontology_embedding_column', config('harness.ontology.embedding_column')),
                 'similarity_threshold' => (float) $request->input('ontology_similarity_threshold', config('harness.ontology.similarity_threshold')),
                 'max_records' => (int) $request->input('ontology_max_records', config('harness.ontology.max_records')),
-                'db_path' => $request->input('ontology_db_path', config('harness.ontology.db_path')),
+                'db_path' => config('harness.ontology.db_path'),
                 'namespaces' => [
                     'enabled' => $request->boolean('ontology_namespaces_enabled'),
                 ],
@@ -261,7 +261,7 @@ class HarnessConfigController extends Controller
             ],
             'quantum_harness' => [
                 'enabled' => $request->boolean('quantum_harness_enabled'),
-                'db_path' => $request->input('quantum_db_path', config('harness.quantum_harness.db_path')),
+                'db_path' => config('harness.quantum_harness.db_path'),
                 'alpha' => (float) $request->input('quantum_alpha', config('harness.quantum_harness.alpha', 0.7)),
                 'beta' => (float) $request->input('quantum_beta', config('harness.quantum_harness.beta', 0.3)),
                 'similarity_threshold' => (float) $request->input('quantum_similarity_threshold', config('harness.quantum_harness.similarity_threshold', 0.30)),

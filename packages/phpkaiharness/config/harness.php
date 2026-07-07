@@ -164,7 +164,6 @@ return [
         'embedding_column' => env('PHPKAIHARNESS_ONTOLOGY_COLUMN', 'embedding'),
         'similarity_threshold' => env('PHPKAIHARNESS_ONTOLOGY_THRESHOLD', 0.30),
         'max_records' => env('PHPKAIHARNESS_ONTOLOGY_LIMIT', 3),
-        'db_path' => env('PHPKAIHARNESS_ONTOLOGY_DB_PATH', null),
         'namespaces' => [
             'enabled' => env('PHPKAIHARNESS_ONTOLOGY_NAMESPACES', true),
         ],

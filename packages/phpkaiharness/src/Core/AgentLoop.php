@@ -257,8 +257,6 @@ class AgentLoop
                     config(['harness.cognitive_memory.enabled' => false]);
                     config(['harness.quantum_harness.enabled' => false]);
                     config(['harness.draft_verification.enabled' => false]);
-
-                    $effectiveMaxIterations = 1;
                 } elseif ($this->complexityDomain === ComplexityClassifier::DOMAIN_COMPLICATED) {
                     // Complicated Domain: Enable Ontology/RAG, disable tool loops
                     config(['harness.feature_graph.nodes.ontology_injection.enabled' => true]);
@@ -272,8 +270,6 @@ class AgentLoop
                     config(['harness.cognitive_memory.enabled' => false]);
                     config(['harness.quantum_harness.enabled' => false]);
                     config(['harness.draft_verification.enabled' => false]);
-
-                    $effectiveMaxIterations = 1;
                 }
             } catch (\Throwable $e) {
                 $this->logger->debug('Failed to dynamically route pipeline config: '.$e->getMessage());
