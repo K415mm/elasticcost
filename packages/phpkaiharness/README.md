@@ -15,6 +15,18 @@
 
 `phpkaiharness` is a **production-grade, pluggable AI Agent Harness** for PHP & Laravel 13. It gives you an autonomous LLM execution loop enriched with enterprise-grade safety, optimization, and observability features — all without leaving the PHP ecosystem.
 
+<div style="background:rgba(28,176,246,0.08);border:1px solid #1cb0f6;border-radius:8px;padding:16px;margin:20px 0;box-shadow:0 0 15px rgba(28,176,246,0.1)">
+  <h3 style="color:#1cb0f6;margin-top:0;font-family:'Courier New',Courier,monospace;letter-spacing:1px">🏆 Global AI Hackathon Series — Qwen Cloud Edition</h3>
+  <p style="color:#b1c2d4;font-size:0.95em;margin:0 0 10px;line-height:1.5">
+    This repository is built for <strong>Track 1: MemoryAgent</strong>. It implements an autonomous, long-running agentic harness featuring a <strong>Dirac-inspired Dynamic Complexity Router</strong> and a <strong>Quantum-Inspired Ontological Memory Harness</strong>.
+  </p>
+  <ul style="color:#b1c2d4;font-size:0.9em;margin:0;padding-left:20px;line-height:1.5">
+    <li><strong>Qwen Cloud Native</strong>: Optimized prompt templates, structured output maps, and thinking budget configurations built specifically for <code>qwen-plus</code> and <code>qwen-turbo</code>.</li>
+    <li><strong>Dirac State Routing</strong>: Models query state as a Hilbert superposition and collapses it dynamically to execute direct, RAG, or full tool loops.</li>
+    <li><strong>Quantum Memory Harness</strong>: Cosine + phase interference scoring (<code>S_fused = α·S_cos + β·S_interfere</code>) with spontaneous symmetry breaking and dissipative temporal decay.</li>
+  </ul>
+</div>
+
 ---
 
 <h2 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;border-bottom:2px solid #3cd2a5;padding-bottom:8px;margin-top:30px">🏗️ Architecture Overview</h2>
@@ -311,6 +323,16 @@ flowchart TB
     <p style="color:#b1c2d4;font-size:0.9em;margin:0">Quantum-inspired ontological memory with cosine + phase interference scoring (<code>S_fused = α·S_cos + β·S_interfere</code>), multi-hop entanglement traversal, and asynchronous memory collapse jobs. Persists across sessions in a dedicated SQLite graph.</p>
   </div>
 
+  <div style="background:#0c1017;border:1px solid rgba(60,210,165,0.35);border-radius:8px;padding:16px;box-shadow:0 0 10px rgba(60,210,165,0.07)">
+    <h3 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;margin-top:0">🌌 Dirac-Inspired Complexity Router</h3>
+    <p style="color:#b1c2d4;font-size:0.9em;margin:0">Classifies incoming queries in a Hilbert space state vector $| \psi \rangle = c_s | \text{Simple} \rangle + c_d | \text{Complicated} \rangle + c_x | \text{Complex} \rangle$. Dynamically collapses (measures) the state to route queries to direct LLM execution (Simple), RAG context injection (Complicated), or full multi-turn tool loops with L1/L2 caching (Complex).</p>
+  </div>
+
+  <div style="background:#0c1017;border:1px solid rgba(60,210,165,0.35);border-radius:8px;padding:16px;box-shadow:0 0 10px rgba(60,210,165,0.07)">
+    <h3 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;margin-top:0">🧠 QFT Cache Verification Loop</h3>
+    <p style="color:#b1c2d4;font-size:0.9em;margin:0">Mitigates stale cache hits in fluctuating environments. Redis L1 candidates match strict numeric IDs, run database existence checks in App Models, and perform a fast LLM verification pass before accepting the hit (Draft-Verification pipeline pattern).</p>
+  </div>
+
 </div>
 
 ---
@@ -417,6 +439,34 @@ Gate::define('viewHarness', function (User $user) {
 </p>
 <pre><code>/storage/app/phpkaiharness/
 </code></pre>
+
+---
+
+<h2 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;border-bottom:2px solid #3cd2a5;padding-bottom:8px;margin-top:30px">🖥️ Standalone Web Application Dashboard (Non-Laravel)</h2>
+
+<p style="color:#b1c2d4;line-height:1.6">
+  <code>phpkaiharness</code> is designed with ultimate modularity. If you are not using Laravel, or want to deploy the telemetry, trace runner, and configuration dashboard as a standalone web application, you can do so in seconds using the built-in standalone web app located in the <code>/ui</code> directory.
+</p>
+
+<h3 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;margin-top:20px">1. Running Standalone Web App</h3>
+<p style="color:#b1c2d4;line-height:1.6">
+  Launch the built-in development server pointing to the UI router:
+</p>
+<pre><code class="language-bash"># Run from the packages/phpkaiharness directory
+php -S localhost:8000 ui/router.php</code></pre>
+<p style="color:#b1c2d4;line-height:1.6">
+  Open your browser to <a href="http://localhost:8000" style="color:#3cd2a5">http://localhost:8000</a> to access the cyber-teal dashboard.
+</p>
+
+<h3 style="color:#3cd2a5;font-family:'Courier New',Courier,monospace;margin-top:20px">2. Standalone Session and Configuration Store</h3>
+<ul style="color:#b1c2d4;font-family:sans-serif;line-height:1.8">
+  <li>
+    <strong>Autopilot API Engine</strong> (<code>ui/api.php</code>): Directly interfaces with standalone scripts to record runs, traces, and metrics.
+  </li>
+  <li>
+    <strong>Independent SQLite Storage</strong>: Automatically seeds and persists settings, model parameters, and telemetry events in <code>storage/app/phpkaiharness/agent_memory.sqlite</code> without requiring a MySQL/PostgreSQL host database.
+  </li>
+</ul>
 
 ---
 
