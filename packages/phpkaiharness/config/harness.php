@@ -164,6 +164,10 @@ return [
         'embedding_column' => env('PHPKAIHARNESS_ONTOLOGY_COLUMN', 'embedding'),
         'similarity_threshold' => env('PHPKAIHARNESS_ONTOLOGY_THRESHOLD', 0.30),
         'max_records' => env('PHPKAIHARNESS_ONTOLOGY_LIMIT', 3),
+        'db_path' => env('PHPKAIHARNESS_ONTOLOGY_DB_PATH', null),
+        'namespaces' => [
+            'enabled' => env('PHPKAIHARNESS_ONTOLOGY_NAMESPACES', true),
+        ],
     ],
 
     /*
@@ -243,6 +247,9 @@ return [
             'enabled' => true,
             'similarity_threshold' => 0.85,
         ],
+        'max_depth' => env('PHPKAIHARNESS_COG_MEMORY_MAX_DEPTH', 3),
+        'coherence_threshold' => env('PHPKAIHARNESS_COG_MEMORY_COHERENCE', 0.15),
+        'decay_rate' => env('PHPKAIHARNESS_COG_MEMORY_DECAY', 0.05),
     ],
 
     /*
@@ -273,6 +280,8 @@ return [
         'beta' => env('PHPKAIHARNESS_QUANTUM_BETA', 0.3),
         'similarity_threshold' => env('PHPKAIHARNESS_QUANTUM_THRESHOLD', 0.30),
         'max_anchors' => env('PHPKAIHARNESS_QUANTUM_LIMIT', 3),
+        'coherence_decay' => env('PHPKAIHARNESS_QUANTUM_COHERENCE_DECAY', 0.05),
+        'density_matrix_bias' => env('PHPKAIHARNESS_QUANTUM_DENSITY_BIAS', 0.10),
     ],
 
     /*

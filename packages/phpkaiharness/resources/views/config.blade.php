@@ -427,10 +427,20 @@
                             ['type' => 'text', 'name' => 'ontology_embedding_column', 'label' => 'Embedding DB Column', 'config_key' => 'ontology.embedding_column', 'value' => $config['ontology']['embedding_column'] ?? 'embedding'],
                             ['type' => 'number', 'name' => 'ontology_similarity_threshold', 'label' => 'Similarity Threshold (0.0–1.0)', 'config_key' => 'ontology.similarity_threshold', 'value' => $config['ontology']['similarity_threshold'] ?? 0.30, 'step' => '0.01', 'min' => '0', 'max' => '1'],
                             ['type' => 'number', 'name' => 'ontology_max_records', 'label' => 'Max Records Injected', 'config_key' => 'ontology.max_records', 'value' => $config['ontology']['max_records'] ?? 3, 'min' => '1', 'max' => '20'],
+                            ['type' => 'text', 'name' => 'ontology_db_path', 'label' => 'Ontology Database Path', 'config_key' => 'ontology.db_path', 'value' => $config['ontology']['db_path'] ?? ''],
+                            ['type' => 'toggle', 'name' => 'ontology_namespaces_enabled', 'label' => 'Namespaces Filtering', 'config_key' => 'ontology.namespaces.enabled', 'value' => $config['ontology']['namespaces']['enabled'] ?? true],
                         ]],
                         'semantic_cache' => ['label' => 'Semantic Cache', 'desc' => 'Returns cached responses for semantically similar prompts', 'icon' => 'bi-lightning-charge', 'color' => '#f59e0b', 'fields' => [
                             ['type' => 'toggle', 'name' => 'cache_enabled', 'label' => 'Cache Enabled', 'config_key' => 'cache.enabled'],
                             ['type' => 'number', 'name' => 'cache_threshold', 'label' => 'Similarity Threshold (0.0–1.0)', 'config_key' => 'cache.threshold', 'value' => $config['cache']['threshold'] ?? 0.88, 'step' => '0.01', 'min' => '0', 'max' => '1'],
+                            ['type' => 'toggle', 'name' => 'cache_redis_enabled', 'label' => 'Redis L1 Cache Enabled', 'config_key' => 'cache.redis.enabled', 'value' => $config['cache']['redis']['enabled'] ?? true],
+                            ['type' => 'text', 'name' => 'cache_redis_connection', 'label' => 'Redis Connection Name', 'config_key' => 'cache.redis.connection', 'value' => $config['cache']['redis']['connection'] ?? 'default'],
+                            ['type' => 'select', 'name' => 'cache_redis_decay_mode', 'label' => 'Redis Decay Mode', 'config_key' => 'cache.redis.decay_mode', 'value' => $config['cache']['redis']['decay_mode'] ?? 'dissipative', 'options' => ['dissipative', 'step', 'none']],
+                            ['type' => 'toggle', 'name' => 'cache_redis_subjective_field_enabled', 'label' => 'Subjective Field Enabled', 'config_key' => 'cache.redis.subjective_field.enabled', 'value' => $config['cache']['redis']['subjective_field']['enabled'] ?? true],
+                            ['type' => 'number', 'name' => 'cache_redis_subjective_field_bias_weight', 'label' => 'Subjective Bias Weight (0.0–1.0)', 'config_key' => 'cache.redis.subjective_field.bias_weight', 'value' => $config['cache']['redis']['subjective_field']['bias_weight'] ?? 0.15, 'step' => '0.01', 'min' => '0', 'max' => '1'],
+                            ['type' => 'toggle', 'name' => 'cache_redis_order_sensitive', 'label' => 'Order Sensitive', 'config_key' => 'cache.redis.order_sensitive', 'value' => $config['cache']['redis']['order_sensitive'] ?? true],
+                            ['type' => 'toggle', 'name' => 'cache_verify_with_llm', 'label' => 'Verify Cache with LLM', 'config_key' => 'cache.verify_with_llm', 'value' => $config['cache']['verify_with_llm'] ?? true],
+                            ['type' => 'text', 'name' => 'cache_verify_model', 'label' => 'LLM Verification Model', 'config_key' => 'cache.verify_model', 'value' => $config['cache']['verify_model'] ?? 'qwen-turbo'],
                         ]],
                         'context_compactor' => ['label' => 'Context Compactor', 'desc' => 'Prunes oldest conversation history to fit context windows', 'icon' => 'bi-archive', 'color' => '#06b6d4', 'fields' => [
                             ['type' => 'select', 'name' => 'compaction_strategy', 'label' => 'Strategy', 'config_key' => 'compaction.strategy', 'value' => $config['compaction']['strategy'] ?? 'sliding_window', 'options' => ['sliding_window', 'summarize', 'trim_oldest']],
@@ -438,7 +448,12 @@
                             ['type' => 'number', 'name' => 'compaction_max_tokens_threshold', 'label' => 'Max Token Threshold', 'config_key' => 'compaction.max_tokens_threshold', 'value' => $config['compaction']['max_tokens_threshold'] ?? 4000, 'min' => '500'],
                         ]],
                         'guardrails' => ['label' => 'Safety Guardrails', 'desc' => 'Prevents high-risk tool executions and scopes authorization', 'icon' => 'bi-shield-check', 'color' => '#10b981', 'fields' => [['type' => 'toggle', 'name' => 'guardrails_enabled', 'label' => 'Guardrails Enabled', 'config_key' => 'guardrails.enabled']]],
-                        'cognitive_memory' => ['label' => 'Cognitive Graph Memory', 'desc' => 'Cross-session fact distillation and memory storage (synchronous, inline)', 'icon' => 'bi-brain', 'color' => '#3b82f6', 'fields' => [['type' => 'toggle', 'name' => 'cognitive_memory_enabled', 'label' => 'Cognitive Memory Enabled', 'config_key' => 'cognitive_memory.enabled']]],
+                        'cognitive_memory' => ['label' => 'Cognitive Graph Memory', 'desc' => 'Cross-session fact distillation and memory storage (synchronous, inline)', 'icon' => 'bi-brain', 'color' => '#3b82f6', 'fields' => [
+                            ['type' => 'toggle', 'name' => 'cognitive_memory_enabled', 'label' => 'Cognitive Memory Enabled', 'config_key' => 'cognitive_memory.enabled'],
+                            ['type' => 'number', 'name' => 'cognitive_memory_max_depth', 'label' => 'Max Graph Depth', 'config_key' => 'cognitive_memory.max_depth', 'value' => $config['cognitive_memory']['max_depth'] ?? 3, 'min' => '1', 'max' => '10'],
+                            ['type' => 'number', 'name' => 'cognitive_memory_coherence_threshold', 'label' => 'Coherence Threshold (0.0–1.0)', 'config_key' => 'cognitive_memory.coherence_threshold', 'value' => $config['cognitive_memory']['coherence_threshold'] ?? 0.15, 'step' => '0.01', 'min' => '0', 'max' => '1'],
+                            ['type' => 'number', 'name' => 'cognitive_memory_decay_rate', 'label' => 'Memory Decay Rate (0.0–1.0)', 'config_key' => 'cognitive_memory.decay_rate', 'value' => $config['cognitive_memory']['decay_rate'] ?? 0.05, 'step' => '0.01', 'min' => '0', 'max' => '1'],
+                        ]],
                         'quantum_harness' => ['label' => 'Quantum Memory Harness', 'desc' => 'Quantum-inspired semantic memory with entanglement traversal. Full configuration is in the Quantum Layer below.', 'icon' => 'bi-atom', 'color' => '#8b5cf6', 'fields' => []],
                     ];
                 @endphp
@@ -746,6 +761,14 @@
                             <div class="col-md-6">
                                 <label class="form-label small text-inverse text-opacity-50">Max Anchors</label>
                                 <input type="number" class="form-control form-control-sm" min="1" max="20" name="quantum_max_anchors" value="{{ $config['quantum_harness']['max_anchors'] ?? 3 }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-inverse text-opacity-50">Coherence Decay Rate</label>
+                                <input type="number" class="form-control form-control-sm" step="0.01" min="0" max="1" name="quantum_coherence_decay" value="{{ $config['quantum_harness']['coherence_decay'] ?? 0.05 }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-inverse text-opacity-50">Density Matrix Bias</label>
+                                <input type="number" class="form-control form-control-sm" step="0.01" min="0" max="1" name="quantum_density_matrix_bias" value="{{ $config['quantum_harness']['density_matrix_bias'] ?? 0.10 }}">
                             </div>
                             <div class="col-12">
                                 <label class="form-label small text-inverse text-opacity-50">SQLite Database Path</label>

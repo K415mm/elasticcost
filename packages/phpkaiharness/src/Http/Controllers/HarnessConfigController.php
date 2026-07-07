@@ -6,6 +6,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -83,16 +84,19 @@ class HarnessConfigController extends Controller
         // Programmatically reload Octane and Horizon workers to apply changes to all long-running processes
         if (function_exists('app')) {
             try {
-                \Illuminate\Support\Facades\Artisan::call('config:clear');
-            } catch (\Throwable $e) {}
+                Artisan::call('config:clear');
+            } catch (\Throwable $e) {
+            }
             try {
                 if (app()->bound('octane') || config('octane.server')) {
-                    \Illuminate\Support\Facades\Artisan::call('octane:reload');
+                    Artisan::call('octane:reload');
                 }
-            } catch (\Throwable $e) {}
+            } catch (\Throwable $e) {
+            }
             try {
-                \Illuminate\Support\Facades\Artisan::call('horizon:terminate');
-            } catch (\Throwable $e) {}
+                Artisan::call('horizon:terminate');
+            } catch (\Throwable $e) {
+            }
         }
 
         $message = $configWriteWarning ?? 'Configuration saved, config cache cleared, and workers reloaded.';
@@ -186,6 +190,18 @@ class HarnessConfigController extends Controller
                 'enabled' => $request->boolean('cache_enabled'),
                 'threshold' => (float) $request->input('cache_threshold', config('harness.cache.threshold')),
                 'db_path' => config('harness.cache.db_path'),
+                'redis' => [
+                    'enabled' => $request->boolean('cache_redis_enabled'),
+                    'connection' => $request->input('cache_redis_connection', config('harness.cache.redis.connection', 'default')),
+                    'decay_mode' => $request->input('cache_redis_decay_mode', config('harness.cache.redis.decay_mode', 'dissipative')),
+                    'subjective_field' => [
+                        'enabled' => $request->boolean('cache_redis_subjective_field_enabled'),
+                        'bias_weight' => (float) $request->input('cache_redis_subjective_field_bias_weight', config('harness.cache.redis.subjective_field.bias_weight', 0.15)),
+                    ],
+                    'order_sensitive' => $request->boolean('cache_redis_order_sensitive'),
+                ],
+                'verify_with_llm' => $request->boolean('cache_verify_with_llm'),
+                'verify_model' => $request->input('cache_verify_model', config('harness.cache.verify_model', 'qwen-turbo')),
             ],
             'pii_masking' => [
                 'enabled' => $request->boolean('pii_masking_enabled'),
@@ -210,6 +226,10 @@ class HarnessConfigController extends Controller
                 'embedding_column' => $request->input('ontology_embedding_column', config('harness.ontology.embedding_column')),
                 'similarity_threshold' => (float) $request->input('ontology_similarity_threshold', config('harness.ontology.similarity_threshold')),
                 'max_records' => (int) $request->input('ontology_max_records', config('harness.ontology.max_records')),
+                'db_path' => $request->input('ontology_db_path', config('harness.ontology.db_path')),
+                'namespaces' => [
+                    'enabled' => $request->boolean('ontology_namespaces_enabled'),
+                ],
             ],
             'policy_guardrail' => [
                 'enabled' => $request->boolean('policy_guardrail_enabled'),
@@ -232,6 +252,9 @@ class HarnessConfigController extends Controller
             ],
             'cognitive_memory' => [
                 'enabled' => $request->boolean('cognitive_memory_enabled'),
+                'max_depth' => (int) $request->input('cognitive_memory_max_depth', config('harness.cognitive_memory.max_depth', 3)),
+                'coherence_threshold' => (float) $request->input('cognitive_memory_coherence_threshold', config('harness.cognitive_memory.coherence_threshold', 0.15)),
+                'decay_rate' => (float) $request->input('cognitive_memory_decay_rate', config('harness.cognitive_memory.decay_rate', 0.05)),
             ],
             'draft_verification' => [
                 'enabled' => $request->boolean('draft_verification_enabled'),
@@ -243,6 +266,8 @@ class HarnessConfigController extends Controller
                 'beta' => (float) $request->input('quantum_beta', config('harness.quantum_harness.beta', 0.3)),
                 'similarity_threshold' => (float) $request->input('quantum_similarity_threshold', config('harness.quantum_harness.similarity_threshold', 0.30)),
                 'max_anchors' => (int) $request->input('quantum_max_anchors', config('harness.quantum_harness.max_anchors', 3)),
+                'coherence_decay' => (float) $request->input('quantum_coherence_decay', config('harness.quantum_harness.coherence_decay', 0.05)),
+                'density_matrix_bias' => (float) $request->input('quantum_density_matrix_bias', config('harness.quantum_harness.density_matrix_bias', 0.10)),
             ],
             'qwen_provider' => [
                 'enabled' => $request->boolean('qwen_provider_enabled'),

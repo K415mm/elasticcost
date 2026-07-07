@@ -86,6 +86,10 @@ return [
         'embedding_column' => 'embedding',
         'similarity_threshold' => 0.3,
         'max_records' => 3,
+        'db_path' => null,
+        'namespaces' => [
+            'enabled' => true,
+        ],
     ],
     'policy_guardrail' => [
         'enabled' => true,
@@ -118,6 +122,9 @@ return [
             'enabled' => true,
             'similarity_threshold' => 0.85,
         ],
+        'max_depth' => 3,
+        'coherence_threshold' => 0.15,
+        'decay_rate' => 0.05,
     ],
     'draft_verification' => [
         'enabled' => true,
@@ -129,6 +136,8 @@ return [
         'beta' => env('PHPKAIHARNESS_QUANTUM_BETA', 0.3),
         'similarity_threshold' => env('PHPKAIHARNESS_QUANTUM_THRESHOLD', 0.30),
         'max_anchors' => env('PHPKAIHARNESS_QUANTUM_LIMIT', 3),
+        'coherence_decay' => 0.05,
+        'density_matrix_bias' => 0.10,
     ],
     'qwen_provider' => [
         'enabled' => env('PHPKAIHARNESS_QWEN_ENABLED', true),
