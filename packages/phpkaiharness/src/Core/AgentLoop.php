@@ -208,6 +208,12 @@ class AgentLoop
             }
         }
 
+        // ── Reload manager-saved config overrides (flush Octane bleed) ─────────
+        // This re-applies config_overrides.json into the running config every
+        // request, so a manager's config change takes effect without a worker
+        // restart — even mid-session or cross-session.
+        HarnessConfig::reloadOverrides();
+
         // ── Resolve effective maxIterations from config (overrides constructor) ─
         $effectiveMaxIterations = $this->maxIterations;
         if (function_exists('config')) {
@@ -241,47 +247,58 @@ class AgentLoop
         $this->complexityDomain = ComplexityClassifier::classify($userPrompt, $registeredToolNames);
         $this->logger->info('Cynefin Complexity Classification resolved to: '.strtoupper($this->complexityDomain));
 
-        // Dynamically adjust pipeline flags based on the domain
-        if (function_exists('config')) {
-            try {
-                if ($this->complexityDomain === ComplexityClassifier::DOMAIN_SIMPLE) {
-                    // Simple Domain: Direct LLM execution, disable RAG, loops, cache
-                    config(['harness.feature_graph.nodes.semantic_cache.enabled' => false]);
-                    config(['harness.feature_graph.nodes.ontology_injection.enabled' => false]);
-                    config(['harness.feature_graph.nodes.cognitive_memory.enabled' => false]);
-                    config(['harness.feature_graph.nodes.quantum_harness.enabled' => false]);
-                    config(['harness.feature_graph.nodes.draft_verification.enabled' => false]);
+        // ── Config Mode: Philosophy vs Force ─────────────────────────────────
+        //
+        // In FORCE mode  : manager config is used as-is. Dirac domain informs
+        //                  telemetry only. No feature flags are overridden.
+        //
+        // In PHILOSOPHY mode : Dirac domain determines which features are USED
+        //                  inside the loop via local run-time flags ($use*).
+        //                  Cache and memory are ALWAYS initialised and checked;
+        //                  a miss is recorded in telemetry — not a teardown.
+        //                  Global config() is never mutated.
+        //
+        $configMode = HarnessConfig::getConfigMode();
+        $isPhilosophyMode = ($configMode === 'philosophy');
 
-                    config(['harness.cache.enabled' => false]);
-                    config(['harness.ontology.enabled' => false]);
-                    config(['harness.cognitive_memory.enabled' => false]);
-                    config(['harness.quantum_harness.enabled' => false]);
-                    config(['harness.draft_verification.enabled' => false]);
-                } elseif ($this->complexityDomain === ComplexityClassifier::DOMAIN_COMPLICATED) {
-                    // Complicated Domain: Enable Ontology/RAG, disable tool loops
-                    config(['harness.feature_graph.nodes.ontology_injection.enabled' => true]);
-                    config(['harness.feature_graph.nodes.semantic_cache.enabled' => false]);
-                    config(['harness.feature_graph.nodes.cognitive_memory.enabled' => false]);
-                    config(['harness.feature_graph.nodes.quantum_harness.enabled' => false]);
-                    config(['harness.feature_graph.nodes.draft_verification.enabled' => false]);
+        // Local per-run flags (only used when philosophy mode is active).
+        // In force mode these are always true and manager config controls init.
+        $philosophyUseCache = true;
+        $philosophyUseQuantum = true;
+        $philosophyUseCognitive = true;
+        $philosophyUseOntology = true;
+        $philosophyUseDraftVerification = true;
 
-                    config(['harness.ontology.enabled' => true]);
-                    config(['harness.cache.enabled' => false]);
-                    config(['harness.cognitive_memory.enabled' => false]);
-                    config(['harness.quantum_harness.enabled' => false]);
-                    config(['harness.draft_verification.enabled' => false]);
-                }
-            } catch (\Throwable $e) {
-                $this->logger->debug('Failed to dynamically route pipeline config: '.$e->getMessage());
+        if ($isPhilosophyMode) {
+            // Derive USAGE flags from domain — these affect whether a HIT is
+            // acted on, not whether the component is initialised.
+            if ($this->complexityDomain === ComplexityClassifier::DOMAIN_SIMPLE) {
+                // Simple: direct LLM. Cache is still checked (miss recorded),
+                // but a cache HIT still short-circuits (preserved behaviour).
+                // Quantum memory, cognitive memory, ontology, verification
+                // are skipped in-loop for simple queries.
+                $philosophyUseQuantum = false;
+                $philosophyUseCognitive = false;
+                $philosophyUseOntology = false;
+                $philosophyUseDraftVerification = false;
+            } elseif ($this->complexityDomain === ComplexityClassifier::DOMAIN_COMPLICATED) {
+                // Complicated: ontology RAG, no full tool loop.
+                // Cache and quantum memory are still checked.
+                $philosophyUseCognitive = false;
+                $philosophyUseDraftVerification = false;
             }
+            // COMPLEX domain: all flags remain true — full pipeline runs.
         }
 
-        // ── Auto-configure features from host application harness.php config ──
+        // ── Auto-configure features from harness config ───────────────────────
+        // Cache and memory are ALWAYS initialised when their config is enabled.
+        // Philosophy mode only affects the in-loop usage flags above.
         if (function_exists('config')) {
             try {
-                // 1. Auto-configure Semantic Cache (check feature_graph first, then legacy)
-                $cacheEnabled = config('harness.feature_graph.nodes.semantic_cache.enabled', config('harness.cache.enabled', config('harness.semantic_cache.enabled', false)));
-                if ($cacheEnabled) {
+                // 1. Semantic Cache — always init when manager config enables it;
+                //    philosophy flag only controls whether a miss skips the loop
+                $cacheConfigEnabled = config('harness.feature_graph.nodes.semantic_cache.enabled', config('harness.cache.enabled', config('harness.semantic_cache.enabled', false)));
+                if ($cacheConfigEnabled) {
                     if ($this->semanticCache === null) {
                         $dbPath = config('harness.cache.db_path', config('harness.semantic_cache.db_path')) ?: SqliteMonitorStore::defaultDbPath();
                         $semanticMemory = null;
@@ -295,11 +312,12 @@ class AgentLoop
                         );
                     }
                 } else {
-                    // Teardown: disable cache if it was previously enabled but now turned off
+                    // Manager explicitly disabled cache — tear it down
                     $this->semanticCache = null;
+                    $philosophyUseCache = false;
                 }
 
-                // 2. Auto-configure Context Compactor (check feature_graph first)
+                // 2. Context Compactor
                 $compactionEnabled = config('harness.feature_graph.nodes.context_compactor.enabled', config('harness.compaction.enabled', config('harness.context_compactor.enabled', true)));
                 if ($compactionEnabled) {
                     if ($this->contextCompactor === null) {
@@ -313,7 +331,7 @@ class AgentLoop
                     $this->contextCompactor = null;
                 }
 
-                // 3. Auto-configure Guardrails (check feature_graph first)
+                // 3. Guardrails
                 $guardrailsEnabled = config('harness.feature_graph.nodes.guardrails.enabled', config('harness.guardrails.enabled', false));
                 if ($guardrailsEnabled) {
                     if ($this->guardrails === null) {
@@ -323,9 +341,13 @@ class AgentLoop
                     $this->guardrails = null;
                 }
 
-                // Auto-configure QueryGraphMemoryTool (check feature_graph first)
+                // 4. Cognitive Graph Memory Tool
+                // In philosophy mode: always attach the tool; the flag controls
+                // whether the agent is prompted to use it.
+                // In force mode: follow manager config exactly.
                 $cognitiveMemoryEnabled = config('harness.feature_graph.nodes.cognitive_memory.enabled', config('harness.cognitive_memory.enabled', config('harness.cognitive_graph_memory.enabled', false)));
-                if ($cognitiveMemoryEnabled) {
+                $attachCognitive = $isPhilosophyMode ? true : $cognitiveMemoryEnabled;
+                if ($attachCognitive) {
                     if (! $this->registry->has('query_graph_memory')) {
                         $this->registry->attach(new QueryGraphMemoryTool);
                     }
@@ -333,6 +355,18 @@ class AgentLoop
                     if ($this->registry->has('query_graph_memory')) {
                         $this->registry->remove('query_graph_memory');
                     }
+                }
+
+                // Track philosophy flags in telemetry context
+                if ($isPhilosophyMode) {
+                    $this->logger->info(sprintf(
+                        'Philosophy mode active — domain=%s useCache=%s useQuantum=%s useCognitive=%s useOntology=%s',
+                        strtoupper($this->complexityDomain),
+                        $philosophyUseCache ? 'yes' : 'no',
+                        $philosophyUseQuantum ? 'yes' : 'no',
+                        $philosophyUseCognitive ? 'yes' : 'no',
+                        $philosophyUseOntology ? 'yes' : 'no'
+                    ));
                 }
             } catch (\Throwable $e) {
                 $this->logger->warning('Failed to auto-configure harness features: '.$e->getMessage());
@@ -361,8 +395,25 @@ class AgentLoop
                     $resolvedSessionId,
                     'feature_matrix',
                     'ResolvedFeatureMatrix',
-                    ['features' => $featureMatrix, 'model' => $this->model, 'agent' => $this->agentName, 'complexity_domain' => $this->complexityDomain],
-                    json_encode(['status' => 'Feature matrix resolved at run start. Complexity: '.$this->complexityDomain], JSON_UNESCAPED_UNICODE) ?: '{}'
+                    [
+                        'features' => $featureMatrix,
+                        'model' => $this->model,
+                        'agent' => $this->agentName,
+                        'complexity_domain' => $this->complexityDomain,
+                        'config_mode' => $configMode,
+                        'philosophy_flags' => $isPhilosophyMode ? [
+                            'use_cache' => $philosophyUseCache,
+                            'use_quantum' => $philosophyUseQuantum,
+                            'use_cognitive' => $philosophyUseCognitive,
+                            'use_ontology' => $philosophyUseOntology,
+                            'use_draft_verification' => $philosophyUseDraftVerification,
+                        ] : null,
+                    ],
+                    json_encode([
+                        'status' => 'Feature matrix resolved at run start.',
+                        'complexity' => $this->complexityDomain,
+                        'config_mode' => $configMode,
+                    ], JSON_UNESCAPED_UNICODE) ?: '{}'
                 );
                 $this->recordedDetailTypes[] = 'feature_matrix';
             } catch (\Throwable $e) {
