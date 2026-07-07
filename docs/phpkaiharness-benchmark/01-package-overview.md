@@ -22,28 +22,43 @@ It is **not** a chatbot wrapper. It is a cognitive middleware layer that makes L
 ## Core Architecture
 
 ```
-User Request
-     │
-     ▼
-┌────────────────────────────────────────────────────────────┐
-│                 phpkaiharness Pipeline                     │
-│                                                            │
-│  [1] PII Masking ──────────────────────────────────────►  │
-│  [2] Semantic Cache Check ─────────────────────────────►  │  ─► Cache HIT → Return instantly (0ms)
-│  [3] Ontology Injection (SQLite RAG) ──────────────────►  │
-│  [4] Quantum Memory Graph Retrieval ───────────────────►  │
-│  [5] Context Compaction (sliding window) ──────────────►  │
-│  [6] LLM API Call (Qwen/OpenAI/etc.) ──────────────────►  │
-│  [7] Draft Verification (evidence check) ──────────────►  │
-│  [8] Policy Guardrails ────────────────────────────────►  │
-│  [9] Budget Enforcement ───────────────────────────────►  │
-│  [10] Cache Store + Quantum Memory Ingest ─────────────►  │
-│  [11] Cognitive Memory Promotion ──────────────────────►  │
-│                                                            │
-└────────────────────────────────────────────────────────────┘
-     │
-     ▼
-Verified, Context-Rich Response
+                       Query Prompt Input
+                                │
+                                ▼
+                  ┌──────────────────────────┐
+                  │  Dirac Complexity Router │
+                  └──────────────────────────┘
+                                │
+          ┌─────────────────────┼─────────────────────┐
+          ▼                     ▼                     ▼
+   [|Simple> Path]      [|Complicated> Path]    [|Complex> Path]
+   Direct LLM Call       Ontological RAG RAG    Full Pipeline Loop
+          │                     │                     │
+          │                     │                     ▼
+          │                     │         ┌───────────────────────┐
+          │                     │         │  L1/L2 Semantic Cache │
+          │                     │         └───────────────────────┘
+          │                     │                     │
+          │                     │          (Miss) ──┼── (Hit) ──► Verified Cache Response
+          │                     │                     │
+          │                     │                     ▼
+          │                     │         ┌───────────────────────┐
+          │                     │         │  Ontology Context RAG │
+          │                     │         └───────────────────────┘
+          │                     │                     │
+          │                     │                     ▼
+          │                     │         ┌───────────────────────┐
+          │                     │         │   Multi-Turn Agent    │
+          │                     │         │   (Qwen Cloud API)    │
+          │                     │         └───────────────────────┘
+          │                     │                     │
+          │                     │                     ▼
+          │                     │         ┌───────────────────────┐
+          │                     │         │  Quantum Mem Ingest   │
+          │                     │         └───────────────────────┘
+          │                     │                     │
+          ▼                     ▼                     ▼
+                       Final Verified Output
 ```
 
 ---
@@ -52,17 +67,18 @@ Verified, Context-Rich Response
 
 | Feature | Description | Storage |
 |---------|-------------|---------|
-| **Semantic Cache** | Cosine-similarity lookup of past responses | SQLite (per-session) |
-| **Quantum Memory** | Graph-theory-inspired memory network | SQLite `harness_memories` |
-| **Ontology RAG** | Inject real DB schemas and records into prompts | SQLite (your app DB) |
-| **Draft Verification** | Validates LLM output against injected evidence | In-pipeline |
-| **PII Masking** | Strips personally identifiable information from prompts | In-pipeline |
-| **Guardrails** | Policy-based response filtering | Config-driven |
-| **Budget Enforcement** | Token and cost limits per session/request | Per-session |
-| **Context Compaction** | Sliding-window context compression | In-pipeline |
-| **Cognitive Memory** | Long-term fact extraction and storage | SQLite `harness_facts` |
-| **Telemetry** | Per-request telemetry in isolated `monitor.db` | SQLite (isolated) |
-| **Failover** | Automatic model failover on API errors | Config-driven |
+| **Dirac Complexity Router** | Project prompt complexity $| \psi \rangle$ to trigger direct, RAG, or full loop | In-pipeline |
+| **Semantic Cache & L1/L2 Loop** | Cosine + phase matching with L1 Redis, L2 SQLite & LLM validation | Redis + SQLite |
+| **Dissipative Cache Decay** | Density matrices decay exponentially ($\rho(t) = e^{-\Gamma t}\rho(0)$) to prevent stale hits | Redis + SQLite |
+| **Quantum Memory Harness** | Cosine + phase wave interference ($S_{\text{fused}} = \alpha S_{\text{cos}} + \beta \cos(\theta_q-\theta_m)$) and entanglement twin pairing | SQLite `agent_memory.sqlite` |
+| **Ontology RAG Injector** | Hydrates prompt context from host model embeddings | SQLite (App DB) |
+| **Cognitive Graph Memory** | Extracts triplets, manages coherence weights, and decays edges over time | SQLite `agent_memory.sqlite` |
+| **Draft Verification** | Validates LLM output against injected database evidence | In-pipeline |
+| **PII Masking** | Strips sensitive emails, IPs, cards, and keys from prompts | In-pipeline |
+| **Guardrails** | Policy-based tool execution filtering | Config-driven |
+| **Budget Enforcement** | Token limits per request / execution session | Per-session |
+| **Telemetry Dashboard** | Real-time diagnostics HUD trace viewer and standalone web views | SQLite (isolated) |
+| **Failover** | Ordered LLM failover stack (Qwen -> Ollama -> OpenRouter) | Config-driven |
 
 ---
 

@@ -56,27 +56,21 @@ Request → [PII Mask] → [Cache Check] → [Ontology Inject] → [Quantum Memo
 
 Each stage communicates via a shared `$context` object. If the cache resolves the request at stage 2, all downstream stages are skipped. This is the key to zero-latency responses.
 
-### The Semantic Cache
+### The Dirac Complexity Router & Pipeline
 
-The cache isn't a simple key-value store. It uses **cosine similarity** to match incoming queries against stored embeddings. If the incoming query is semantically similar to a past query (above the configured threshold), the stored, verified response is returned immediately.
+Rather than routing all requests linearly, the engine models prompts as state vectors $| \psi \rangle$ in a 3D Hilbert space. Measuring the query collapses the state dynamically, choosing direct generation ($| \text{Simple} \rangle$), RAG hydration ($| \text{Complicated} \rangle$), or full loop execution ($| \text{Complex} \rangle$) based on computed coefficients.
 
-What makes our cache achieve an 85% hit rate when similar systems achieve 20-30%?
+### The Semantic Cache & QFT Memory
 
-**Two things:**
+Our cache doesn't just check text similarity. It represents queries as concept density matrices ($\rho$) and implements:
 
-**1. Quantum graph memory.** Most vector caches store embeddings as flat vectors. Our implementation stores memory nodes as interconnected graph structures inspired by quantum graph theory. When a new query arrives, the similarity lookup traverses the graph to find semantically related clusters — not just the single nearest vector. This dramatically expands the "hit zone" for each cached response.
+1. **Dissipative Quantum Decay**: Similarity thresholds decay exponentially over time ($T(t) = T_0 + (1 - T_0)(1 - e^{-\Gamma t})$) to protect against stale data in volatile database environments.
+2. **Quantum Memory Interference**: Memory nodes and query vectors carry phase states ($\theta \in [0, 2\pi]$). Retrieval scores are calculated using cosine + phase wave interference: $S_{fused} = \alpha S_{cos} + \beta \cos(\theta_q-\theta_m)$.
+3. **QFT Cache Verification Loop**: Before returning any hit, the pipeline checks numeric entity IDs against live Eloquent DB models (e.g. checks if a client actually exists) and performs a fast, low-cost LLM verification pass, ensuring cached data is domain-stable and verified.
 
-**2. Ontology injection before embedding.** Before a prompt is embedded and compared against the cache, we inject the database ontology (schemas, relationships, active records) into it. This means all queries about the same domain share a common semantic fingerprint, regardless of phrasing. "Cost for client X" and "pricing for X account" produce similar embeddings because they both contain the same injected schema context.
+### Ontological Memory & Entanglement
 
-### Draft Verification
-
-Every LLM response passes through a verification stage before being returned to the user or stored in the cache. The verifier:
-
-1. Extracts factual claims from the draft response
-2. Cross-checks each claim against the evidence injected by the ontology layer
-3. Flags or blocks responses containing unsupported claims
-
-This means the semantic cache only stores *verified* responses. The 85% of B-Warm requests that hit the cache are getting fast **and** accurate data.
+When highly correlated memories (e.g. sizing parameters and benchmarks) are linked, they become entangled in the database. Retrieving one instantly propagates state collapse and retrieves the entangled partner node, keeping the working context window complete without losing dependencies.
 
 ---
 

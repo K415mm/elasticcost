@@ -12,18 +12,12 @@
 | File | Description |
 |------|-------------|
 | `README.md` | This file — overview & index |
-| `01-package-overview.md` | What phpkaiharness is, architecture, features |
+| `01-package-overview.md` | Dual-engine architecture, features, and Dirac-inspired complexity router |
 | `02-test-methodology.md` | How the benchmark was designed and executed |
-| `03-test-results.md` | Full quantitative results (all modes) |
-| `04-expert-judgment-gemini.md` | Gemini 3.5 High Judgment (real telemetry data) |
-| `05-expert-judgment-claude.md` | Claude Sonnet 4.6 (Thinking) Personal Expert Verdict |
-| `06-architecture-deep-dive.md` | Deep technical architecture explanation |
-| `07-blog-technical.md` | Technical blog post — developer audience |
-| `08-blog-intro.md` | Non-technical introduction blog post |
-| `09-social-linkedin.md` | LinkedIn post (professional, long-form) |
-| `10-social-twitter.md` | Twitter/X thread (20 tweets) |
-| `11-social-facebook.md` | Facebook post |
-| `print-report.html` | Full HTML report — open in browser and Print → Save as PDF |
+| `03-test-results.md` | Full quantitative results and feature confirmation matrix |
+| `07-blog-technical.md` | Technical blog post — Dirac superposition and dissipative decay cache |
+| `10-social-media.md` | LinkedIn posts and Twitter threads |
+| **[doc/quantum/](file:///s:/elasticcost/packages/phpkaiharness/doc/quantum)** | Deep specifications subdirectory detailing Dirac equations and QFT memory |
 
 ---
 
