@@ -19,18 +19,24 @@ docker exec elasticcost-app php artisan view:clear
 docker exec elasticcost-app php artisan event:clear
 
 echo "=== [3/8] Clear Laravel caches (octane container) ==="
-docker exec elasticcost-octane php artisan optimize:clear 2>/dev/null || true
-docker exec elasticcost-octane php artisan config:clear
-docker exec elasticcost-octane php artisan route:clear
-docker exec elasticcost-octane php artisan view:clear
-docker exec elasticcost-octane php artisan event:clear
+if docker ps --format '{{.Names}}' | grep -q "elasticcost-octane"; then
+    docker exec elasticcost-octane php artisan optimize:clear 2>/dev/null || true
+    docker exec elasticcost-octane php artisan config:clear || true
+    docker exec elasticcost-octane php artisan route:clear || true
+    docker exec elasticcost-octane php artisan view:clear || true
+    docker exec elasticcost-octane php artisan event:clear || true
+else
+    echo "No elasticcost-octane container found, skipping."
+fi
 
 echo "=== [4/8] Clear Redis cache + sessions + queues ==="
 docker exec elasticcost-redis redis-cli FLUSHALL
 
 echo "=== [5/8] Clear cached views and logs ==="
 docker exec elasticcost-app sh -c 'rm -rf /var/www/storage/framework/views/* /var/www/storage/framework/cache/* /var/www/storage/logs/*.log 2>/dev/null || true'
-docker exec elasticcost-octane sh -c 'rm -rf /var/www/storage/framework/views/* 2>/dev/null || true'
+if docker ps --format '{{.Names}}' | grep -q "elasticcost-octane"; then
+    docker exec elasticcost-octane sh -c 'rm -rf /var/www/storage/framework/views/* 2>/dev/null || true'
+fi
 
 echo "=== [6/8] Clear Horizon queue + failed jobs ==="
 docker exec elasticcost-app php artisan horizon:clear --force 2>/dev/null || true
