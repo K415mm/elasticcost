@@ -135,6 +135,8 @@ class AgentHarnessTest extends TestCase
      */
     public function test_agent_loop_coordinates_multi_step_thought_actions(): void
     {
+        config(['harness.feature_graph.nodes.semantic_cache.enabled' => false]);
+
         // Create mock LLM Client
         $llmClientMock = new class implements LlmClientInterface
         {
@@ -216,6 +218,7 @@ class AgentHarnessTest extends TestCase
         // 2. Assistant response with tool_calls
         // 3. Tool results response
         // 4. Final Assistant response
+        var_dump($history);
         $this->assertCount(4, $history);
         $this->assertEquals('user', $history[0]['role']);
         $this->assertEquals('assistant', $history[1]['role']);

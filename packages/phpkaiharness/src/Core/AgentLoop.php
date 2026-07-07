@@ -52,6 +52,12 @@ class AgentLoop
 
     protected string $agentName = 'agent';
 
+    protected bool $isSemanticCacheExplicitlySet = false;
+
+    protected bool $isGuardrailsExplicitlySet = false;
+
+    protected bool $isContextCompactorExplicitlySet = false;
+
     /** @var array Accumulated tool calls from the current run */
     protected array $executedToolCalls = [];
 
@@ -88,6 +94,7 @@ class AgentLoop
     public function setSemanticCache(?SemanticCache $cache): self
     {
         $this->semanticCache = $cache;
+        $this->isSemanticCacheExplicitlySet = true;
 
         return $this;
     }
@@ -95,6 +102,7 @@ class AgentLoop
     public function setContextCompactor(?ContextCompactor $compactor): self
     {
         $this->contextCompactor = $compactor;
+        $this->isContextCompactorExplicitlySet = true;
 
         return $this;
     }
@@ -102,6 +110,7 @@ class AgentLoop
     public function setGuardrails(?Guardrails $guardrails): self
     {
         $this->guardrails = $guardrails;
+        $this->isGuardrailsExplicitlySet = true;
 
         return $this;
     }
@@ -261,13 +270,12 @@ class AgentLoop
         $configMode = HarnessConfig::getConfigMode();
         $isPhilosophyMode = ($configMode === 'philosophy');
 
-        // Local per-run flags (only used when philosophy mode is active).
-        // In force mode these are always true and manager config controls init.
         $philosophyUseCache = true;
         $philosophyUseQuantum = true;
         $philosophyUseCognitive = true;
         $philosophyUseOntology = true;
         $philosophyUseDraftVerification = true;
+        $philosophyUseOptimizer = true;
 
         if ($isPhilosophyMode) {
             // Derive USAGE flags from domain — these affect whether a HIT is
@@ -275,12 +283,13 @@ class AgentLoop
             if ($this->complexityDomain === ComplexityClassifier::DOMAIN_SIMPLE) {
                 // Simple: direct LLM. Cache is still checked (miss recorded),
                 // but a cache HIT still short-circuits (preserved behaviour).
-                // Quantum memory, cognitive memory, ontology, verification
+                // Quantum memory, cognitive memory, ontology, verification, optimizer
                 // are skipped in-loop for simple queries.
                 $philosophyUseQuantum = false;
                 $philosophyUseCognitive = false;
                 $philosophyUseOntology = false;
                 $philosophyUseDraftVerification = false;
+                $philosophyUseOptimizer = false;
             } elseif ($this->complexityDomain === ComplexityClassifier::DOMAIN_COMPLICATED) {
                 // Complicated: ontology RAG, no full tool loop.
                 // Cache and quantum memory are still checked.
@@ -312,9 +321,11 @@ class AgentLoop
                         );
                     }
                 } else {
-                    // Manager explicitly disabled cache — tear it down
-                    $this->semanticCache = null;
-                    $philosophyUseCache = false;
+                    // Manager explicitly disabled cache — tear it down if not manually set
+                    if (! $this->isSemanticCacheExplicitlySet) {
+                        $this->semanticCache = null;
+                        $philosophyUseCache = false;
+                    }
                 }
 
                 // 2. Context Compactor
@@ -328,7 +339,9 @@ class AgentLoop
                         );
                     }
                 } else {
-                    $this->contextCompactor = null;
+                    if (! $this->isContextCompactorExplicitlySet) {
+                        $this->contextCompactor = null;
+                    }
                 }
 
                 // 3. Guardrails
@@ -338,7 +351,9 @@ class AgentLoop
                         $this->guardrails = new Guardrails;
                     }
                 } else {
-                    $this->guardrails = null;
+                    if (! $this->isGuardrailsExplicitlySet) {
+                        $this->guardrails = null;
+                    }
                 }
 
                 // 4. Cognitive Graph Memory Tool
@@ -455,6 +470,14 @@ class AgentLoop
             agentName: $this->agentName,
             logger: $this->logger
         );
+        $promptContext->philosophyFlags = [
+            'use_cache' => $philosophyUseCache,
+            'use_quantum' => $philosophyUseQuantum,
+            'use_cognitive' => $philosophyUseCognitive,
+            'use_ontology' => $philosophyUseOntology,
+            'use_draft_verification' => $philosophyUseDraftVerification,
+            'use_optimizer' => $philosophyUseOptimizer,
+        ];
 
         $promptPipeline = new PromptProcessorPipeline;
         $promptContext = $promptPipeline->run($promptContext);
@@ -468,7 +491,7 @@ class AgentLoop
         $this->dispatch(new AgentStarted($resolvedSessionId, $this->agentName, $optimizedUserPrompt, $optimizedSystemPrompt, $this->model));
 
         // ── Semantic Cache Lookup ─────────────────────────────────────────────
-        if ($this->semanticCache) {
+        if ($this->semanticCache && $philosophyUseCache) {
             $cachedResponse = $this->semanticCache->lookup($userPrompt);
             if ($cachedResponse !== null) {
                 $this->logger->info("Semantic cache hit for prompt: {$userPrompt}");
@@ -830,10 +853,10 @@ class AgentLoop
             'guardrail' => fn () => config('harness.feature_graph.nodes.guardrails.enabled', config('harness.guardrails.enabled', false)),
             'compaction' => fn () => config('harness.feature_graph.nodes.context_compactor.enabled', config('harness.compaction.enabled', config('harness.context_compactor.enabled', false))),
             'compression' => fn () => config('harness.feature_graph.nodes.context_compression.enabled', config('harness.compaction.compression.enabled', false)),
-            'cognitive_memory' => fn () => config('harness.feature_graph.nodes.cognitive_memory.enabled', config('harness.cognitive_memory.enabled', config('harness.cognitive_graph_memory.enabled', false))),
+            'cognitive_memory' => fn () => HarnessConfig::isNodeEnabled('cognitive_memory', 'harness.cognitive_memory.enabled', false),
             'budget' => fn () => config('harness.budget.enabled', false),
             'failover' => fn () => config('harness.failover.enabled', false),
-            'quantum_collapse' => fn () => config('harness.quantum_harness.enabled', false),
+            'quantum_collapse' => fn () => HarnessConfig::isNodeEnabled('quantum_harness', 'harness.quantum_harness.enabled', false),
         ];
 
         $executedTypes = $this->recordedDetailTypes;
@@ -863,7 +886,7 @@ class AgentLoop
      */
     protected function ingestQuantumMemory(?string $sessionId, string $prompt, string $response, ?AnalyticsCollectorInterface $collector): void
     {
-        if (! function_exists('config') || ! config('harness.quantum_harness.enabled', false)) {
+        if (! function_exists('config') || ! HarnessConfig::isNodeEnabled('quantum_harness', 'harness.quantum_harness.enabled', false)) {
             return;
         }
 
@@ -887,12 +910,12 @@ class AgentLoop
             if ($collector && $sessionId && ($storedPrompt || $storedResponse)) {
                 $collector->recordEvent(
                     $sessionId,
-                    'quantum_ingest',
+                    'quantum_collapse',
                     'QuantumMemoryIngestion',
                     ['prompt_node' => $promptId, 'response_node' => $responseId, 'stored' => true],
                     json_encode(['status' => 'Ingested '.((int) $storedPrompt + (int) $storedResponse).' memory nodes'], JSON_UNESCAPED_UNICODE) ?: '{}'
                 );
-                $this->recordedDetailTypes[] = 'quantum_ingest';
+                $this->recordedDetailTypes[] = 'quantum_collapse';
             }
 
             $this->logger->info("Quantum memory ingestion: stored prompt and response nodes for session {$sessionId}");
