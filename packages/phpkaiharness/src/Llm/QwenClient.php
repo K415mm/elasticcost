@@ -337,18 +337,22 @@ class QwenClient implements LlmClientInterface
         }
 
         $decoded = json_decode($content, true);
-        if (is_array($decoded) && array_key_exists('thought', $decoded)) {
-            if (! empty($decoded['response'])) {
+        if (is_array($decoded)) {
+            if (array_key_exists('response', $decoded)) {
                 return (string) $decoded['response'];
             }
-            $jsonEnd = strpos($content, '}') + 1;
-            $after = trim(substr($content, $jsonEnd));
+            if (array_key_exists('text', $decoded) && count($decoded) === 1) {
+                return (string) $decoded['text'];
+            }
+            if (array_key_exists('thought', $decoded)) {
+                if (! empty($decoded['response'])) {
+                    return (string) $decoded['response'];
+                }
+                $jsonEnd = strpos($content, '}') + 1;
+                $after = trim(substr($content, $jsonEnd));
 
-            return $after !== '' ? $after : '';
-        }
-
-        if (is_array($decoded) && array_key_exists('text', $decoded) && count($decoded) === 1) {
-            return (string) $decoded['text'];
+                return $after !== '' ? $after : '';
+            }
         }
 
         return $content;
