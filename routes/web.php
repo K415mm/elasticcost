@@ -13,6 +13,7 @@ use App\Http\Controllers\MsspCostingController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\ScenarioController;
 use App\Http\Controllers\SizingDashboardController;
+use App\Http\Controllers\SqliteMonitorController;
 use App\Http\Controllers\SystemSettingsController;
 use App\Http\Controllers\TestCompareController;
 use App\Http\Controllers\TokenManagementController;
@@ -74,6 +75,10 @@ Route::middleware('auth')->group(function () {
         Route::post('settings/system', [SystemSettingsController::class, 'update'])->name('settings.system.update');
         Route::post('settings/system/translations', [SystemSettingsController::class, 'updateTranslation'])->name('settings.system.translations.update');
         Route::post('settings/system/ai', [SystemSettingsController::class, 'updateAi'])->name('settings.system.ai.update');
+
+        // SQLite Databases Monitoring
+        Route::get('settings/sqlite', [SqliteMonitorController::class, 'index'])->name('sqlite.index');
+        Route::match(['get', 'post'], 'settings/sqlite/explore', [SqliteMonitorController::class, 'explore'])->name('sqlite.explore');
     });
 
     // File Manager & RAG System
