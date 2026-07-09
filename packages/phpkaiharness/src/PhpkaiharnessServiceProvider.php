@@ -3,6 +3,7 @@
 namespace Phpkaiharness;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Ai\AiManager;
@@ -18,6 +19,7 @@ use Phpkaiharness\Core\Registry\ToolRegistry;
 use Phpkaiharness\Llm\LaravelAiClient;
 use Phpkaiharness\Monitor\SqliteMonitorStore;
 use Phpkaiharness\Optimize\QuantumInferenceEngine;
+use Phpkaiharness\Optimize\SemanticCache;
 use Phpkaiharness\Optimize\SqliteSemanticMemory;
 use Phpkaiharness\Session\SessionManager;
 
@@ -122,6 +124,17 @@ class PhpkaiharnessServiceProvider extends ServiceProvider
             );
         });
 
+        $this->app->singleton(SemanticCache::class, function ($app) {
+            $dbPath = config('harness.cache.db_path') ?: SqliteMonitorStore::defaultDbPath();
+
+            return new SemanticCache(
+                $app->make(SqliteMonitorStore::class)->getPdo(),
+                (float) config('harness.cache.threshold', 0.88),
+                $dbPath,
+                $app->make(SemanticMemoryInterface::class)
+            );
+        });
+
         $this->app->resolving(AiManager::class, function (AiManager $manager) {
             $manager->extend('openai', function ($app, $config) {
                 $provider = new OpenAiProvider(
@@ -209,6 +222,31 @@ class PhpkaiharnessServiceProvider extends ServiceProvider
             }
         } catch (\Throwable $e) {
             // Silence any errors during auto-init to prevent bootstrap failures
+        }
+
+        // Listen to Eloquent model saves/deletes to invalidate the cache automatically
+        if (class_exists(Event::class)) {
+            Event::listen([
+                'eloquent.saved: *',
+                'eloquent.deleted: *',
+                'eloquent.created: *',
+            ], function (string $event, array $models) {
+                foreach ($models as $model) {
+                    $className = get_class($model);
+                    // If it is one of our domain models, invalidate the semantic cache
+                    if (str_starts_with($className, 'App\\Models\\')) {
+                        try {
+                            $cache = app(SemanticCache::class);
+                            $cache->invalidate();
+                            if (function_exists('info')) {
+                                info("Semantic Cache fully invalidated due to mutation of model: {$className}");
+                            }
+                        } catch (\Throwable $e) {
+                            // Non-fatal
+                        }
+                    }
+                }
+            });
         }
     }
 }

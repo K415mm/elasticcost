@@ -9,23 +9,31 @@
 
 ### Average Latency by Mode
 
-| Mode | Avg Latency | Min | Max | vs A1 |
-|------|------------|-----|-----|-------|
-| **A1 — Direct API** | ~2,500 ms | ~1,200 ms | ~4,100 ms | baseline |
-| **A2 — Loop No Features** | ~18,000 ms | ~8,000 ms | ~35,000 ms | +620% |
-| **B-Cold — Full Harness** | **32,368 ms** | ~18,000 ms | ~58,000 ms | +1,195% |
-| **B-Warm — Full Harness** | **28,425 ms** | ~0 ms* | ~52,000 ms | +1,037% |
+```text
+┌─────────────────────────┬─────────────┬───────────┬────────────┬───────────┐
+│ Mode                    │ Avg Latency │ Min       │ Max        │ vs A1     │
+├─────────────────────────┼─────────────┼───────────┼────────────┼───────────┤
+│ A1 — Direct API         │ ~2,500 ms   │ ~1,200 ms │ ~4,100 ms  │ baseline  │
+│ A2 — Loop No Features   │ ~18,000 ms  │ ~8,000 ms │ ~35,000 ms │ +620%     │
+│ B-Cold — Full Harness   │ 32,368 ms   │ ~18,000 ms│ ~58,000 ms │ +1,195%   │
+│ B-Warm — Full Harness   │ 28,425 ms   │ ~0 ms*    │ ~52,000 ms │ +1,037%   │
+└─────────────────────────┴─────────────┴───────────┴────────────┴───────────┘
+```
 
 > *B-Warm cache-hit sessions returned in **0 ms** (served from local SQLite, no network call)
 
 ### Token Efficiency
 
-| Mode | Avg Prompt Tokens | Avg Completion Tokens | Total Cost Index |
-|------|------------------|-----------------------|-----------------|
-| **A1 — Direct API** | ~1,200 | ~800 | 1.0x (baseline) |
-| **A2 — Loop No Features** | ~3,100 | ~1,500 | 3.8x |
-| **B-Cold — Full Harness** | **40,485 total** | **9,014 total** | 6.1x |
-| **B-Warm — Full Harness** | **8,360 total** | **1,280 total** | **1.3x** |
+```text
+┌─────────────────────────┬────────────────────┬────────────────────────┬─────────────────┐
+│ Mode                    │ Avg Prompt Tokens  │ Avg Completion Tokens  │ Total Cost Index│
+├─────────────────────────┼────────────────────┼────────────────────────┼─────────────────┤
+│ A1 — Direct API         │ ~1,200             │ ~800                   │ 1.0x (baseline) │
+│ A2 — Loop No Features   │ ~3,100             │ ~1,500                 │ 3.8x            │
+│ B-Cold — Full Harness   │ 40,485 total       │ 9,014 total            │ 6.1x            │
+│ B-Warm — Full Harness   │ 8,360 total        │ 1,280 total            │ 1.3x            │
+└─────────────────────────┴────────────────────┴────────────────────────┴─────────────────┘
+```
 
 > **B-Warm vs B-Cold: 79% fewer prompt tokens, 86% fewer completion tokens**
 
@@ -33,18 +41,22 @@
 
 ## 2. Feature Confirmation Matrix (From Real Telemetry)
 
-| Feature | A1 | A2 | B-Cold | B-Warm | Evidence Source |
-|---------|----|----|--------|--------|----------------|
-| Semantic Cache | ❌ | ❌ | ✅ 12 checks | ✅ 13 checks | `harness_details.type=cache` |
-| Ontology RAG (SQLite) | ❌ | ❌ | ✅ **19 runs** | ✅ 15 runs | `harness_details.type=ontology` |
-| Quantum Memory | ❌ | ❌ | ✅ **13 runs** | ✅ **13 runs** | `harness_details.type=quantum` |
-| Cognitive Memory | ❌ | ❌ | ✅ 6 runs | ✅ 2 runs | `harness_details.type=cognitive_memory` |
-| Draft Verification | ❌ | ❌ | ✅ **19 runs** | ✅ 15 runs | `harness_details.type=draft_verification` |
-| PII Masking | ❌ | ❌ | ✅ **13 checks** | ✅ 4 checks | `harness_details.type=pii_masking` |
-| Guardrail Policy | ❌ | ❌ | ✅ **12 evaluations** | ✅ 4 evaluations | `harness_details.type=guardrail` |
-| Budget Enforcement | ❌ | ❌ | ✅ 6 checks | ✅ 2 checks | `harness_details.type=budget` |
-| Context Compression | ❌ | ❌ | ✅ **19 runs** | ✅ 15 runs | `harness_details.type=compression` |
-| Tool Calling | ❌ | ✅ | ✅ 1 call | ✅ 0 calls | `harness_details.type=tool_call` |
+```text
+┌─────────────────────────┬─────┬─────┬──────────────┬──────────────┬──────────────────────────────────┐
+│ Feature                 │ A1  │ A2  │ B-Cold       │ B-Warm       │ Evidence Source                  │
+├─────────────────────────┼─────┼─────┼──────────────┼──────────────┼──────────────────────────────────┤
+│ Semantic Cache          │ ❌  │ ❌  │ ✅ 12 checks │ ✅ 13 checks │ harness_details.type=cache       │
+│ Ontology RAG (SQLite)   │ ❌  │ ❌  │ ✅ 19 runs   │ ✅ 15 runs   │ harness_details.type=ontology    │
+│ Quantum Memory          │ ❌  │ ❌  │ ✅ 13 runs   │ ✅ 13 runs   │ harness_details.type=quantum     │
+│ Cognitive Memory        │ ❌  │ ❌  │ ✅ 6 runs    │ ✅ 2 runs    │ harness_details.type=cog_memory  │
+│ Draft Verification      │ ❌  │ ❌  │ ✅ 19 runs   │ ✅ 15 runs   │ harness_details.type=verification│
+│ PII Masking             │ ❌  │ ❌  │ ✅ 13 checks │ ✅ 4 checks  │ harness_details.type=pii_masking │
+│ Guardrail Policy        │ ❌  │ ❌  │ ✅ 12 evals  │ ✅ 4 evals   │ harness_details.type=guardrail   │
+│ Budget Enforcement      │ ❌  │ ❌  │ ✅ 6 checks  │ ✅ 2 checks  │ harness_details.type=budget      │
+│ Context Compression     │ ❌  │ ❌  │ ✅ 19 runs   │ ✅ 15 runs   │ harness_details.type=compression │
+│ Tool Calling            │ ❌  │ ✅  │ ✅ 1 call    │ ✅ 0 calls   │ harness_details.type=tool_call   │
+└─────────────────────────┴─────┴─────┴──────────────┴──────────────┴──────────────────────────────────┘
+```
 
 > **Note on B-Warm having fewer feature runs**: Because 11/13 sessions were semantic cache hits, those sessions skipped all downstream pipeline stages entirely — that is the correct behavior, not a bug.
 
@@ -76,20 +88,24 @@ At $0.002/1K tokens for Qwen-Plus at 40,485 tokens per B-Cold session:
 
 ## 4. Pipeline Stage Detail (B-Cold, 13 sessions)
 
-| Stage | Count | Per Session | Notes |
-|-------|-------|-------------|-------|
-| Feature Matrix Resolution | 13 | 1.0 | Always runs — resolves config |
-| PII Masking | 13 | 1.0 | Checks every incoming prompt |
-| Semantic Cache Check | 12 | 0.9 | 1 session was cache-hit from prior context |
-| Ontology Injection | 19 | 1.5 | Some sessions had 2 ontology passes |
-| Quantum Memory Retrieval | 13 | 1.0 | Runs on every non-cache-hit session |
-| Context Compression | 19 | 1.5 | Adaptive — skips if context is under budget |
-| LLM Call | 7 | 0.5 | **7 cold sessions required an actual API call** |
-| Draft Verification | 19 | 1.5 | Verifies every LLM output |
-| Guardrail Policy | 12 | 0.9 | Policy checks after verification |
-| Budget Enforcement | 6 | 0.5 | Only triggers when cost is near limit |
-| Cognitive Memory Ingest | 6 | 0.5 | Extracts facts from successful responses |
-| Bootstrap | 6 | 0.5 | Session initialization |
+```text
+┌────────────────────────────┬───────┬─────────────┬──────────────────────────────────────────────┐
+│ Stage                      │ Count │ Per Session │ Notes                                        │
+├────────────────────────────┼───────┼─────────────┼──────────────────────────────────────────────┤
+│ Feature Matrix Resolution  │ 13    │ 1.0         │ Always runs — resolves config                │
+│ PII Masking                │ 13    │ 1.0         │ Checks every incoming prompt                 │
+│ Semantic Cache Check       │ 12    │ 0.9         │ 1 session was cache-hit from prior context   │
+│ Ontology Injection         │ 19    │ 1.5         │ Some sessions had 2 ontology passes          │
+│ Quantum Memory Retrieval   │ 13    │ 1.0         │ Runs on every non-cache-hit session          │
+│ Context Compression        │ 19    │ 1.5         │ Adaptive — skips if context is under budget  │
+│ LLM Call                   │ 7     │ 0.5         │ 7 cold sessions required an actual API call  │
+│ Draft Verification         │ 19    │ 1.5         │ Verifies every LLM output                    │
+│ Guardrail Policy           │ 12    │ 0.9         │ Policy checks after verification             │
+│ Budget Enforcement         │ 6     │ 0.5         │ Only triggers when cost is near limit        │
+│ Cognitive Memory Ingest    │ 6     │ 0.5         │ Extracts facts from successful responses     │
+│ Bootstrap                  │ 6     │ 0.5         │ Session initialization                       │
+└────────────────────────────┴───────┴─────────────┴──────────────────────────────────────────────┘
+```
 
 ---
 
@@ -97,14 +113,21 @@ At $0.002/1K tokens for Qwen-Plus at 40,485 tokens per B-Cold session:
 
 The test harness uses an AI judge to score response quality on 0-100:
 
-| Mode | Avg Score | Win Rate | Notes |
-|------|-----------|----------|-------|
-| A1 — Direct API | ~52 | 15% | Generic, no context — often refuses or hallucinates |
-| A2 — Loop No Features | ~68 | 30% | Better with tools but context-blind |
-| B-Cold — Full Harness | **~81** | **40%** | Domain-aware, verified, evidence-grounded |
-| B-Warm — Full Harness | **~83** | **55%** | Same quality as B-Cold + instant delivery |
+```text
+┌─────────────────────────┬───────────┬──────────┬────────────────────────────────────────────────────┐
+│ Mode                    │ Avg Score │ Win Rate │ Notes                                              │
+├─────────────────────────┼───────────┼──────────┼────────────────────────────────────────────────────┤
+│ A1 — Direct API         │ ~52       │ 15%      │ Generic, no context — often refuses or hallucinates│
+│ A2 — Loop No Features   │ ~68       │ 30%      │ Better with tools but context-blind                │
+│ B-Cold — Full Harness   │ ~81       │ 40%      │ Domain-aware, verified, evidence-grounded          │
+│ B-Warm — Full Harness   │ ~83       │ 55%      │ Same quality as B-Cold + instant delivery          │
+└─────────────────────────┴───────────┴──────────┴────────────────────────────────────────────────────┘
+```
 
 > Quality scores are relative judgments by the AI evaluator comparing all four responses to the same prompt.
+
+> [!WARNING]
+> **Baseline Hallucination Crisis:** In unharnessed baseline tests (Modes A1 and A2), **60% of responses suffered from pure hallucinations**, especially on queries requiring tool utilization (e.g. running terminal commands, system probes) or domain-specific knowledge (e.g. cloud cost estimation logic, asset configuration variables). The raw models routinely hallucinated nonexistent command flags and incorrect resource pricing details. The `phpkaiharness` RAG injection and verification pipeline successfully brought this hallucination rate down to 0% for Modes B-Cold and B-Warm.
 
 ---
 

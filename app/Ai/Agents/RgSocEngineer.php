@@ -85,7 +85,7 @@ class RgSocEngineer implements Agent, HasMiddleware, HasTools
         $normalizedPrompt = strtolower($prompt);
         $forceAction = false;
 
-        $actionKeywords = ['list', 'show', 'get', 'update', 'set', 'modify', 'change', 'enable', 'disable', 'check', 'action', 'tool', 'database', 'db', 'query', 'add', 'create', 'new', 'register'];
+        $actionKeywords = ['update', 'set', 'modify', 'change', 'enable', 'disable', 'add', 'create', 'register', 'delete', 'remove'];
         $dbTargets = ['client', 'device', 'asset', 'setting', 'price', 'salary', 'allocation', 'count', 'agent', 'siem', 'mdr', 'edr', 'active directory', 'status'];
 
         $hasActionKeyword = false;

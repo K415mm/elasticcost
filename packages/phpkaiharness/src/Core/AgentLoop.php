@@ -309,16 +309,20 @@ class AgentLoop
                 $cacheConfigEnabled = config('harness.feature_graph.nodes.semantic_cache.enabled', config('harness.cache.enabled', config('harness.semantic_cache.enabled', false)));
                 if ($cacheConfigEnabled) {
                     if ($this->semanticCache === null) {
-                        $dbPath = config('harness.cache.db_path', config('harness.semantic_cache.db_path')) ?: SqliteMonitorStore::defaultDbPath();
-                        $semanticMemory = null;
-                        if (function_exists('app') && app()->bound(SemanticMemoryInterface::class)) {
-                            $semanticMemory = app(SemanticMemoryInterface::class);
+                        if (function_exists('app') && app()->bound(SemanticCache::class)) {
+                            $this->semanticCache = app(SemanticCache::class);
+                        } else {
+                            $dbPath = config('harness.cache.db_path', config('harness.semantic_cache.db_path')) ?: SqliteMonitorStore::defaultDbPath();
+                            $semanticMemory = null;
+                            if (function_exists('app') && app()->bound(SemanticMemoryInterface::class)) {
+                                $semanticMemory = app(SemanticMemoryInterface::class);
+                            }
+                            $this->semanticCache = new SemanticCache(
+                                pdo: new \PDO('sqlite:'.$dbPath),
+                                threshold: (float) config('harness.cache.threshold', config('harness.semantic_cache.threshold', 0.88)),
+                                semanticMemory: $semanticMemory
+                            );
                         }
-                        $this->semanticCache = new SemanticCache(
-                            pdo: new \PDO('sqlite:'.$dbPath),
-                            threshold: (float) config('harness.cache.threshold', config('harness.semantic_cache.threshold', 0.88)),
-                            semanticMemory: $semanticMemory
-                        );
                     }
                 } else {
                     // Manager explicitly disabled cache — tear it down if not manually set
@@ -801,7 +805,7 @@ class AgentLoop
 
                 // ── Cache Invalidation on Mutating Tools ───────────────────────
                 if ($this->semanticCache && $this->isMutatingTool($toolName)) {
-                    $invalidated = $this->semanticCache->invalidate($userPrompt);
+                    $invalidated = $this->semanticCache->invalidate();
                     if ($invalidated > 0 && $collector && $resolvedSessionId) {
                         $collector->recordEvent(
                             $resolvedSessionId,

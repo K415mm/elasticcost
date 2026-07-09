@@ -338,8 +338,32 @@ class SemanticCache
         return (float) count($intersection) / (float) count($union);
     }
 
+    /**
+     * Check if a prompt contains mutating keywords.
+     */
+    public static function isMutatingPrompt(string $prompt): bool
+    {
+        $cleanPrompt = self::normalizePrompt($prompt);
+        $mutatingKeywords = ['update', 'delete', 'modify', 'create', 'run', 'simulate', 'change', 'ingest', 'set', 'remove', 'add', 'register'];
+        foreach ($mutatingKeywords as $keyword) {
+            if (preg_match("/\b{$keyword}\b/i", $cleanPrompt)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function lookup(string $prompt): ?string
     {
+        if (self::isMutatingPrompt($prompt)) {
+            if (function_exists('info')) {
+                info('Semantic Cache lookup bypassed: prompt contains mutating action keywords.');
+            }
+
+            return null;
+        }
+
         $cachedResponse = $this->performLookup($prompt);
 
         if ($cachedResponse !== null) {
