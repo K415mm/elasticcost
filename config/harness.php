@@ -2,6 +2,12 @@
 
 return [
     'config_mode' => 'philosophy',
+    'routing' => [
+        'local_intent' => [
+            'enabled' => true,
+            'confidence_threshold' => 0.9,
+        ],
+    ],
     'default' => [
         'provider' => 'ollama',
         'model' => null,

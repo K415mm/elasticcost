@@ -4,6 +4,7 @@ namespace App\Ai\Agents;
 
 use App\Ai\Analytics\LaravelAnalyticsCollector;
 use App\Ai\Middleware\TelemetryMiddleware;
+use App\Ai\Routing\LocalIntentRouter;
 use App\Jobs\HarnessAgentLoopIterationJob;
 use App\Services\AiConfigHelper;
 use Illuminate\Support\Facades\Bus;
@@ -95,30 +96,21 @@ class RgSocEngineer implements Agent, HasMiddleware, HasTools
             }
         }
 
-        $normalizedPrompt = strtolower($cleanUserQuery);
-        $forceAction = false;
+        $localRoutingEnabled = (bool) config('harness.routing.local_intent.enabled', true);
+        $localRoutingThreshold = (float) config('harness.routing.local_intent.confidence_threshold', 0.9);
+        $routingDecision = (new LocalIntentRouter)->decide(
+            prompt: $cleanUserQuery,
+            enabled: $localRoutingEnabled,
+            threshold: $localRoutingThreshold,
+        );
+        $forceAction = $routingDecision->isLocalAction();
 
-        $actionKeywords = ['update', 'set', 'modify', 'change', 'enable', 'disable', 'add', 'create', 'register', 'delete', 'remove'];
-        $dbTargets = ['client', 'device', 'asset', 'setting', 'price', 'salary', 'allocation', 'count', 'agent', 'siem', 'mdr', 'edr', 'active directory', 'status'];
-
-        $hasActionKeyword = false;
-        foreach ($actionKeywords as $verb) {
-            if (str_contains($normalizedPrompt, $verb)) {
-                $hasActionKeyword = true;
-                break;
-            }
-        }
-
-        $hasDbTarget = false;
-        foreach ($dbTargets as $target) {
-            if (str_contains($normalizedPrompt, $target)) {
-                $hasDbTarget = true;
-                break;
-            }
-        }
-
-        if ($hasActionKeyword && $hasDbTarget) {
-            $forceAction = true;
+        if ($forceAction) {
+            Log::info('RgSocEngineer: local intent route selected', [
+                'session_id' => $sessionId,
+                'confidence' => $routingDecision->confidence,
+                'signals' => $routingDecision->signals,
+            ]);
         }
 
         $requiresAction = false;
@@ -131,8 +123,12 @@ class RgSocEngineer implements Agent, HasMiddleware, HasTools
             $requiresAction = true;
             if ($analytics) {
                 try {
-                    $analytics->startSession($sessionId, $cleanUserQuery, 'fast-path-keyword');
-                    Log::info('RgSocEngineer: startSession OK (fast-path)', ['session_id' => $sessionId]);
+                    $analytics->startSession($sessionId, $cleanUserQuery, 'local-intent-action');
+                    Log::info('RgSocEngineer: startSession OK (local intent)', [
+                        'session_id' => $sessionId,
+                        'confidence' => $routingDecision->confidence,
+                        'signals' => $routingDecision->signals,
+                    ]);
                 } catch (\Throwable $e) {
                     Log::error('RgSocEngineer: startSession failed', ['session_id' => $sessionId, 'error' => $e->getMessage()]);
                 }
