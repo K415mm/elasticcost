@@ -161,8 +161,7 @@ class LaravelAiClient implements LlmClientInterface
         if (function_exists('app') && app()->bound(AiManager::class)) {
             $manager = app(AiManager::class);
             $isMockedTest = (interface_exists('Mockery\MockInterface') && $manager instanceof MockInterface)
-                || (class_exists('PHPUnit\Framework\MockObject\MockObject') && $manager instanceof MockObject)
-                || (interface_exists('PHPUnit\Framework\MockObject\MockObject') && $manager instanceof MockObject);
+                || (class_exists('PHPUnit\Framework\MockObject\MockObject') && $manager instanceof MockObject);
         }
 
         if (($this->provider === 'qwen' || $this->provider === 'qwen_cloud') && ! $isMockedTest) {

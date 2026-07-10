@@ -171,7 +171,10 @@ class HarnessConfigController extends Controller
             ],
             'failover' => [
                 'enabled' => $request->boolean('failover_enabled'),
-                'clients' => config('harness.failover.clients'),
+                'clients' => ! empty(config('harness.failover.clients')) ? config('harness.failover.clients') : [
+                    ['provider' => 'ollama',   'model' => 'llama3.2'],
+                    ['provider' => 'lmstudio', 'model' => 'gemma-2b-it'],
+                ],
             ],
             'feature_graph' => [
                 'nodes' => [

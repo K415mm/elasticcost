@@ -26,12 +26,32 @@ class ComplexityClassifier
     {
         $cleanPrompt = strtolower(trim($prompt));
 
-        // 1. Define the Hilbert space coefficients (probability amplitudes)
-        $c_s = 1.0; // Base Simple state amplitude
-        $c_d = 0.0; // Complicated state amplitude
-        $c_x = 0.0; // Complex state amplitude
+        // 1. Tokenize query into high-value semantic particles (tokens)
+        $tokens = self::tokenize($cleanPrompt);
 
-        // 2. Project mutating tools onto the Complex basis |Complex⟩
+        // 2. Program Permutations as Dynamical Variables & compute Class Operator average
+        // We represent the token matrix as a state vector |ψ⟩ where each element is the semantic weight of a token.
+        $psi = self::buildTokenWeights($tokens);
+
+        // Calculate Class Operator average of transpositions: χ_c = n_c^-1 * Σ P_c
+        $eigenvalue = self::evaluatePermutationSymmetry($psi);
+
+        // 3. Define the Hilbert space coefficients (probability amplitudes)
+        // |ψ⟩ = c_s |Simple⟩ + c_d |Complicated⟩ + c_x |Complex⟩
+        $c_s = 1.0; // Symmetrical / Einstein-Bose basis amplitude
+        $c_d = 0.0; // Complicated / Supplementary condition amplitude
+        $c_x = 0.0; // Complex / Fermionic basis amplitude
+
+        // 4. Project Permutation Symmetry onto Symmetrical vs. Antisymmetrical bases
+        // Symmetrical (Einstein-Bose): eigenvalue ≈ 1 (order-invariant conversational query)
+        // Antisymmetrical (Fermionic): eigenvalue ≈ -1 or low (order-sensitive command/mutating intent)
+        if ($eigenvalue >= 0.8) {
+            $c_s += 1.2;
+        } else {
+            $c_x += 0.8 * (1.0 - $eigenvalue);
+        }
+
+        // 5. Project mutating tools onto the Complex basis |Complex⟩
         $hasActionTools = false;
         $mutatingKeywords = ['update', 'delete', 'modify', 'create', 'run', 'simulate', 'change', 'ingest', 'set'];
         foreach ($registeredTools as $tool) {
@@ -62,7 +82,8 @@ class ComplexityClassifier
             $c_s -= 0.8;
         }
 
-        // 3. Project database entities onto the Complicated basis |Complicated⟩
+        // 6. Project database entities / RAG requirement onto the Complicated basis |Complicated⟩
+        // Mathematically represents checking the "Semantic Supplementary Condition" for external ground truth.
         $entityKeywords = ['client', 'scenario', 'asset', 'sizing', 'profit', 'mssp', 'user', 'role', 'permission'];
         $hasEntities = false;
         foreach ($entityKeywords as $entity) {
@@ -81,12 +102,12 @@ class ComplexityClassifier
             $c_s -= 0.9;
         }
 
-        // 4. Calculate measurement probability densities: P(Domain) = |c_Domain|^2
+        // 7. Calculate measurement probability densities: P(Domain) = |c_Domain|^2
         $p_simple = pow(max(0.0, $c_s), 2);
         $p_complicated = pow(max(0.0, $c_d), 2);
         $p_complex = pow(max(0.0, $c_x), 2);
 
-        // 5. Trigger spontaneous symmetry breaking / state collapse
+        // 8. Trigger spontaneous symmetry breaking / state collapse
         $maxProb = max($p_simple, $p_complicated, $p_complex);
 
         if ($maxProb === $p_complex && $c_x > 0.0) {
@@ -97,5 +118,87 @@ class ComplexityClassifier
         }
 
         return self::DOMAIN_SIMPLE;
+    }
+
+    /**
+     * Tokenize the prompt to extract semantic particles, ignoring minor stopwords.
+     *
+     * @return array<string>
+     */
+    private static function tokenize(string $prompt): array
+    {
+        $words = preg_split('/[^a-z0-9]+/i', strtolower($prompt), -1, PREG_SPLIT_NO_EMPTY);
+        $stopwords = ['a', 'an', 'the', 'is', 'are', 'was', 'were', 'to', 'for', 'of', 'in', 'on', 'at', 'by', 'me', 'you', 'it'];
+
+        return array_values(array_filter($words, fn ($word) => ! in_array($word, $stopwords, true)));
+    }
+
+    /**
+     * Build the semantic weight vector |ψ⟩ for the extracted tokens.
+     *
+     * @param  array<string>  $tokens
+     * @return array<float>
+     */
+    private static function buildTokenWeights(array $tokens): array
+    {
+        if (empty($tokens)) {
+            return [0.0];
+        }
+
+        $weights = [];
+        foreach ($tokens as $token) {
+            // Assign a semantic weight based on character length and character sum
+            $weight = strlen($token) * 0.1;
+            $charSum = 0;
+            for ($i = 0; $i < strlen($token); $i++) {
+                $charSum += ord($token[$i]);
+            }
+            $weight += ($charSum % 100) * 0.01;
+            $weights[] = $weight;
+        }
+
+        // Normalize the state vector |ψ⟩
+        $sumSq = array_sum(array_map(fn ($w) => $w * $w, $weights));
+        $norm = $sumSq > 0 ? sqrt($sumSq) : 1.0;
+        $weights = array_map(fn ($w) => $w / $norm, $weights);
+
+        return $weights;
+    }
+
+    /**
+     * Apply permutation operators and evaluate the symmetry eigenvalue.
+     * Computes the effect of the class operator χ_c = n_c^-1 * Σ P_c
+     * returns an eigenvalue close to 1.0 for high symmetry, or lower/negative for asymmetry.
+     *
+     * @param  array<float>  $psi
+     */
+    private static function evaluatePermutationSymmetry(array $psi): float
+    {
+        $n = count($psi);
+        if ($n <= 1) {
+            return 1.0; // Single particle system is always symmetrical
+        }
+
+        // Apply transposition operators P_k that swap adjacent components
+        // and measure the inner product/similarity of the resulting states.
+        $similarities = [];
+        for ($k = 0; $k < $n - 1; $k++) {
+            $permuted = $psi;
+            // Swap adjacent components (permutation operator P_k)
+            $temp = $permuted[$k];
+            $permuted[$k] = $permuted[$k + 1];
+            $permuted[$k + 1] = $temp;
+
+            // Measure inner product: <ψ | P_k | ψ>
+            $innerProduct = 0.0;
+            for ($i = 0; $i < $n; $i++) {
+                $innerProduct += $psi[$i] * $permuted[$i];
+            }
+            $similarities[] = $innerProduct;
+        }
+
+        // Compute average eigenvalue of class operator χ_c: <ψ | χ_c | ψ>
+        // Because χ_c = 1/(n-1) * Σ P_k
+        return array_sum($similarities) / count($similarities);
     }
 }

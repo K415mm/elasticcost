@@ -28,7 +28,8 @@ return [
     'failover' => [
         'enabled' => env('PHPKAIHARNESS_FAILOVER_ENABLED', false),
         'clients' => [
-            // No default fallback clients — require explicit opt-in with health checks.
+            ['provider' => 'ollama',   'model' => 'llama3.2'],
+            ['provider' => 'lmstudio', 'model' => 'gemma-2b-it'],
         ],
     ],
 
@@ -328,22 +329,22 @@ return [
                 'enabled' => env('PHPKAIHARNESS_COMPRESSION_ENABLED', false),
             ],
             'model_optimizer' => [
-                'enabled' => env('PHPKAIHARNESS_OPTIMIZER_ENABLED', false),
+                'enabled' => env('PHPKAIHARNESS_OPTIMIZER_ENABLED', true),
             ],
             'ontology_injection' => [
                 'enabled' => env('PHPKAIHARNESS_ONTOLOGY_ENABLED', false),
             ],
             'semantic_cache' => [
-                'enabled' => env('PHPKAIHARNESS_CACHE_ENABLED', false),
+                'enabled' => env('PHPKAIHARNESS_CACHE_ENABLED', true),
             ],
             'context_compactor' => [
                 'enabled' => env('PHPKAIHARNESS_COMPACT_ENABLED', true),
             ],
             'guardrails' => [
-                'enabled' => env('PHPKAIHARNESS_GUARDRAILS_ENABLED', false),
+                'enabled' => env('PHPKAIHARNESS_GUARDRAILS_ENABLED', true),
             ],
             'cognitive_memory' => [
-                'enabled' => env('PHPKAIHARNESS_COG_MEMORY_ENABLED', false),
+                'enabled' => env('PHPKAIHARNESS_COG_MEMORY_ENABLED', true),
             ],
             'quantum_harness' => [
                 'enabled' => env('PHPKAIHARNESS_QUANTUM_ENABLED', false),

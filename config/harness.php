@@ -9,7 +9,10 @@ return [
     ],
     'failover' => [
         'enabled' => true,
-        'clients' => [],
+        'clients' => [
+            ['provider' => 'ollama',   'model' => 'llama3.2'],
+            ['provider' => 'lmstudio', 'model' => 'gemma-2b-it'],
+        ],
     ],
     'feature_graph' => [
         'nodes' => [
