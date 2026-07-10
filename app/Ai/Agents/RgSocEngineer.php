@@ -2,12 +2,13 @@
 
 namespace App\Ai\Agents;
 
-use App\Ai\Adapters\LaravelToolAdapter;
 use App\Ai\Analytics\LaravelAnalyticsCollector;
 use App\Ai\Middleware\TelemetryMiddleware;
+use App\Jobs\HarnessAgentLoopIterationJob;
 use App\Services\AiConfigHelper;
-use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use Laravel\Ai\Attributes\Model;
 use Laravel\Ai\Attributes\Provider;
@@ -20,11 +21,7 @@ use Laravel\Ai\Prompts\AgentPrompt;
 use Laravel\Ai\Responses\AgentResponse;
 use Laravel\Ai\Responses\Data\Meta;
 use Laravel\Ai\Responses\Data\Usage;
-use Phpkaiharness\Core\AgentLoop;
-use Phpkaiharness\Core\Registry\ToolRegistry;
 use Phpkaiharness\Http\Middleware\PolicyGuardrailMiddleware;
-use Phpkaiharness\Llm\LaravelAiClient;
-use Psr\Log\AbstractLogger;
 use Stringable;
 
 class RgSocEngineer implements Agent, HasMiddleware, HasTools
@@ -195,52 +192,60 @@ class RgSocEngineer implements Agent, HasMiddleware, HasTools
             }
 
             $providerName = $mainProvider instanceof Lab ? $mainProvider->value : (string) $mainProvider;
-            $llmClient = new LaravelAiClient($providerName, $mainModel);
 
-            // Create Tool Registry and attach adapted Laravel tools
-            $registry = new ToolRegistry;
-            foreach ($mainAgent->tools() as $laravelTool) {
-                $registry->attach(new LaravelToolAdapter($laravelTool));
-            }
-
-            $logger = new class extends AbstractLogger
-            {
-                public function log($level, string|Stringable $message, array $context = []): void
-                {
-                    Log::log($level, (string) $message, $context);
-                }
-            };
-
-            // Create Agent Loop
-            $agentLoop = new AgentLoop(
-                llmClient: $llmClient,
-                registry: $registry,
-                systemPrompt: (string) $mainAgent->instructions(),
-                model: $mainModel,
-                maxIterations: config('harness.default.max_iterations', 10),
-                logger: $logger
-            );
-
-            $agentLoop->setAgentName('RgSocEngineerMain')
-                ->setEventDispatcher(fn (object $event) => Event::dispatch($event));
-
-            // Execute loop — pass full conversation prompt so the agent has context
-            // (which client was discussed, prior results, etc.), not just the clean instruction
-            $history = [];
-            $loopStartTime = microtime(true);
             $effectivePrompt = $actionInstruction
                 ? "TASK: {$actionInstruction}\n\nCONVERSATION CONTEXT:\n{$prompt}"
                 : $prompt;
-            $responseText = $agentLoop->run($effectivePrompt, $history, $sessionId, $analytics);
-            $executedToolCalls = $agentLoop->getExecutedToolCalls();
-            Log::info('RgSocEngineer: AgentLoop completed', ['session_id' => $sessionId, 'response_length' => strlen($responseText), 'tool_calls' => count($executedToolCalls)]);
+
+            // Serialize loop configuration and initial state to Redis cache
+            $stateKey = "harness:session:{$sessionId}:state";
+            $stateData = [
+                'userPrompt' => $effectivePrompt,
+                'history' => [],
+                'sessionId' => $sessionId,
+                'systemPrompt' => (string) $mainAgent->instructions(),
+                'model' => $mainModel,
+                'provider' => $providerName,
+                'iteration' => 0,
+                'maxIterations' => (int) config('harness.default.max_iterations', 10),
+                'result' => null,
+                'status' => 'pending',
+            ];
+            Redis::set($stateKey, json_encode($stateData));
+
+            $loopStartTime = microtime(true);
+
+            // Dispatch as a Horizon Batch job
+            $batch = Bus::batch([
+                new HarnessAgentLoopIterationJob($sessionId, 0),
+            ])->dispatch();
+
+            Log::info('RgSocEngineer: Dispatched HarnessAgentLoopIterationJob batch', ['session_id' => $sessionId, 'batch_id' => $batch->id]);
+
+            // Poll Redis for result completion (timeout after 120 seconds)
+            $responseText = 'No response generated from async worker.';
+            $history = [];
+            $timeoutSeconds = 120;
+            while (microtime(true) - $loopStartTime < $timeoutSeconds) {
+                $stateJson = Redis::get($stateKey);
+                if ($stateJson) {
+                    $currentState = json_decode($stateJson, true);
+                    if (($currentState['status'] ?? '') === 'completed') {
+                        $responseText = $currentState['result'] ?? '';
+                        $history = $currentState['history'] ?? [];
+                        break;
+                    }
+                }
+                usleep(100000); // Sleep for 100ms
+            }
+
             if ($analytics) {
                 try {
                     $durationMs = (int) ((microtime(true) - $loopStartTime) * 1000);
                     $analytics->endSession($sessionId, $responseText, $durationMs, 1);
-                    Log::info('RgSocEngineer: endSession OK', ['session_id' => $sessionId]);
+                    Log::info('RgSocEngineer: endSession OK (async)', ['session_id' => $sessionId]);
                 } catch (\Throwable $e) {
-                    Log::error('RgSocEngineer: endSession failed', ['session_id' => $sessionId, 'error' => $e->getMessage()]);
+                    Log::error('RgSocEngineer: endSession failed (async)', ['session_id' => $sessionId, 'error' => $e->getMessage()]);
                 }
             }
 
