@@ -82,7 +82,23 @@ class RgSocEngineer implements Agent, HasMiddleware, HasTools
             $analytics = null;
         }
 
-        $normalizedPrompt = strtolower($prompt);
+        // Extract the latest clean user query from the compiled sliding-window history prompt
+        $cleanUserQuery = $prompt;
+        $lastUserPos = mb_strrpos($prompt, '### User:', 0, 'UTF-8');
+        if ($lastUserPos !== false) {
+            $afterUser = mb_substr($prompt, $lastUserPos + 9, null, 'UTF-8');
+            $lastAgentPos = mb_strrpos($afterUser, '### RG SOC Engineer:', 0, 'UTF-8');
+            if ($lastAgentPos === false) {
+                $lastAgentPos = mb_strrpos($afterUser, '### ElasticCost Assistant:', 0, 'UTF-8');
+            }
+            if ($lastAgentPos !== false) {
+                $cleanUserQuery = trim(mb_substr($afterUser, 0, $lastAgentPos, 'UTF-8'));
+            } else {
+                $cleanUserQuery = trim($afterUser);
+            }
+        }
+
+        $normalizedPrompt = strtolower($cleanUserQuery);
         $forceAction = false;
 
         $actionKeywords = ['update', 'set', 'modify', 'change', 'enable', 'disable', 'add', 'create', 'register', 'delete', 'remove'];
@@ -106,22 +122,6 @@ class RgSocEngineer implements Agent, HasMiddleware, HasTools
 
         if ($hasActionKeyword && $hasDbTarget) {
             $forceAction = true;
-        }
-
-        // Extract the latest clean user query from the compiled sliding-window history prompt
-        $cleanUserQuery = $prompt;
-        $lastUserPos = mb_strrpos($prompt, '### User:', 0, 'UTF-8');
-        if ($lastUserPos !== false) {
-            $afterUser = mb_substr($prompt, $lastUserPos + 9, null, 'UTF-8');
-            $lastAgentPos = mb_strrpos($afterUser, '### RG SOC Engineer:', 0, 'UTF-8');
-            if ($lastAgentPos === false) {
-                $lastAgentPos = mb_strrpos($afterUser, '### ElasticCost Assistant:', 0, 'UTF-8');
-            }
-            if ($lastAgentPos !== false) {
-                $cleanUserQuery = trim(mb_substr($afterUser, 0, $lastAgentPos, 'UTF-8'));
-            } else {
-                $cleanUserQuery = trim($afterUser);
-            }
         }
 
         $requiresAction = false;
