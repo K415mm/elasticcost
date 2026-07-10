@@ -101,6 +101,13 @@ class HarnessAgentLoopIterationJob implements ShouldQueue
         $responseText = $agentLoop->run($effectivePrompt, $history, $this->sessionId, $analytics);
         $toolCalls = $agentLoop->getExecutedToolCalls();
 
+        // Accumulate tool calls in Redis state
+        $accumulatedToolCalls = $state['toolCalls'] ?? [];
+        foreach ($toolCalls as $tc) {
+            $accumulatedToolCalls[] = $tc;
+        }
+        $state['toolCalls'] = $accumulatedToolCalls;
+
         // Run the second Dirac Router (observer)
         $observer = new DiracObserverRouter;
         $decision = $observer->evaluate($history, $toolCalls);

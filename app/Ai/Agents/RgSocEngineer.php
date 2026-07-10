@@ -225,6 +225,7 @@ class RgSocEngineer implements Agent, HasMiddleware, HasTools
             // Poll Redis for result completion (timeout after 120 seconds)
             $responseText = 'No response generated from async worker.';
             $history = [];
+            $executedToolCalls = [];
             $timeoutSeconds = 120;
             while (microtime(true) - $loopStartTime < $timeoutSeconds) {
                 $stateJson = Redis::get($stateKey);
@@ -233,6 +234,7 @@ class RgSocEngineer implements Agent, HasMiddleware, HasTools
                     if (($currentState['status'] ?? '') === 'completed') {
                         $responseText = $currentState['result'] ?? '';
                         $history = $currentState['history'] ?? [];
+                        $executedToolCalls = $currentState['toolCalls'] ?? [];
                         break;
                     }
                 }
