@@ -931,6 +931,192 @@
             </div>
         </div>
 
+        <!-- ── LAYER 6: ADVANCED CONFIGURATION ── -->
+        <div class="qcfg-layer" id="layer-advanced" style="--layer-color: #6b7280">
+            <div class="qcfg-layer-header">
+                <i class="bi bi-code-square qcfg-layer-icon"></i>
+                <span class="qcfg-layer-title">Advanced Configuration</span>
+                <span class="qcfg-layer-subtitle">Full control over all harness arrays and paths</span>
+                <span class="qcfg-layer-count">JSON</span>
+            </div>
+            <div class="qcfg-nodes-row">
+                <!-- Routing Local Intent -->
+                <div class="qcfg-node" style="--node-color:#6b7280; flex:1 1 100%; max-width:100%;">
+                    <div class="qcfg-node-header">
+                        <div class="qcfg-node-icon" style="color:#6b7280"><i class="bi bi-diagram-3"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="qcfg-node-title">Routing & Local Intent</div>
+                            <div class="qcfg-node-key">routing.local_intent</div>
+                        </div>
+                    </div>
+                    <div class="qcfg-node-body">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <span class="small text-inverse text-opacity-50 flex-grow-1">Enabled</span>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" name="routing_local_intent_enabled" value="1" {{ ($config['routing']['local_intent']['enabled'] ?? true) ? 'checked' : '' }}>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-inverse text-opacity-50">Confidence Threshold</label>
+                                <input type="number" class="form-control form-control-sm" step="0.05" min="0" max="1" name="routing_local_intent_confidence_threshold" value="{{ $config['routing']['local_intent']['confidence_threshold'] ?? 0.9 }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-arrow"><div class="card-arrow-top-left"></div><div class="card-arrow-top-right"></div><div class="card-arrow-bottom-left"></div><div class="card-arrow-bottom-right"></div></div>
+                </div>
+
+                <!-- Cache Verification Model -->
+                <div class="qcfg-node" style="--node-color:#6b7280; flex:1 1 100%; max-width:100%;">
+                    <div class="qcfg-node-header">
+                        <div class="qcfg-node-icon" style="color:#6b7280"><i class="bi bi-shield-check"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="qcfg-node-title">Cache Verification Model</div>
+                            <div class="qcfg-node-key">cache.verify_model</div>
+                        </div>
+                    </div>
+                    <div class="qcfg-node-body">
+                        <input class="form-control form-control-sm" name="cache_verify_model" value="{{ $config['cache']['verify_model'] ?? 'qwen-turbo' }}">
+                    </div>
+                    <div class="card-arrow"><div class="card-arrow-top-left"></div><div class="card-arrow-top-right"></div><div class="card-arrow-bottom-left"></div><div class="card-arrow-bottom-right"></div></div>
+                </div>
+
+                <!-- Database Paths -->
+                <div class="qcfg-node" style="--node-color:#6b7280; flex:1 1 100%; max-width:100%;">
+                    <div class="qcfg-node-header">
+                        <div class="qcfg-node-icon" style="color:#6b7280"><i class="bi bi-hdd"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="qcfg-node-title">Database Paths</div>
+                            <div class="qcfg-node-key">cache.db_path / ontology.db_path / quantum_harness.db_path</div>
+                        </div>
+                    </div>
+                    <div class="qcfg-node-body">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label class="form-label small text-inverse text-opacity-50">Cache DB Path</label>
+                                <input class="form-control form-control-sm" name="cache_db_path" value="{{ $config['cache']['db_path'] ?? '' }}" placeholder="storage/app/phpkaiharness/monitor.db">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small text-inverse text-opacity-50">Ontology DB Path</label>
+                                <input class="form-control form-control-sm" name="ontology_db_path" value="{{ $config['ontology']['db_path'] ?? '' }}" placeholder="storage/app/phpkaiharness/monitor.db">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small text-inverse text-opacity-50">Quantum DB Path</label>
+                                <input class="form-control form-control-sm" name="quantum_harness_db_path" value="{{ $config['quantum_harness']['db_path'] ?? '' }}" placeholder="storage/app/phpkaiharness/agent_memory.sqlite">
+                            </div>
+                        </div>
+                        <div class="form-text text-inverse text-opacity-25 mt-1">Leave empty to use the default storage path. Edited values are saved via the override file and translated for the current OS.</div>
+                    </div>
+                    <div class="card-arrow"><div class="card-arrow-top-left"></div><div class="card-arrow-top-right"></div><div class="card-arrow-bottom-left"></div><div class="card-arrow-bottom-right"></div></div>
+                </div>
+
+                <!-- PII Masking Patterns -->
+                <div class="qcfg-node" style="--node-color:#6b7280; flex:1 1 100%; max-width:100%;">
+                    <div class="qcfg-node-header">
+                        <div class="qcfg-node-icon" style="color:#6b7280"><i class="bi bi-eye-slash"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="qcfg-node-title">PII Masking Patterns</div>
+                            <div class="qcfg-node-key">pii_masking.patterns</div>
+                        </div>
+                    </div>
+                    <div class="qcfg-node-body">
+                        @php
+                            $piiPatterns = $config['pii_masking']['patterns'] ?? [
+                                'EMAIL' => '/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/',
+                                'IP' => '/\b(?:\d{1,3}\.){3}\d{1,3}\b/',
+                                'CREDIT_CARD' => '/\b(?:\d[ \-]*?){13,16}\b/',
+                                'API_KEY' => '/\b[A-Za-z0-9_\-]{32,64}\b/',
+                                'PHONE' => '/\b\d{3}[\s-]?\d{3}[\s-]?\d{4}\b/',
+                            ];
+                        @endphp
+                        <textarea class="form-control form-control-sm" name="pii_masking_patterns_json" rows="6" style="font-family:monospace; min-height:120px;">{!! json_encode($piiPatterns, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) !!}</textarea>
+                        <div class="form-text text-inverse text-opacity-25">JSON object mapping label to regex.</div>
+                    </div>
+                    <div class="card-arrow"><div class="card-arrow-top-left"></div><div class="card-arrow-top-right"></div><div class="card-arrow-bottom-left"></div><div class="card-arrow-bottom-right"></div></div>
+                </div>
+
+                <!-- Guardrails Lists -->
+                <div class="qcfg-node" style="--node-color:#6b7280; flex:1 1 100%; max-width:100%;">
+                    <div class="qcfg-node-header">
+                        <div class="qcfg-node-icon" style="color:#6b7280"><i class="bi bi-shield-lock"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="qcfg-node-title">Guardrails Lists</div>
+                            <div class="qcfg-node-key">guardrails.high_risk_tools / authorized_scopes / tool_scope_map</div>
+                        </div>
+                    </div>
+                    <div class="qcfg-node-body">
+                        @php
+                            $guardrailsHighRisk = $config['guardrails']['high_risk_tools'] ?? ['wsl_command', 'delete_*', 'execute_*', 'rm_*'];
+                            $guardrailsScopes = $config['guardrails']['authorized_scopes'] ?? ['admin', 'sizing', 'analytics', 'read-only'];
+                            $guardrailsToolMap = $config['guardrails']['tool_scope_map'] ?? [
+                                'wsl_command' => ['admin'],
+                                'delete_*' => ['admin', 'write'],
+                                'execute_*' => ['admin'],
+                            ];
+                        @endphp
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label class="form-label small text-inverse text-opacity-50">High Risk Tools</label>
+                                <textarea class="form-control form-control-sm" name="guardrails_high_risk_tools_json" rows="4" style="font-family:monospace; min-height:80px;">{!! json_encode($guardrailsHighRisk, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) !!}</textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small text-inverse text-opacity-50">Authorized Scopes</label>
+                                <textarea class="form-control form-control-sm" name="guardrails_authorized_scopes_json" rows="4" style="font-family:monospace; min-height:80px;">{!! json_encode($guardrailsScopes, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) !!}</textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small text-inverse text-opacity-50">Tool Scope Map</label>
+                                <textarea class="form-control form-control-sm" name="guardrails_tool_scope_map_json" rows="4" style="font-family:monospace; min-height:80px;">{!! json_encode($guardrailsToolMap, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) !!}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-arrow"><div class="card-arrow-top-left"></div><div class="card-arrow-top-right"></div><div class="card-arrow-bottom-left"></div><div class="card-arrow-bottom-right"></div></div>
+                </div>
+
+                <!-- Failover Clients -->
+                <div class="qcfg-node" style="--node-color:#6b7280; flex:1 1 100%; max-width:100%;">
+                    <div class="qcfg-node-header">
+                        <div class="qcfg-node-icon" style="color:#6b7280"><i class="bi bi-arrow-repeat"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="qcfg-node-title">Failover Clients</div>
+                            <div class="qcfg-node-key">failover.clients</div>
+                        </div>
+                    </div>
+                    <div class="qcfg-node-body">
+                        @php
+                            $failoverClients = $config['failover']['clients'] ?? [
+                                ['provider' => 'ollama', 'model' => 'llama3.2'],
+                                ['provider' => 'lmstudio', 'model' => 'gemma-2b-it'],
+                            ];
+                        @endphp
+                        <textarea class="form-control form-control-sm" name="failover_clients_json" rows="6" style="font-family:monospace; min-height:120px;">{!! json_encode($failoverClients, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) !!}</textarea>
+                        <div class="form-text text-inverse text-opacity-25">Array of {provider, model} objects.</div>
+                    </div>
+                    <div class="card-arrow"><div class="card-arrow-top-left"></div><div class="card-arrow-top-right"></div><div class="card-arrow-bottom-left"></div><div class="card-arrow-bottom-right"></div></div>
+                </div>
+
+                <!-- Telemetry Middleware -->
+                <div class="qcfg-node" style="--node-color:#6b7280; flex:1 1 100%; max-width:100%;">
+                    <div class="qcfg-node-header">
+                        <div class="qcfg-node-icon" style="color:#6b7280"><i class="bi bi-stack"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="qcfg-node-title">Telemetry Middleware</div>
+                            <div class="qcfg-node-key">telemetry.middleware</div>
+                        </div>
+                    </div>
+                    <div class="qcfg-node-body">
+                        @php
+                            $telemetryMiddleware = $config['telemetry']['middleware'] ?? ['web', 'auth', 'permission:harness_analytics'];
+                        @endphp
+                        <textarea class="form-control form-control-sm" name="telemetry_middleware_json" rows="3" style="font-family:monospace; min-height:80px;">{!! json_encode($telemetryMiddleware, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) !!}</textarea>
+                        <div class="form-text text-inverse text-opacity-25">Array of middleware names for /harness routes.</div>
+                    </div>
+                    <div class="card-arrow"><div class="card-arrow-top-left"></div><div class="card-arrow-top-right"></div><div class="card-arrow-bottom-left"></div><div class="card-arrow-bottom-right"></div></div>
+                </div>
+            </div>
+        </div>
+
         <!-- ── SAVE ── -->
         <div class="d-flex justify-content-end mb-4 mt-3">
             <button type="submit" class="btn btn-theme px-5">

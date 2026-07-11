@@ -371,6 +371,66 @@
     <!-- CONTENT -->
     <div id="content" class="app-content">
 
+        <!-- LIVE SYSTEM STATUS -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex fw-bold small mb-3 align-items-center">
+                            <span class="flex-grow-1"><i class="bi bi-activity text-theme me-2"></i>LIVE SYSTEM STATUS</span>
+                            <span class="badge bg-theme text-black" style="text-transform:uppercase;">{{ $systemStatus['config_mode'] ?? 'philosophy' }}</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-xl-3 col-md-6">
+                                <div class="fs-10px text-inverse text-opacity-50">EMBEDDING PROVIDER</div>
+                                <div class="fs-6 fw-bold text-theme text-truncate">{{ $systemStatus['embedding_provider'] ?: '—' }}<small class="text-inverse text-opacity-50 ms-1">/ {{ $systemStatus['embedding_model'] ?: '—' }}</small></div>
+                                <div class="fs-10px text-inverse text-opacity-25">{{ number_format($systemStatus['embedding_dimensions'] ?? 0) }} dims</div>
+                            </div>
+                            <div class="col-xl-3 col-md-6">
+                                <div class="fs-10px text-inverse text-opacity-50">DEFAULT LLM</div>
+                                <div class="fs-6 fw-bold text-theme text-truncate">{{ $systemStatus['default_provider'] ?: '—' }}<small class="text-inverse text-opacity-50 ms-1">/ {{ $systemStatus['default_model'] ?: '—' }}</small></div>
+                                <div class="fs-10px text-inverse text-opacity-25">{{ $systemStatus['active_feature_count'] ?? 0 }}/{{ $systemStatus['total_feature_count'] ?? 0 }} features active</div>
+                            </div>
+                            <div class="col-xl-3 col-md-6">
+                                <div class="fs-10px text-inverse text-opacity-50">REDIS L1 CACHE</div>
+                                <div class="fs-6 fw-bold {{ in_array($systemStatus['redis_status'] ?? '', ['connected','disabled'], true) ? 'text-success' : 'text-warning' }}">{{ $systemStatus['redis_status'] ?? 'unknown' }}</div>
+                                <div class="fs-10px text-inverse text-opacity-25">{{ ($systemStatus['redis_enabled'] ?? false) ? 'enabled' : 'disabled' }}</div>
+                            </div>
+                            <div class="col-xl-3 col-md-6">
+                                <div class="fs-10px text-inverse text-opacity-50">RAG FEATURES</div>
+                                <div class="fs-10px text-inverse text-opacity-25">
+                                    Semantic Cache <span class="text-theme">{{ ($systemStatus['semantic_cache_enabled'] ?? false) ? 'ON' : 'OFF' }}</span> &bull;
+                                    Ontology <span class="text-theme">{{ ($systemStatus['ontology_injection_enabled'] ?? false) ? 'ON' : 'OFF' }}</span> &bull;
+                                    Quantum <span class="text-theme">{{ ($systemStatus['quantum_harness_enabled'] ?? false) ? 'ON' : 'OFF' }}</span>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-md-6">
+                                <div class="fs-10px text-inverse text-opacity-50">MONITOR DB</div>
+                                <div class="fs-6 fw-bold text-info">{{ ($systemStatus['monitor_db_size'] ?? 0) > 0 ? number_format($systemStatus['monitor_db_size']) . ' bytes' : '—' }}</div>
+                                <div class="fs-10px text-inverse text-opacity-25 font-monospace text-truncate" title="{{ $systemStatus['monitor_db_path'] ?? '' }}">{{ $systemStatus['monitor_db_path'] ?? '—' }}</div>
+                            </div>
+                            <div class="col-xl-3 col-md-6">
+                                <div class="fs-10px text-inverse text-opacity-50">QUANTUM DB</div>
+                                <div class="fs-6 fw-bold text-info">{{ ($systemStatus['quantum_db_size'] ?? 0) > 0 ? number_format($systemStatus['quantum_db_size']) . ' bytes' : '—' }}</div>
+                                <div class="fs-10px text-inverse text-opacity-25 font-monospace text-truncate" title="{{ $systemStatus['quantum_db_path'] ?? '' }}">{{ $systemStatus['quantum_db_path'] ?? '—' }}</div>
+                            </div>
+                            <div class="col-xl-3 col-md-6">
+                                <div class="fs-10px text-inverse text-opacity-50">TELEMETRY</div>
+                                <div class="fs-6 fw-bold text-info">{{ ($systemStatus['telemetry_enabled'] ?? false) ? 'ON' : 'OFF' }}</div>
+                                <div class="fs-10px text-inverse text-opacity-25">Session isolation {{ ($systemStatus['session_isolation_enabled'] ?? false) ? 'ON' : 'OFF' }}</div>
+                            </div>
+                            <div class="col-xl-3 col-md-6">
+                                <div class="fs-10px text-inverse text-opacity-50">USAGE</div>
+                                <div class="fs-6 fw-bold text-theme">{{ number_format($systemStatus['total_sessions'] ?? 0) }} sessions</div>
+                                <div class="fs-10px text-inverse text-opacity-25">{{ number_format($systemStatus['total_llm_calls'] ?? 0) }} LLM / {{ number_format($systemStatus['total_tool_calls'] ?? 0) }} tool calls</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-arrow"><div class="card-arrow-top-left"></div><div class="card-arrow-top-right"></div><div class="card-arrow-bottom-left"></div><div class="card-arrow-bottom-right"></div></div>
+                </div>
+            </div>
+        </div>
+
         @if(empty($sessions))
         <!-- Empty State -->
         <div class="row justify-content-center mt-5">

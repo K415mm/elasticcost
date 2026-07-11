@@ -2,11 +2,13 @@
 
 namespace Phpkaiharness\Http\Controllers;
 
+use App\Services\AiConfigHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Redis;
 use Laravel\Ai\Ai;
 use Phpkaiharness\Core\AgentLoop;
 use Phpkaiharness\Core\AgentSelector;
@@ -78,7 +80,73 @@ class HarnessTelemetryController extends Controller
 
         $config = config('harness');
 
-        return response()->view('harness::dashboard', compact('stats', 'sessions', 'dailyStats', 'config'));
+        $systemStatus = $this->buildSystemStatus($stats);
+
+        return response()->view('harness::dashboard', compact('stats', 'sessions', 'dailyStats', 'config', 'systemStatus'));
+    }
+
+    /**
+     * Build a live system-status payload for the dashboard.
+     *
+     * @param  array<string, mixed>  $stats
+     * @return array<string, mixed>
+     */
+    private function buildSystemStatus(array $stats): array
+    {
+        $embeddingConfig = ['provider' => '', 'model' => '', 'dimensions' => 0];
+        try {
+            $embeddingConfig = AiConfigHelper::configureEmbeddings();
+        } catch (\Throwable $e) {
+            $embeddingConfig['provider'] = (string) config('ai.default_for_embeddings', 'qwen');
+        }
+
+        $fgNodes = config('harness.feature_graph.nodes', []);
+        $activeFeatures = 0;
+        foreach ($fgNodes as $node) {
+            if ($node['enabled'] ?? false) {
+                $activeFeatures++;
+            }
+        }
+
+        $monitorDbPath = config('harness.cache.db_path') ?: SqliteMonitorStore::defaultDbPath();
+        $quantumDbPath = config('harness.quantum_harness.db_path') ?: (function_exists('storage_path') ? storage_path('app/phpkaiharness/agent_memory.sqlite') : '');
+
+        $redisStatus = 'unknown';
+        try {
+            if (config('harness.cache.redis.enabled', true)) {
+                $ping = Redis::connection(config('harness.cache.redis.connection', 'default'))->ping();
+                $redisStatus = ($ping === true || $ping === 'PONG' || $ping === '+PONG') ? 'connected' : 'disconnected';
+            } else {
+                $redisStatus = 'disabled';
+            }
+        } catch (\Throwable $e) {
+            $redisStatus = 'error';
+        }
+
+        return [
+            'embedding_provider' => $embeddingConfig['provider'] ?? 'qwen',
+            'embedding_model' => $embeddingConfig['model'] ?? '',
+            'embedding_dimensions' => (int) ($embeddingConfig['dimensions'] ?? 0),
+            'default_provider' => config('harness.default.provider', 'ollama'),
+            'default_model' => config('harness.default.model', ''),
+            'config_mode' => config('harness.config_mode', 'philosophy'),
+            'active_feature_count' => $activeFeatures,
+            'total_feature_count' => count($fgNodes),
+            'semantic_cache_enabled' => (bool) config('harness.feature_graph.nodes.semantic_cache.enabled', true),
+            'ontology_injection_enabled' => (bool) config('harness.feature_graph.nodes.ontology_injection.enabled', true),
+            'quantum_harness_enabled' => (bool) config('harness.feature_graph.nodes.quantum_harness.enabled', true),
+            'redis_status' => $redisStatus,
+            'redis_enabled' => (bool) config('harness.cache.redis.enabled', true),
+            'session_isolation_enabled' => (bool) config('harness.session_isolation.enabled', true),
+            'telemetry_enabled' => (bool) config('harness.telemetry.enabled', true),
+            'monitor_db_path' => $monitorDbPath,
+            'quantum_db_path' => $quantumDbPath,
+            'monitor_db_size' => $monitorDbPath && File::exists($monitorDbPath) ? File::size($monitorDbPath) : 0,
+            'quantum_db_size' => $quantumDbPath && File::exists($quantumDbPath) ? File::size($quantumDbPath) : 0,
+            'total_sessions' => (int) ($stats['total_sessions'] ?? 0),
+            'total_llm_calls' => (int) ($stats['total_llm_calls'] ?? 0),
+            'total_tool_calls' => (int) ($stats['total_tool_calls'] ?? 0),
+        ];
     }
 
     /**
