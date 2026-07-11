@@ -138,7 +138,8 @@ class RgSocEngineer implements Agent, HasMiddleware, HasTools
         } else {
             $router = new SocEngineerRouter;
             $routerStartTime = microtime(true);
-            $routerResponse = $router->prompt($prompt, $attachments, $lightProvider, $lightModel, $timeout);
+            $routerPrompt = $prompt."\n\nReturn your response as a JSON object.";
+            $routerResponse = $router->prompt($routerPrompt, $attachments, $lightProvider, $lightModel, $timeout);
             $routerDurationMs = (int) ((microtime(true) - $routerStartTime) * 1000);
 
             $requiresAction = $routerResponse['requires_action'] ?? false;

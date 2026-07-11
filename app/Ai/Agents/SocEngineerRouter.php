@@ -71,6 +71,9 @@ Your task is to analyze the conversation history and specifically focus on the L
    - Is a general query that does not require active database details or updates (e.g., "what can you do?", "explain what EDR is").
    - In this case, provide a direct, concise, and helpful conversational response in `chat_response`.
 
+### RESPONSE FORMAT:
+Return a valid JSON object matching the requested schema. The word json must appear in this response.
+
 ### CRITICAL DIRECTIVE:
 If the user's message mentions using database actions, tools, queries, listing records, or checking settings, you MUST classify it as `requires_action = true`. Do not answer these requests conversational-style; always delegate them to the action executor.
 INSTRUCTIONS;
