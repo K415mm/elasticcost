@@ -14,10 +14,7 @@ use Laravel\Ai\Responses\Data\Usage;
 use Laravel\Ai\Responses\StreamableAgentResponse;
 use Laravel\Ai\Responses\TextResponse;
 use PDO;
-use Phpkaiharness\Contracts\AnalyticsCollectorInterface;
-use Phpkaiharness\Contracts\LlmClientInterface;
 use Phpkaiharness\Http\Middleware\QuantumOntologyMemoryMiddleware;
-use Phpkaiharness\Jobs\AsynchronousMemoryCollapseJob;
 use Phpkaiharness\Optimize\QuantumInferenceEngine;
 
 class QuantumOntologyMemoryHarnessTest extends PhpkaiharnessTestCase
@@ -131,6 +128,7 @@ class QuantumOntologyMemoryHarnessTest extends PhpkaiharnessTestCase
     public function test_middleware_prompt_injection(): void
     {
         config([
+            'harness.feature_graph.nodes.quantum_harness.enabled' => true,
             'harness.quantum_harness.enabled' => true,
             'harness.quantum_harness.alpha' => 0.7,
             'harness.quantum_harness.beta' => 0.3,
@@ -235,4 +233,3 @@ class QuantumOntologyMemoryHarnessTest extends PhpkaiharnessTestCase
         $this->assertStringContainsString('[QUANTUM-HARNESS MEMORY ENVELOPE]', $result->prompt);
     }
 }
-

@@ -692,10 +692,19 @@ class SemanticCache
      * @param  string  $response  The LLM response to cache.
      * @param  array<float>  $embedding  Pre-computed vector embedding of the prompt.
      */
-    public function store(string $prompt, string $response, array $embedding): void
+    public function store(string $prompt, string $response, ?array $embedding = null): void
     {
         if (! $this->isCacheable($response)) {
             return;
+        }
+
+        if ($embedding === null || empty($embedding)) {
+            try {
+                $embedding = EmbeddingGenerator::generate($prompt);
+            } catch (\Throwable $e) {
+                // Cannot generate an embedding — skip the vector memory layer
+                $embedding = null;
+            }
         }
 
         // ── L1 Redis Superposition Layer Store ──
@@ -718,7 +727,7 @@ class SemanticCache
             }
         }
 
-        if ($this->semanticMemory === null) {
+        if ($this->semanticMemory === null || empty($embedding)) {
             return;
         }
 

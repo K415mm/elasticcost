@@ -2,9 +2,7 @@
 
 namespace Phpkaiharness\Optimize;
 
-use App\Services\AiConfigHelper;
 use Illuminate\Support\Facades\DB;
-use Laravel\Ai\Embeddings;
 use PDO;
 
 class QuantumInferenceEngine
@@ -193,7 +191,7 @@ class QuantumInferenceEngine
             $queryVector = $this->getQueryEmbedding($query);
             if (empty($queryVector)) {
                 // Fallback: use pseudo-embedding so retrieval still works with hash-based similarity
-                $queryVector = $this->generatePseudoEmbedding($query);
+                $queryVector = EmbeddingGenerator::pseudoEmbedding($query);
             }
 
             // Bounded retrieval: limit nodes scanned to prevent performance degradation at scale.
@@ -399,7 +397,7 @@ class QuantumInferenceEngine
             if (empty($embedding)) {
                 // Fallback: generate a deterministic pseudo-embedding from the content hash
                 // This ensures nodes are still stored and can be retrieved by text similarity
-                $embedding = $this->generatePseudoEmbedding($content);
+                $embedding = EmbeddingGenerator::pseudoEmbedding($content);
                 if (function_exists('info') && function_exists('app') && app()->bound('log')) {
                     info('Quantum storeNode: embedding provider unavailable, using pseudo-embedding for node '.$id);
                 }
@@ -438,7 +436,7 @@ class QuantumInferenceEngine
     }
 
     /**
-     * Retrieve query embedding vector using Laravel AI SDK.
+     * Retrieve query embedding vector using the shared embedding generator.
      */
     protected function getQueryEmbedding(string $text): array
     {
@@ -446,30 +444,7 @@ class QuantumInferenceEngine
             return [];
         }
 
-        if (class_exists(Embeddings::class)) {
-            $provider = config('ai.default_for_embeddings') ?: (config('harness.default.provider') ?: 'ollama');
-            $model = null;
-            if (class_exists('App\Services\AiConfigHelper')) {
-                try {
-                    $cfg = AiConfigHelper::configureEmbeddings();
-                    $provider = $cfg['provider'] ?? $provider;
-                    $model = $cfg['model'] ?? null;
-                } catch (\Throwable $e) {
-                    // Ignore config errors
-                }
-            }
-            try {
-                $response = Embeddings::for([$text])->generate($provider, $model);
-
-                return $response->first() ?? [];
-            } catch (\Throwable $e) {
-                if (function_exists('info') && function_exists('app') && app()->bound('log')) {
-                    info('Embedding generation failed in QuantumInferenceEngine: '.$e->getMessage());
-                }
-            }
-        }
-
-        return [];
+        return EmbeddingGenerator::generate($text);
     }
 
     /**
@@ -530,27 +505,5 @@ class QuantumInferenceEngine
         }
 
         return $dotProduct / (sqrt($normA) * sqrt($normB));
-    }
-
-    /**
-     * Generate a deterministic pseudo-embedding from content hash.
-     * Used as fallback when the embedding provider is unavailable.
-     * Produces a 384-dimensional vector (common small embedding size).
-     *
-     * @return array<float>
-     */
-    protected function generatePseudoEmbedding(string $content): array
-    {
-        $hash = hash('sha256', $content, true);
-        $vector = [];
-        $dimension = 384;
-
-        for ($i = 0; $i < $dimension; $i++) {
-            $byteIndex = $i % strlen($hash);
-            $byte = ord($hash[$byteIndex]);
-            $vector[] = ($byte - 128) / 128.0;
-        }
-
-        return $vector;
     }
 }

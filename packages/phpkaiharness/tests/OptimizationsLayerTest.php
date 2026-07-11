@@ -5,9 +5,8 @@ namespace Phpkaiharness\Tests;
 use Phpkaiharness\Contracts\SemanticMemoryInterface;
 use Phpkaiharness\Optimize\Guardrails;
 use Phpkaiharness\Optimize\SemanticCache;
-use PHPUnit\Framework\TestCase;
 
-class OptimizationsLayerTest extends TestCase
+class OptimizationsLayerTest extends PhpkaiharnessTestCase
 {
     // -------------------------------------------------------------------------
     // Guardrails: Palantir AIP-style Approvals & Checkpoints Tests
@@ -197,7 +196,7 @@ class OptimizationsLayerTest extends TestCase
                 $this->searchCalled = true;
 
                 return [
-                    ['text' => 'Cached response for similar query', 'source' => 'test', 'score' => 0.95],
+                    ['text' => 'Cached response for similar query', 'source' => 'semantic-cache:What is the weather today?', 'score' => 0.95],
                 ];
             }
 
@@ -306,7 +305,7 @@ class OptimizationsLayerTest extends TestCase
         {
             public function search(string $query, float $threshold = 0.30, int $limit = 3): array
             {
-                return [['text' => 'Found', 'source' => 'test', 'score' => 0.99]];
+                return [['text' => 'Found a long cached response for the setter test', 'source' => 'semantic-cache:query', 'score' => 0.99]];
             }
 
             public function addMemory(string $text, array $embedding, string $source): void {}
@@ -315,7 +314,7 @@ class OptimizationsLayerTest extends TestCase
         $cache->setSemanticMemory($semanticMemory);
 
         $result = $cache->lookup('query');
-        $this->assertEquals('Found', $result);
+        $this->assertEquals('Found a long cached response for the setter test', $result);
     }
 
     public function test_semantic_cache_gracefully_handles_memory_exceptions(): void

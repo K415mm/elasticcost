@@ -2,8 +2,6 @@
 
 namespace Phpkaiharness\Optimize;
 
-use App\Services\AiConfigHelper;
-use Laravel\Ai\Embeddings;
 use Laravel\Ai\Prompts\AgentPrompt;
 
 /**
@@ -55,20 +53,16 @@ class OntologicalContextInjector
 
         try {
             // Configure embeddings from app settings and get provider + model
-            $embeddingConfig = [];
-            if (class_exists('App\Services\AiConfigHelper')) {
-                $embeddingConfig = AiConfigHelper::configureEmbeddings();
-            }
-            $provider = $embeddingConfig['provider'] ?? config('ai.default_for_embeddings', 'ollama');
-            $model = $embeddingConfig['model'] ?? null;
+            $embeddingConfig = EmbeddingGenerator::resolveConfig();
+            $provider = $embeddingConfig['provider'];
+            $model = $embeddingConfig['model'];
             if ($metadata !== null) {
                 $metadata['embedding_provider'] = $provider;
                 $metadata['embedding_model'] = $model;
             }
 
-            // Generate query vector using Laravel AI SDK — pass model explicitly
-            $response = Embeddings::for([$query])->generate($provider, $model);
-            $queryVector = $response->first();
+            // Generate query vector using Laravel AI SDK via the shared generator
+            $queryVector = EmbeddingGenerator::generate($query);
 
             if (empty($queryVector)) {
                 if ($metadata !== null) {
@@ -90,7 +84,7 @@ class OntologicalContextInjector
                     && method_exists($allRecords->first(), 'getAttribute')
                     && $allRecords->first()->getAttribute($embeddingColumn) !== null;
 
-                $records = $allRecords->map(function ($record) use ($queryVector, &$evaluated, $hasSimilarityMethod, $provider, $model, $query) {
+                $records = $allRecords->map(function ($record) use ($queryVector, &$evaluated, $hasSimilarityMethod, $query) {
                     $similarity = 0.0;
 
                     if ($hasSimilarityMethod) {
@@ -100,8 +94,7 @@ class OntologicalContextInjector
                         $recordText = $this->recordToText($record);
                         if (! empty($recordText)) {
                             try {
-                                $recordResponse = Embeddings::for([$recordText])->generate($provider, $model);
-                                $recordVector = $recordResponse->first();
+                                $recordVector = EmbeddingGenerator::generate($recordText);
                                 if (! empty($recordVector)) {
                                     $similarity = $this->cosineSimilarity($queryVector, $recordVector);
                                 }

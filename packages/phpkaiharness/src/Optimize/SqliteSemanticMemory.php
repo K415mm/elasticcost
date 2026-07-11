@@ -2,8 +2,6 @@
 
 namespace Phpkaiharness\Optimize;
 
-use App\Services\AiConfigHelper;
-use Laravel\Ai\Embeddings;
 use PDO;
 use Phpkaiharness\Contracts\SemanticMemoryInterface;
 
@@ -90,31 +88,13 @@ class SqliteSemanticMemory implements SemanticMemoryInterface
 
     protected function getEmbedding(string $text): array
     {
-        if (class_exists(Embeddings::class)) {
-            $provider = config('ai.default_for_embeddings');
-            if (empty($provider)) {
-                $provider = config('harness.default.provider', 'ollama');
-            }
-            $model = null;
-            if (class_exists('App\Services\AiConfigHelper')) {
-                try {
-                    $cfg = AiConfigHelper::configureEmbeddings();
-                    $provider = $cfg['provider'] ?? $provider;
-                    $model = $cfg['model'] ?? null;
-                } catch (\Throwable $e) {
-                    // Ignore config errors
-                }
-            }
-            try {
-                $response = Embeddings::for([$text])->generate($provider, $model);
+        $vector = EmbeddingGenerator::generate($text);
 
-                return $response->first() ?? [];
-            } catch (\Throwable $e) {
-                throw new \RuntimeException('Failed to generate embedding via Laravel AI SDK: '.$e->getMessage(), 0, $e);
-            }
+        if (empty($vector)) {
+            throw new \RuntimeException('Failed to generate embedding for semantic memory query.');
         }
 
-        throw new \RuntimeException('Laravel AI SDK (Laravel\\Ai\\Embeddings) not available for generating embeddings.');
+        return $vector;
     }
 
     private function cosineSimilarity(array $vec1, array $vec2): float
