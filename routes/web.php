@@ -10,6 +10,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FileManagerController;
 use App\Http\Controllers\MsspCostingController;
+use App\Http\Controllers\PrecognitionExperimentController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\ScenarioController;
 use App\Http\Controllers\SizingDashboardController;
@@ -162,6 +163,11 @@ Route::middleware('auth')->group(function () {
         Route::get('roles/permissions', [RolePermissionController::class, 'index'])->name('roles.permissions');
         Route::put('roles/permissions', [RolePermissionController::class, 'update'])->name('roles.permissions.update');
     });
+
+    // Isolated Precognition / Folio experiments
+    Route::post('experiments/precognition', [PrecognitionExperimentController::class, 'store'])
+        ->middleware(['precognitive'])
+        ->name('experiments.precognition.store');
 
     // Token Management (Passport)
     Route::middleware('permission:token_management')->group(function () {
