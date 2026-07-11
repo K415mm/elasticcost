@@ -294,6 +294,25 @@
     .animate-pulse {
         animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
+
+    #ai-analysis-content a {
+        display: inline-block;
+        padding: .35rem .75rem;
+        border: 1px solid rgba(60, 210, 165, 0.5);
+        border-radius: .375rem;
+        background: rgba(60, 210, 165, 0.1);
+        color: #3cd2a5;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin: .2rem .2rem .2rem 0;
+        transition: background 0.2s, color 0.2s;
+    }
+
+    #ai-analysis-content a:hover {
+        background: rgba(60, 210, 165, 0.25);
+        color: #ffffff;
+    }
 </style>
 
 <!-- Ollama Ping Toast -->

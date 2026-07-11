@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Ai\Adapters\LaravelToolAdapter;
 use App\Ai\Agents\ElasticCostAssistant;
 use App\Ai\Agents\RgSocEngineer;
 use App\Ai\Analytics\LaravelAnalyticsCollector;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Phpkaiharness\Core\AgentLoop;
+use Phpkaiharness\Core\Registry\ToolRegistry;
 use Phpkaiharness\Llm\LaravelAiClient;
 use Phpkaiharness\Session\SessionManager;
 
@@ -283,11 +285,17 @@ class AiChatController extends Controller
 
             $llmClient = new LaravelAiClient($providerStr, $aiConfig['model']);
 
+            $registry = new ToolRegistry;
+            foreach ($agent->tools() as $laravelTool) {
+                $registry->attach(new LaravelToolAdapter($laravelTool));
+            }
+
             $loop = new AgentLoop(
                 llmClient: $llmClient,
+                registry: $registry,
                 systemPrompt: $agent->instructions(),
                 model: $aiConfig['model'],
-                maxIterations: 1
+                maxIterations: (int) config('harness.default.max_iterations', 10)
             );
             $loop->setAgentName($agentName);
 

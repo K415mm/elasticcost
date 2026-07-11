@@ -53,6 +53,25 @@
         font-weight: bold;
     }
 
+    .chat-bubble-content a {
+        display: inline-block;
+        padding: .25rem .6rem;
+        border: 1px solid rgba(60, 210, 165, 0.5);
+        border-radius: .375rem;
+        background: rgba(60, 210, 165, 0.1);
+        color: #3cd2a5;
+        text-decoration: none;
+        font-size: 0.82rem;
+        font-weight: 600;
+        margin: .15rem .15rem .15rem 0;
+        transition: background 0.2s, color 0.2s;
+    }
+
+    .chat-bubble-content a:hover {
+        background: rgba(60, 210, 165, 0.25);
+        color: #ffffff;
+    }
+
     .hover-delete-btn {
         opacity: 0;
         transition: opacity 0.2s ease-in-out;

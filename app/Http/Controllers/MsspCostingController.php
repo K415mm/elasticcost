@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Ai\Agents\OfferAnalyst;
+use App\Ai\Adapters\LaravelToolAdapter;
+use App\Ai\Agents\ElasticCostAssistant;
+use App\Ai\Analytics\LaravelAnalyticsCollector;
 use App\Models\Client;
 use App\Models\ClientScenarioAnalystAllocation;
 use App\Models\GlobalSetting;
@@ -14,6 +16,10 @@ use App\Services\MsspCostingEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Phpkaiharness\Core\AgentLoop;
+use Phpkaiharness\Core\Registry\ToolRegistry;
+use Phpkaiharness\Llm\LaravelAiClient;
+use Phpkaiharness\Session\SessionManager;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -1236,17 +1242,50 @@ class MsspCostingController extends Controller
                 ],
             ];
 
-            $promptContent = "Please analyze the following Cybersecurity MSSP and SOC proposal costing details:\n\n".
-                      json_encode($pricingBreakdown, JSON_PRETTY_PRINT)."\n\n".
-                      'Evaluate the sizing/topology vs ingestion, evaluate the staffing allocations, and critique the pricing margins and final offered price. Provide recommendations.';
+            $promptContent = "You are reviewing the current MSSP/SOC proposal for client {$client->id} and scenario {$scenario->id}:\n\n".
+                json_encode($pricingBreakdown, JSON_PRETTY_PRINT)."\n\n".
+                'Evaluate the sizing/topology vs ingestion, evaluate the staffing allocations, and critique the pricing margins and final offered price. '.
+                'Then compare all available scenarios for this client using the compare_scenarios tool, select the best scenario using the select_best_scenario tool, '.
+                'and generate Markdown and Word export links for the current scenario using the export_mssp_proposal tool. '.
+                'Present the recommendation as a concise summary with a cost table and clickable download links.';
 
-            // Run agent using Laravel AI SDK
+            // Run ElasticCost Assistant with tool support
             $aiConfig = AiConfigHelper::configure();
-            $response = (new OfferAnalyst)->prompt($promptContent, provider: $aiConfig['provider'], model: $aiConfig['model'], timeout: 120);
+            $agent = new ElasticCostAssistant;
 
-            $analysisText = property_exists($response, 'structured')
-                ? ($response->structured['full_critique'] ?? $response->text)
-                : $response->text;
+            $sessionId = 'phpsess_'.session()->getId();
+            $sessionManager = app(SessionManager::class);
+            $sessionManager->activateSession($sessionId);
+            $analytics = new LaravelAnalyticsCollector($sessionManager->resolveMonitorDbPath($sessionId));
+
+            $provider = $aiConfig['provider'];
+            $providerStr = $provider instanceof \BackedEnum ? $provider->value : (string) $provider;
+
+            $llmClient = new LaravelAiClient($providerStr, $aiConfig['model']);
+
+            $registry = new ToolRegistry;
+            foreach ($agent->tools() as $laravelTool) {
+                $registry->attach(new LaravelToolAdapter($laravelTool));
+            }
+
+            $loop = new AgentLoop(
+                llmClient: $llmClient,
+                registry: $registry,
+                systemPrompt: $agent->instructions(),
+                model: $aiConfig['model'],
+                maxIterations: (int) config('harness.default.max_iterations', 10)
+            );
+            $loop->setAgentName('ElasticCostAssistant');
+
+            $history = [];
+            $analysisText = $loop->run(
+                userPrompt: $promptContent,
+                history: $history,
+                sessionId: $sessionId,
+                collector: $analytics
+            );
+
+            $analytics->endSession($sessionId, $analysisText, 0, 1);
 
             // Get provider display name
             $providerName = is_object($aiConfig['provider']) ? $aiConfig['provider']->name : (string) $aiConfig['provider'];
