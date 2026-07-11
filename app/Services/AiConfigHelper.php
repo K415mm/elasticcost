@@ -207,17 +207,47 @@ class AiConfigHelper
      * Configure the AI SDK settings specifically for RAG vector embeddings,
      * independent of the main conversation LLM provider.
      *
-     * @return array{provider: string, model: string}
+     * @return array{provider: string, model: string|null, dimensions: int|null}
      */
     public static function configureEmbeddings(): array
     {
-        $providerKey = 'ollama';
-        $model = 'nomic-embed-text';
+        $providerKey = config('ai.default_for_embeddings', 'qwen');
+        $model = null;
+        $dimensions = null;
+        $hasGlobalSettings = false;
 
         try {
-            if (Schema::hasTable('global_settings')) {
-                $providerKey = GlobalSetting::getValue('rag_embedding_provider', 'ollama');
-                $model = GlobalSetting::getValue('rag_embedding_model', 'nomic-embed-text');
+            $hasGlobalSettings = Schema::hasTable('global_settings');
+
+            if ($hasGlobalSettings) {
+                $providerKey = GlobalSetting::getValue('rag_embedding_provider', $providerKey);
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('RAG embedding configuration failed: '.$e->getMessage().'. Falling back to default embeddings.');
+        }
+
+        $defaults = match ($providerKey) {
+            'qwen' => ['model' => 'text-embedding-v3', 'dimensions' => 1024],
+            'gemini' => ['model' => 'text-embedding-004', 'dimensions' => 768],
+            'jina' => ['model' => 'jina-embeddings-v3', 'dimensions' => 1024],
+            'cohere' => ['model' => 'embed-v4.0', 'dimensions' => 1024],
+            'voyageai' => ['model' => 'voyage-3', 'dimensions' => 1024],
+            'mistral' => ['model' => 'mistral-embed', 'dimensions' => 1024],
+            'openai' => ['model' => 'text-embedding-3-small', 'dimensions' => 1536],
+            'lmstudio' => ['model' => 'text-embedding-embeddinggemma-300m', 'dimensions' => 768],
+            'ollama' => ['model' => 'nomic-embed-text', 'dimensions' => 768],
+            default => ['model' => null, 'dimensions' => null],
+        };
+
+        if ($defaults['model'] !== null) {
+            $model = config('ai.providers.'.$providerKey.'.models.embeddings.default') ?? $defaults['model'];
+            $dimensions = config('ai.providers.'.$providerKey.'.models.embeddings.dimensions') ?? $defaults['dimensions'];
+        }
+
+        try {
+            if ($hasGlobalSettings) {
+                $model = GlobalSetting::getValue('rag_embedding_model', $model) ?? $model;
+                $dimensions = GlobalSetting::getValue('rag_embedding_dimensions', $dimensions) ?? $dimensions;
 
                 if ($providerKey === 'ollama') {
                     $url = GlobalSetting::getValue('ollama_url', 'http://localhost:11434');
@@ -225,6 +255,8 @@ class AiConfigHelper
 
                     config([
                         'ai.providers.ollama.url' => $url,
+                        'ai.providers.ollama.models.embeddings.default' => $model,
+                        'ai.providers.ollama.models.embeddings.dimensions' => $dimensions,
                         'ai.default_for_embeddings' => 'ollama',
                     ]);
 
@@ -240,6 +272,7 @@ class AiConfigHelper
                         'ai.providers.lmstudio.key' => 'lm-studio',
                         'ai.providers.lmstudio.url' => $url,
                         'ai.providers.lmstudio.models.embeddings.default' => $model,
+                        'ai.providers.lmstudio.models.embeddings.dimensions' => $dimensions,
                         'ai.default_for_embeddings' => 'lmstudio',
                     ]);
 
@@ -247,26 +280,84 @@ class AiConfigHelper
                         app(AiManager::class)->forgetInstance('lmstudio');
                     }
                 } elseif ($providerKey === 'gemini') {
-                    $apiKey = GlobalSetting::getValue('gemini_api_key', '');
+                    $apiKey = GlobalSetting::getValue('gemini_api_key', config('ai.providers.gemini.key'));
 
                     config([
                         'ai.providers.gemini.key' => $apiKey,
+                        'ai.providers.gemini.models.embeddings.default' => $model,
+                        'ai.providers.gemini.models.embeddings.dimensions' => $dimensions,
                         'ai.default_for_embeddings' => 'gemini',
                     ]);
 
                     if (app()->bound(AiManager::class)) {
                         app(AiManager::class)->forgetInstance('gemini');
                     }
-                } elseif ($providerKey === 'openrouter') {
-                    $apiKey = GlobalSetting::getValue('openrouter_api_key', '');
+                } elseif ($providerKey === 'openai') {
+                    $apiKey = GlobalSetting::getValue('openai_api_key', config('ai.providers.openai.key'));
+                    $url = GlobalSetting::getValue('openai_url', config('ai.providers.openai.url'));
 
                     config([
-                        'ai.providers.openrouter.key' => $apiKey,
-                        'ai.default_for_embeddings' => 'openrouter',
+                        'ai.providers.openai.key' => $apiKey,
+                        'ai.providers.openai.url' => $url,
+                        'ai.providers.openai.models.embeddings.default' => $model,
+                        'ai.providers.openai.models.embeddings.dimensions' => $dimensions,
+                        'ai.default_for_embeddings' => 'openai',
                     ]);
 
                     if (app()->bound(AiManager::class)) {
-                        app(AiManager::class)->forgetInstance('openrouter');
+                        app(AiManager::class)->forgetInstance('openai');
+                    }
+                } elseif ($providerKey === 'jina') {
+                    $apiKey = GlobalSetting::getValue('jina_api_key', config('ai.providers.jina.key'));
+
+                    config([
+                        'ai.providers.jina.key' => $apiKey,
+                        'ai.providers.jina.models.embeddings.default' => $model,
+                        'ai.providers.jina.models.embeddings.dimensions' => $dimensions,
+                        'ai.default_for_embeddings' => 'jina',
+                    ]);
+
+                    if (app()->bound(AiManager::class)) {
+                        app(AiManager::class)->forgetInstance('jina');
+                    }
+                } elseif ($providerKey === 'cohere') {
+                    $apiKey = GlobalSetting::getValue('cohere_api_key', config('ai.providers.cohere.key'));
+
+                    config([
+                        'ai.providers.cohere.key' => $apiKey,
+                        'ai.providers.cohere.models.embeddings.default' => $model,
+                        'ai.providers.cohere.models.embeddings.dimensions' => $dimensions,
+                        'ai.default_for_embeddings' => 'cohere',
+                    ]);
+
+                    if (app()->bound(AiManager::class)) {
+                        app(AiManager::class)->forgetInstance('cohere');
+                    }
+                } elseif ($providerKey === 'voyageai') {
+                    $apiKey = GlobalSetting::getValue('voyageai_api_key', config('ai.providers.voyageai.key'));
+
+                    config([
+                        'ai.providers.voyageai.key' => $apiKey,
+                        'ai.providers.voyageai.models.embeddings.default' => $model,
+                        'ai.providers.voyageai.models.embeddings.dimensions' => $dimensions,
+                        'ai.default_for_embeddings' => 'voyageai',
+                    ]);
+
+                    if (app()->bound(AiManager::class)) {
+                        app(AiManager::class)->forgetInstance('voyageai');
+                    }
+                } elseif ($providerKey === 'mistral') {
+                    $apiKey = GlobalSetting::getValue('mistral_api_key', config('ai.providers.mistral.key'));
+
+                    config([
+                        'ai.providers.mistral.key' => $apiKey,
+                        'ai.providers.mistral.models.embeddings.default' => $model,
+                        'ai.providers.mistral.models.embeddings.dimensions' => $dimensions,
+                        'ai.default_for_embeddings' => 'mistral',
+                    ]);
+
+                    if (app()->bound(AiManager::class)) {
+                        app(AiManager::class)->forgetInstance('mistral');
                     }
                 } elseif ($providerKey === 'qwen') {
                     $apiKey = GlobalSetting::getValue('qwen_api_key') ?: (env('PHPKAIHARNESS_QWEN_KEY') ?: (env('QWEN_API_KEY') ?: env('DASHSCOPE_API_KEY', '')));
@@ -277,13 +368,17 @@ class AiConfigHelper
                         'ai.providers.qwen.key' => $apiKey,
                         'ai.providers.qwen.url' => $url,
                         'ai.providers.qwen.models.embeddings.default' => $model,
-                        'ai.providers.qwen.models.embeddings.dimensions' => 1024,
+                        'ai.providers.qwen.models.embeddings.dimensions' => $dimensions,
                         'ai.default_for_embeddings' => 'qwen',
                     ]);
 
                     if (app()->bound(AiManager::class)) {
                         app(AiManager::class)->forgetInstance('qwen');
                     }
+                } else {
+                    config([
+                        'ai.default_for_embeddings' => $providerKey,
+                    ]);
                 }
             }
         } catch (\Throwable $e) {
@@ -293,6 +388,7 @@ class AiConfigHelper
         return [
             'provider' => $providerKey,
             'model' => $model,
+            'dimensions' => $dimensions,
         ];
     }
 
