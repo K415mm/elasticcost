@@ -100,6 +100,19 @@ class HarnessTelemetryController extends Controller
             $embeddingConfig['provider'] = (string) config('ai.default_for_embeddings', 'qwen');
         }
 
+        $defaultConfig = ['provider' => config('harness.default.provider', 'ollama'), 'model' => config('harness.default.model', '')];
+        try {
+            $resolved = AiConfigHelper::configure();
+            $provider = $resolved['provider'] ?? $defaultConfig['provider'];
+            if (is_object($provider) && method_exists($provider, 'value')) {
+                $provider = $provider->value;
+            }
+            $defaultConfig['provider'] = (string) $provider;
+            $defaultConfig['model'] = (string) ($resolved['model'] ?? $defaultConfig['model']);
+        } catch (\Throwable $e) {
+            // keep harness defaults
+        }
+
         $fgNodes = config('harness.feature_graph.nodes', []);
         $activeFeatures = 0;
         foreach ($fgNodes as $node) {
@@ -115,7 +128,8 @@ class HarnessTelemetryController extends Controller
         try {
             if (config('harness.cache.redis.enabled', true)) {
                 $ping = Redis::connection(config('harness.cache.redis.connection', 'default'))->ping();
-                $redisStatus = ($ping === true || $ping === 'PONG' || $ping === '+PONG') ? 'connected' : 'disconnected';
+                $pingString = (string) $ping;
+                $redisStatus = ($ping === true || $pingString === 'PONG' || $pingString === '+PONG') ? 'connected' : 'disconnected';
             } else {
                 $redisStatus = 'disabled';
             }
@@ -127,8 +141,8 @@ class HarnessTelemetryController extends Controller
             'embedding_provider' => $embeddingConfig['provider'] ?? 'qwen',
             'embedding_model' => $embeddingConfig['model'] ?? '',
             'embedding_dimensions' => (int) ($embeddingConfig['dimensions'] ?? 0),
-            'default_provider' => config('harness.default.provider', 'ollama'),
-            'default_model' => config('harness.default.model', ''),
+            'default_provider' => $defaultConfig['provider'],
+            'default_model' => $defaultConfig['model'],
             'config_mode' => config('harness.config_mode', 'philosophy'),
             'active_feature_count' => $activeFeatures,
             'total_feature_count' => count($fgNodes),

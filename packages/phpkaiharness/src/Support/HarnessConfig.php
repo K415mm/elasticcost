@@ -2,6 +2,9 @@
 
 namespace Phpkaiharness\Support;
 
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
+
 class HarnessConfig
 {
     /**
@@ -120,5 +123,116 @@ class HarnessConfig
         }
 
         return $result;
+    }
+
+    /**
+     * Sync the harness LLM config from the host app's global_settings.
+     *
+     * This keeps the phpkaiharness package aligned with the System Settings UI
+     * and disables the default localhost fallbacks when no harness config exists.
+     */
+    public static function syncFromGlobalSettings(): void
+    {
+        if (! function_exists('config') || ! function_exists('storage_path') || ! function_exists('app')) {
+            return;
+        }
+
+        if (! app()->bound('config')) {
+            return;
+        }
+
+        try {
+            if (! class_exists('App\Models\GlobalSetting') || ! class_exists('Illuminate\Support\Facades\Schema')) {
+                return;
+            }
+
+            if (! Schema::hasTable('global_settings')) {
+                return;
+            }
+
+            $provider = GlobalSetting::getValue('ai_provider');
+            if (empty($provider)) {
+                return;
+            }
+
+            $overridePath = storage_path('app/phpkaiharness/config_overrides.json');
+            $existing = [];
+            if (file_exists($overridePath)) {
+                $raw = file_get_contents($overridePath);
+                if ($raw !== false && $raw !== '') {
+                    $existing = json_decode($raw, true) ?: [];
+                }
+            }
+
+            $harness = $existing;
+            $harness['default']['provider'] = $provider;
+
+            $model = '';
+            if (class_exists('App\Services\AiConfigHelper')) {
+                try {
+                    $cfg = \App\Services\AiConfigHelper::configure();
+                    $resolvedProvider = $cfg['provider'] ?? $provider;
+                    if (is_object($resolvedProvider) && method_exists($resolvedProvider, 'value')) {
+                        $resolvedProvider = $resolvedProvider->value;
+                    }
+                    $resolvedModel = $cfg['model'] ?? '';
+                    if (! empty($resolvedProvider)) {
+                        $harness['default']['provider'] = (string) $resolvedProvider;
+                    }
+                    if (! empty($resolvedModel)) {
+                        $model = (string) $resolvedModel;
+                        $harness['default']['model'] = $model;
+                    }
+                } catch (\Throwable $e) {
+                    // fall through to global settings
+                }
+            }
+
+            if (empty($harness['default']['model'])) {
+                $model = GlobalSetting::getValue($provider.'_model');
+                if (! empty($model)) {
+                    $harness['default']['model'] = (string) $model;
+                }
+            }
+
+            if ($provider === 'qwen') {
+                $harness['qwen_provider']['enabled'] = true;
+                $harness['qwen_provider']['api_key'] = (string) GlobalSetting::getValue('qwen_api_key', '');
+                $harness['qwen_provider']['url'] = (string) GlobalSetting::getValue('qwen_url', 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1');
+                $harness['qwen_provider']['model'] = (string) ($model ?: GlobalSetting::getValue('qwen_model', 'qwen-plus'));
+                $harness['qwen_provider']['light_model'] = (string) GlobalSetting::getValue('qwen_light_model', 'qwen-turbo');
+                $harness['qwen_provider']['structured_output'] = 'json_object';
+                $harness['qwen_provider']['max_tokens'] = 4096;
+            } elseif ($provider === 'ollama') {
+                $harness['default']['model'] = (string) GlobalSetting::getValue('ollama_model', 'gemma4:e2b');
+                $harness['ollama_url'] = (string) GlobalSetting::getValue('ollama_url', 'http://localhost:11434');
+            } elseif ($provider === 'lmstudio') {
+                $harness['default']['model'] = (string) GlobalSetting::getValue('lmstudio_model', 'qwen2.5-coder-7b-instruct');
+                $harness['lmstudio_url'] = (string) GlobalSetting::getValue('lmstudio_url', 'http://localhost:1234/v1');
+            } elseif ($provider === 'gemini') {
+                $harness['default']['model'] = (string) GlobalSetting::getValue('gemini_model', 'gemini-1.5-flash');
+                $harness['gemini_api_key'] = (string) GlobalSetting::getValue('gemini_api_key', '');
+            } elseif ($provider === 'openrouter') {
+                $harness['default']['model'] = (string) GlobalSetting::getValue('openrouter_model', 'meta-llama/llama-3-8b-instruct:free');
+                $harness['openrouter_api_key'] = (string) GlobalSetting::getValue('openrouter_api_key', '');
+            }
+
+            if (! isset($harness['failover'])) {
+                $harness['failover'] = [
+                    'enabled' => false,
+                    'clients' => [],
+                ];
+            }
+
+            $directory = dirname($overridePath);
+            if (! File::isDirectory($directory)) {
+                File::makeDirectory($directory, 0755, true, true);
+            }
+
+            File::put($overridePath, json_encode($harness, JSON_PRETTY_PRINT));
+            config(['harness' => array_replace_recursive(config('harness'), $harness)]);
+        } catch (\Throwable $e) {
+            // Non-fatal: continue with whatever harness config is already loaded
+        }
     }
 }

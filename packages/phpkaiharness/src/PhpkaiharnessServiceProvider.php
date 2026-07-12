@@ -22,6 +22,7 @@ use Phpkaiharness\Optimize\QuantumInferenceEngine;
 use Phpkaiharness\Optimize\SemanticCache;
 use Phpkaiharness\Optimize\SqliteSemanticMemory;
 use Phpkaiharness\Session\SessionManager;
+use Phpkaiharness\Support\HarnessConfig;
 
 /**
  * phpkaiharness Service Provider.
@@ -71,6 +72,16 @@ class PhpkaiharnessServiceProvider extends ServiceProvider
                     }
                     config(['harness' => array_replace_recursive(config('harness'), $overrides)]);
                 }
+            }
+        }
+
+        // If no harness config overrides exist yet, mirror the host app's System Settings
+        // so the package does not try to call localhost LLM fallbacks on first boot.
+        if (! File::exists($overridePath)) {
+            try {
+                HarnessConfig::syncFromGlobalSettings();
+            } catch (\Throwable $e) {
+                // Non-fatal: continue with defaults
             }
         }
 

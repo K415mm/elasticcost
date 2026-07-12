@@ -7,6 +7,7 @@ use App\Models\TranslationOverride;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Phpkaiharness\Support\HarnessConfig;
 
 class SystemSettingsController extends Controller
 {
@@ -234,6 +235,10 @@ class SystemSettingsController extends Controller
                 ]
             );
         }
+
+        // Mirror the AI settings into the phpkaiharness harness config so the
+        // harness dashboard and AgentLoop use the same provider.
+        HarnessConfig::syncFromGlobalSettings();
 
         return redirect()->route('settings.system')
             ->with('success', __('messages.settings_updated_success') ?: 'AI settings updated successfully!');
