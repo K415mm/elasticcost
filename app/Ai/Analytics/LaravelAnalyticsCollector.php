@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Phpkaiharness\Contracts\AnalyticsCollectorInterface;
 use Phpkaiharness\Monitor\SqliteMonitorStore;
+use Phpkaiharness\Session\SessionManager;
 
 class LaravelAnalyticsCollector implements AnalyticsCollectorInterface
 {
@@ -14,7 +15,22 @@ class LaravelAnalyticsCollector implements AnalyticsCollectorInterface
     public function __construct(?string $dbPath = null)
     {
         try {
-            $resolvedPath = $dbPath ?? config('harness.cache.db_path');
+            $resolvedPath = $dbPath;
+            if (! $resolvedPath && function_exists('app') && app()->bound(SessionManager::class)) {
+                $sessionId = null;
+                foreach (['harness.parent_session_id', 'harness.active_session_id', 'harness.root_session_id'] as $binding) {
+                    if (app()->bound($binding) && app($binding)) {
+                        $sessionId = (string) app($binding);
+                        break;
+                    }
+                }
+
+                if ($sessionId) {
+                    $resolvedPath = app(SessionManager::class)->resolveMonitorDbPath($sessionId);
+                }
+            }
+
+            $resolvedPath ??= config('harness.cache.db_path');
             if ($resolvedPath) {
                 $dir = dirname($resolvedPath);
                 if (! file_exists($dir)) {

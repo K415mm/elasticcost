@@ -24,6 +24,7 @@ use Phpkaiharness\Core\AgentLoop;
 use Phpkaiharness\Core\Registry\ToolRegistry;
 use Phpkaiharness\Http\Middleware\PolicyGuardrailMiddleware;
 use Phpkaiharness\Llm\LaravelAiClient;
+use Phpkaiharness\Session\SessionManager;
 use Psr\Log\AbstractLogger;
 use Stringable;
 
@@ -75,8 +76,18 @@ class RgSocEngineer implements Agent, HasMiddleware, HasTools
         );
         Log::info('RgSocEngineer::prompt() called', ['session_id' => $sessionId, 'isFaked' => static::isFaked(), 'prompt_preview' => mb_substr($prompt, 0, 100, 'UTF-8')]);
         try {
-            $analytics = new LaravelAnalyticsCollector;
-            Log::info('RgSocEngineer: LaravelAnalyticsCollector created', ['session_id' => $sessionId]);
+            $monitorDbPath = null;
+            if ($this->phpSessionId && app()->bound(SessionManager::class)) {
+                $sessionManager = app(SessionManager::class);
+                $sessionManager->activateSession($this->phpSessionId);
+                $monitorDbPath = $sessionManager->resolveMonitorDbPath($this->phpSessionId);
+            }
+
+            $analytics = new LaravelAnalyticsCollector($monitorDbPath);
+            Log::info('RgSocEngineer: LaravelAnalyticsCollector created', [
+                'session_id' => $sessionId,
+                'monitor_db_path' => $monitorDbPath,
+            ]);
         } catch (\Throwable $e) {
             Log::error('RgSocEngineer: Failed to create LaravelAnalyticsCollector', ['session_id' => $sessionId, 'error' => $e->getMessage()]);
             $analytics = null;
