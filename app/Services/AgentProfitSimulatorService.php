@@ -496,7 +496,17 @@ class AgentProfitSimulatorService
                 collector: $analytics
             );
 
-            $decoded = json_decode($responseText, true);
+            $cleanText = trim($responseText);
+            $cleanText = preg_replace('/^```(?:json)?\s+|\s*```$/i', '', $cleanText);
+            $cleanText = trim($cleanText);
+
+            $decoded = json_decode($cleanText, true);
+            if (! is_array($decoded)) {
+                if (preg_match('/(\{.*\})/s', $cleanText, $matches)) {
+                    $decoded = json_decode(trim($matches[1]), true);
+                }
+            }
+
             if (is_array($decoded) && isset($decoded['full_market_report'])) {
                 return array_merge($decoded, [
                     'ai_provider_used' => $providerStr,
