@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Ai\Agents\SizingRegulator;
+use App\Ai\Middleware\InjectDocumentation;
 use App\Models\Client;
 use App\Models\ClientScenarioMsspDetail;
 use App\Models\Scenario;
@@ -11,6 +12,10 @@ use App\Services\CurrencyHelper;
 use App\Services\SizingEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Laravel\Ai\Prompts\AgentPrompt;
+use Phpkaiharness\Core\AgentLoop;
+use Phpkaiharness\Core\Prompt\DummyTextProvider;
+use Phpkaiharness\Llm\LaravelAiClient;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -111,13 +116,58 @@ class SizingDashboardController extends Controller
                       json_encode($sizingBreakdown, JSON_PRETTY_PRINT)."\n\n".
                       'Evaluate the sizing/topology, RAM-to-disk ratios, storage tiers retention plan, and node specs. Offer enhancements and recommendations.';
 
-            // Run agent using Laravel AI SDK
             $aiConfig = AiConfigHelper::configure();
-            $response = (new SizingRegulator)->prompt($promptContent, provider: $aiConfig['provider'], model: $aiConfig['model'], timeout: 120);
+            $provider = $aiConfig['provider'];
+            $providerStr = $provider instanceof \BackedEnum ? $provider->value : (string) $provider;
+            $model = $aiConfig['model'];
 
-            $analysisText = property_exists($response, 'structured')
-                ? ($response->structured['full_critique'] ?? $response->text)
-                : $response->text;
+            $agent = new SizingRegulator;
+            if ($agent::isFaked()) {
+                $response = $agent->prompt($promptContent, provider: $aiConfig['provider'], model: $aiConfig['model'], timeout: 120);
+                $analysisText = property_exists($response, 'structured')
+                    ? ($response->structured['full_critique'] ?? $response->text)
+                    : $response->text;
+            } else {
+                // Run InjectDocumentation RAG middleware manually
+                $ragMiddleware = new InjectDocumentation;
+                $dummyProvider = new DummyTextProvider;
+                $dummyPrompt = new AgentPrompt($agent, $promptContent, [], $dummyProvider, $model);
+                $finalPrompt = $ragMiddleware->handle($dummyPrompt, fn ($p) => $p);
+                $promptContent = $finalPrompt->prompt;
+
+                // Call agent via phpkaiharness AgentLoop to avoid SDK structured output timeout
+                $schemaJson = '{'.
+                    '"verdict": "Adequate, Under-provisioned, or Imbalanced",'.
+                    '"health_score": 8,'.
+                    '"ratio_audit": ["Tier audit details..."],'.
+                    '"ha_check": {"master_eligible_count": 3, "quorum_met": true, "remarks": "Master quorum details..."},'.
+                    '"recommendations": ["Recommendation 1", "Recommendation 2"],'.
+                    '"full_critique": "Detailed markdown audit critique..."'.
+                '}';
+
+                $systemPrompt = $agent->instructions()."\n\nYou MUST respond ONLY with a valid JSON object matching the following structure:\n".$schemaJson;
+                $llmClient = new LaravelAiClient($providerStr, $model);
+
+                $loop = new AgentLoop(
+                    llmClient: $llmClient,
+                    systemPrompt: $systemPrompt,
+                    model: $model,
+                    maxIterations: 1
+                );
+                $loop->setAgentName('SizingRegulator');
+
+                $history = [];
+                $responseText = $loop->run(
+                    userPrompt: $promptContent,
+                    history: $history,
+                    sessionId: 'sandbox_'.session()->getId()
+                );
+
+                $decoded = json_decode($responseText, true);
+                $analysisText = is_array($decoded)
+                    ? ($decoded['full_critique'] ?? $responseText)
+                    : $responseText;
+            }
 
             // Get provider display name
             $providerName = is_object($aiConfig['provider']) ? $aiConfig['provider']->name : (string) $aiConfig['provider'];

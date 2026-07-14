@@ -194,15 +194,16 @@ class AgentProfitSimulatorService
         $cumulPartnerProfit = 0.0;
         $cumulDirectRevenue = 0.0;
         $cumulPartnerRevenue = 0.0;
+        $cumulPartnerMargin = 0.0;
 
-        $onPremMrc = (float) ($costData['client_offered_price_mrc'] ?? $costData['total_monthly_service_cost'] ?? 0.0);
-        $cloudMrc = (float) ($costData['cloud_option']['client_offered_price_mrc'] ?? $costData['cloud_option']['elastic_cloud_subscription_cost'] ?? 0.0);
+        $onPremMrc = (float) ($costData['total_monthly_service_cost'] ?? 0.0) + ((float) ($costData['onetime_setup_cost'] ?? 0.0) / 12);
+        $cloudMrc = (float) ($costData['cloud_option']['elastic_cloud_subscription_cost'] ?? 0.0) + ((float) ($costData['onetime_setup_cost'] ?? 0.0) / 12);
 
-        $hostingDeduction = 0.0;
+        $fixedMonthlyCost = 0.0;
         if (($settings['hosting_mode'] ?? 'none') === 'onprem') {
-            $hostingDeduction = $onPremMrc;
+            $fixedMonthlyCost = $onPremMrc;
         } elseif (($settings['hosting_mode'] ?? 'none') === 'cloud') {
-            $hostingDeduction = $cloudMrc;
+            $fixedMonthlyCost = $cloudMrc;
         }
 
         for ($month = 1; $month <= 36; $month++) {
@@ -217,10 +218,13 @@ class AgentProfitSimulatorService
             $siemSoldOut = $siemDeployed >= $settings['siem_purchased_limit'];
             $isFullySoldOut = $edrSoldOut && $mdrSoldOut && $siemSoldOut;
 
-            $monthlyCost = ($edrDeployed * $settings['edr_base_cost'])
-                + ($mdrDeployed * $settings['mdr_base_cost'])
-                + ($siemDeployed * $settings['siem_base_cost'])
-                + $hostingDeduction;
+            if (($settings['hosting_mode'] ?? 'none') !== 'none') {
+                $monthlyCost = $fixedMonthlyCost;
+            } else {
+                $monthlyCost = ($edrDeployed * $settings['edr_base_cost'])
+                    + ($mdrDeployed * $settings['mdr_base_cost'])
+                    + ($siemDeployed * $settings['siem_base_cost']);
+            }
 
             $directRevenue = ($edrDeployed * $settings['edr_client_price'])
                 + ($mdrDeployed * $settings['mdr_client_price'])
@@ -239,6 +243,7 @@ class AgentProfitSimulatorService
             $cumulPartnerProfit += $partnerProfit;
             $cumulDirectRevenue += $directRevenue;
             $cumulPartnerRevenue += $partnerRevenue;
+            $cumulPartnerMargin += $partnerMargin;
 
             $timeline[$month] = [
                 'month' => $month,
@@ -260,6 +265,7 @@ class AgentProfitSimulatorService
                 'cumul_partner_profit' => round($cumulPartnerProfit, 2),
                 'cumul_direct_revenue' => round($cumulDirectRevenue, 2),
                 'cumul_partner_revenue' => round($cumulPartnerRevenue, 2),
+                'cumul_partner_margin' => round($cumulPartnerMargin, 2),
             ];
         }
 
@@ -280,15 +286,16 @@ class AgentProfitSimulatorService
         $cumulPartnerProfit = 0.0;
         $cumulDirectRevenue = 0.0;
         $cumulPartnerRevenue = 0.0;
+        $cumulPartnerMargin = 0.0;
 
-        $onPremMrc = (float) ($costData['client_offered_price_mrc'] ?? $costData['total_monthly_service_cost'] ?? 0.0);
-        $cloudMrc = (float) ($costData['cloud_option']['client_offered_price_mrc'] ?? $costData['cloud_option']['elastic_cloud_subscription_cost'] ?? 0.0);
+        $onPremMrc = (float) ($costData['total_monthly_service_cost'] ?? 0.0) + ((float) ($costData['onetime_setup_cost'] ?? 0.0) / 12);
+        $cloudMrc = (float) ($costData['cloud_option']['elastic_cloud_subscription_cost'] ?? 0.0) + ((float) ($costData['onetime_setup_cost'] ?? 0.0) / 12);
 
-        $hostingDeduction = 0.0;
+        $fixedMonthlyCost = 0.0;
         if (($settings['hosting_mode'] ?? 'none') === 'onprem') {
-            $hostingDeduction = $onPremMrc;
+            $fixedMonthlyCost = $onPremMrc;
         } elseif (($settings['hosting_mode'] ?? 'none') === 'cloud') {
-            $hostingDeduction = $cloudMrc;
+            $fixedMonthlyCost = $cloudMrc;
         }
 
         $edrMaxLimit = (int) ($settings['edr_purchased_limit'] ?? 300);
@@ -300,7 +307,7 @@ class AgentProfitSimulatorService
             $edrAgentsSold = 0;
             $mdrAgentsSold = 0;
             $siemAgentsSold = 0;
-            $monthlyCost = $hostingDeduction;
+            $monthlyCost = (($settings['hosting_mode'] ?? 'none') !== 'none') ? $fixedMonthlyCost : 0.0;
             $directRevenue = 0.0;
             $partnerRevenue = 0.0;
             $allPacksSoldOut = count($packs) > 0;
@@ -318,10 +325,14 @@ class AgentProfitSimulatorService
                     }
                 }
 
-                $packBaseCost = ($edrCount * $settings['edr_base_cost'])
-                    + ($mdrCount * $settings['mdr_base_cost'])
-                    + ($siemCount * $settings['siem_base_cost'])
-                    + $extraServicesCost;
+                if (($settings['hosting_mode'] ?? 'none') !== 'none') {
+                    $packBaseCost = $extraServicesCost;
+                } else {
+                    $packBaseCost = ($edrCount * $settings['edr_base_cost'])
+                        + ($mdrCount * $settings['mdr_base_cost'])
+                        + ($siemCount * $settings['siem_base_cost'])
+                        + $extraServicesCost;
+                }
 
                 $initialPacks = (int) ($p['initial_packs'] ?? 1);
                 $growth = (int) ($p['monthly_growth'] ?? 5);
@@ -366,6 +377,7 @@ class AgentProfitSimulatorService
             $cumulPartnerProfit += $partnerProfit;
             $cumulDirectRevenue += $directRevenue;
             $cumulPartnerRevenue += $partnerRevenue;
+            $cumulPartnerMargin += $partnerMargin;
 
             $timeline[$month] = [
                 'month' => $month,
@@ -386,6 +398,7 @@ class AgentProfitSimulatorService
                 'cumul_partner_profit' => round($cumulPartnerProfit, 2),
                 'cumul_direct_revenue' => round($cumulDirectRevenue, 2),
                 'cumul_partner_revenue' => round($cumulPartnerRevenue, 2),
+                'cumul_partner_margin' => round($cumulPartnerMargin, 2),
             ];
         }
 
@@ -543,9 +556,6 @@ class AgentProfitSimulatorService
         ];
     }
 
-    /**
-     * Helper to summarize key time horizons (1M, 3M, 6M, 12M, 36M).
-     */
     protected function summarizeHorizons(array $timeline): array
     {
         $horizons = [1, 3, 6, 12, 36];
@@ -561,6 +571,7 @@ class AgentProfitSimulatorService
                 'direct_profit' => $timeline[$h]['cumul_direct_profit'],
                 'partner_revenue' => $timeline[$h]['cumul_partner_revenue'],
                 'partner_profit' => $timeline[$h]['cumul_partner_profit'],
+                'partner_margin' => $timeline[$h]['cumul_partner_margin'] ?? ($timeline[$h]['cumul_direct_revenue'] - $timeline[$h]['cumul_partner_revenue']),
                 'monthly_mrc_at_end' => $timeline[$h]['direct_revenue'],
                 'monthly_profit_at_end' => $timeline[$h]['direct_profit'],
             ];

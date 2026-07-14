@@ -1495,7 +1495,8 @@ class MsspCostingController extends Controller
                     $modelAvailable = collect($models)->contains($model);
 
                     $diagnostics['status'] = 'ok';
-                    $diagnostics['available_models'] = $models;
+                    $diagnostics['available_models'] = array_slice($models, 0, 20);
+                    $diagnostics['total_models'] = count($models);
                     $diagnostics['target_model_found'] = $modelAvailable;
                     $diagnostics['message'] = 'Qwen Cloud API is reachable ✅';
                     $diagnostics['model_status'] = $modelAvailable

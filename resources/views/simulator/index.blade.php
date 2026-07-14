@@ -404,7 +404,12 @@
                             <div class="mono-cell text-info small fw-semibold" id="hz_partner_profit_{{ $hMonths }}">
                                 {{ \App\Services\CurrencyHelper::format($hz['partner_profit']) }}
                             </div>
-                            <div class="text-muted" style="font-size: 10px;">Partner Channel Profit</div>
+                            <div class="text-muted" style="font-size: 10px;">MSSP Wholesale Profit</div>
+                            <hr class="my-2 border-secondary border-opacity-20">
+                            <div class="mono-cell text-warning small fw-semibold" id="hz_partner_margin_{{ $hMonths }}">
+                                {{ \App\Services\CurrencyHelper::format($hz['partner_margin'] ?? ($hz['direct_revenue'] - $hz['partner_revenue'])) }}
+                            </div>
+                            <div class="text-muted" style="font-size: 10px;">Partner Earned Margin</div>
                             <div class="mt-2" id="hz_status_badge_{{ $hMonths }}">
                                 @if($hz['is_sold_out'])
                                     <span class="badge bg-danger bg-opacity-25 text-danger-light border border-danger border-opacity-40 py-1 px-2" style="font-size: 9px;">
@@ -448,6 +453,7 @@
                     <th>Partner Revenue</th>
                     <th>Direct Revenue</th>
                     <th>Partner Margin</th>
+                    <th>MSSP Wholesale Net Profit</th>
                     <th class="text-end">Direct Net Profit</th>
                     <th class="text-end">Cumul. Direct Profit</th>
                 </tr>
@@ -486,6 +492,7 @@
                         <td class="mono-cell text-info-light">{{ \App\Services\CurrencyHelper::format($row['partner_revenue']) }}</td>
                         <td class="mono-cell text-white">{{ \App\Services\CurrencyHelper::format($row['direct_revenue']) }}</td>
                         <td class="mono-cell text-warning">{{ \App\Services\CurrencyHelper::format($row['partner_margin']) }}</td>
+                        <td class="mono-cell text-info fw-bold">{{ \App\Services\CurrencyHelper::format($row['partner_profit']) }}</td>
                         <td class="mono-cell text-end text-success fw-bold">{{ \App\Services\CurrencyHelper::format($row['direct_profit']) }}</td>
                         <td class="mono-cell text-end text-success fw-bold">{{ \App\Services\CurrencyHelper::format($row['cumul_direct_profit']) }}</td>
                     </tr>
