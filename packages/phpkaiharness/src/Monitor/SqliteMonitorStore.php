@@ -4,6 +4,7 @@ namespace Phpkaiharness\Monitor;
 
 use PDO;
 use Phpkaiharness\Contracts\AnalyticsCollectorInterface;
+use Phpkaiharness\Optimize\SemanticCache;
 
 /**
  * Standalone SQLite-backed analytics store.
@@ -62,7 +63,6 @@ class SqliteMonitorStore implements AnalyticsCollectorInterface
         if (! is_dir($dir)) {
             @mkdir($dir, 0777, true);
         }
-
 
         if (! extension_loaded('pdo_sqlite') && ! extension_loaded('sqlite3')) {
             throw new \RuntimeException(
@@ -186,6 +186,13 @@ class SqliteMonitorStore implements AnalyticsCollectorInterface
         $settings = [];
         if (function_exists('config') && function_exists('app') && app()->bound('config')) {
             $settings = config('harness') ?: [];
+        }
+        try {
+            if (class_exists(SemanticCache::class)) {
+                $settings['context'] = SemanticCache::getSubjectiveField();
+            }
+        } catch (\Throwable $e) {
+            // Non-fatal
         }
         $settingsJson = json_encode($settings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
         if ($settingsJson === false) {
@@ -452,7 +459,7 @@ class SqliteMonitorStore implements AnalyticsCollectorInterface
         );
         $stmt->bindValue(':pattern', '%'.$factText.'%');
         $stmt->bindValue(':fact', $factText);
-        $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
 
         return $stmt->fetchAll() ?: [];

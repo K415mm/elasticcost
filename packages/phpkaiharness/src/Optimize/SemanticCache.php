@@ -412,10 +412,13 @@ class SemanticCache
                 if ($cachedJson) {
                     $cached = json_decode($cachedJson, true);
                     if ($cached && ! empty($cached['response']) && self::matchDigits($cleanPrompt, $cached['prompt'])) {
-                        // Boost coherence on hit (Zeno effect)
-                        $redis->zadd('harness:cache:coherence', 1.0, $queryHash);
+                        // Validate context to prevent cross-session client/scenario leakage
+                        if (self::validateCacheContext($cached['context'] ?? [])) {
+                            // Boost coherence on hit (Zeno effect)
+                            $redis->zadd('harness:cache:coherence', 1.0, $queryHash);
 
-                        return $cached['response'];
+                            return $cached['response'];
+                        }
                     }
                 }
 
@@ -521,7 +524,7 @@ class SemanticCache
         // Try exact match on raw and normalized prompt
         try {
             $stmt = $db->prepare(
-                "SELECT prompt, response FROM harness_sessions
+                "SELECT * FROM harness_sessions
                  WHERE {$reject}
                  ORDER BY created_at DESC LIMIT 150"
             );
@@ -531,6 +534,12 @@ class SemanticCache
                 if (empty($row['response'])) {
                     continue;
                 }
+                // Validate context mismatch
+                $settings = json_decode($row['settings'] ?? '{}', true) ?: [];
+                if (! self::validateCacheContext($settings['context'] ?? [])) {
+                    continue;
+                }
+
                 $storedPrompt = trim($row['prompt'] ?? '');
                 if ($storedPrompt === $cleanPrompt || self::normalizePrompt($storedPrompt) === $normTarget) {
                     return $row['response'];
@@ -543,7 +552,7 @@ class SemanticCache
         // Try semantic core hash match (non-commutative, order-sensitive)
         try {
             $stmt = $db->query(
-                "SELECT prompt, response FROM harness_sessions
+                "SELECT * FROM harness_sessions
                  WHERE {$reject}
                  ORDER BY created_at DESC LIMIT 150"
             );
@@ -552,6 +561,12 @@ class SemanticCache
             foreach ($sessions as $session) {
                 $cachedPrompt = $session['prompt'] ?? '';
                 if (empty($cachedPrompt)) {
+                    continue;
+                }
+
+                // Validate context mismatch
+                $settings = json_decode($session['settings'] ?? '{}', true) ?: [];
+                if (! self::validateCacheContext($settings['context'] ?? [])) {
                     continue;
                 }
 
@@ -570,7 +585,7 @@ class SemanticCache
         // Try Levenshtein fuzzy match with semantic core overlap guard
         try {
             $stmt = $db->query(
-                "SELECT prompt, response FROM harness_sessions
+                "SELECT * FROM harness_sessions
                  WHERE {$reject}
                  ORDER BY created_at DESC LIMIT 150"
             );
@@ -580,6 +595,12 @@ class SemanticCache
                 $cachedPromptRaw = $session['prompt'] ?? '';
                 $cachedPrompt = self::normalizePrompt($cachedPromptRaw);
                 if (empty($cachedPrompt)) {
+                    continue;
+                }
+
+                // Validate context mismatch
+                $settings = json_decode($session['settings'] ?? '{}', true) ?: [];
+                if (! self::validateCacheContext($settings['context'] ?? [])) {
                     continue;
                 }
 
@@ -718,6 +739,7 @@ class SemanticCache
                     'prompt' => $prompt,
                     'response' => $response,
                     'created_at' => time(),
+                    'context' => self::getSubjectiveField(),
                 ]));
 
                 // Add to coherence ZSET with initial coherence = 1.0 (fully coherent)
@@ -744,6 +766,8 @@ class SemanticCache
 
     /**
      * Get active context keywords (Subjective Field) to bias ambiguous cache lookups.
+     * Extracts concrete client/scenario IDs to allow cross-session sharing of general
+     * info while preventing data leaking between different clients/scenarios.
      */
     public static function getSubjectiveField(): array
     {
@@ -755,11 +779,32 @@ class SemanticCache
 
         if (function_exists('app') && app()->bound('request') && function_exists('request')) {
             $req = request();
-            if ($req->route('client')) {
-                $keywords[] = 'client';
+
+            // Client ID/Name extraction
+            $client = $req->route('client') ?? $req->input('client_id') ?? $req->input('client');
+            if ($client) {
+                if (is_object($client) && isset($client->id)) {
+                    $keywords[] = 'client_'.$client->id;
+                    if (isset($client->name)) {
+                        $keywords[] = 'client_name_'.strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $client->name));
+                    }
+                } elseif (is_numeric($client)) {
+                    $keywords[] = 'client_'.$client;
+                } else {
+                    $keywords[] = 'client_name_'.strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string) $client));
+                }
             }
-            if ($req->input('client_id')) {
-                $keywords[] = 'client';
+
+            // Scenario ID/Name extraction
+            $scenario = $req->route('scenario') ?? $req->input('scenario_id') ?? $req->input('scenario');
+            if ($scenario) {
+                if (is_object($scenario) && isset($scenario->id)) {
+                    $keywords[] = 'scenario_'.$scenario->id;
+                } elseif (is_numeric($scenario)) {
+                    $keywords[] = 'scenario_'.$scenario;
+                } else {
+                    $keywords[] = 'scenario_name_'.strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string) $scenario));
+                }
             }
         }
 
@@ -771,6 +816,47 @@ class SemanticCache
         }
 
         return array_unique($keywords);
+    }
+
+    /**
+     * Validate whether the cached context matches the current context.
+     * Prevents serving client A's cached responses to client B queries.
+     */
+    public static function validateCacheContext(array $cachedContext): bool
+    {
+        $currentContext = self::getSubjectiveField();
+
+        // 1. Validate Client ID mismatch
+        $cachedClientIds = array_filter($cachedContext, fn ($c) => str_starts_with($c, 'client_') && ! str_starts_with($c, 'client_name_'));
+        $currentClientIds = array_filter($currentContext, fn ($c) => str_starts_with($c, 'client_') && ! str_starts_with($c, 'client_name_'));
+
+        if (! empty($cachedClientIds) && ! empty($currentClientIds)) {
+            if (array_values($cachedClientIds) !== array_values($currentClientIds)) {
+                return false;
+            }
+        }
+
+        // 2. Validate Client Name mismatch
+        $cachedClientNames = array_filter($cachedContext, fn ($c) => str_starts_with($c, 'client_name_'));
+        $currentClientNames = array_filter($currentContext, fn ($c) => str_starts_with($c, 'client_name_'));
+
+        if (! empty($cachedClientNames) && ! empty($currentClientNames)) {
+            if (array_values($cachedClientNames) !== array_values($currentClientNames)) {
+                return false;
+            }
+        }
+
+        // 3. Validate Scenario ID mismatch
+        $cachedScenarioIds = array_filter($cachedContext, fn ($c) => str_starts_with($c, 'scenario_') && ! str_starts_with($c, 'scenario_name_'));
+        $currentScenarioIds = array_filter($currentContext, fn ($c) => str_starts_with($c, 'scenario_') && ! str_starts_with($c, 'scenario_name_'));
+
+        if (! empty($cachedScenarioIds) && ! empty($currentScenarioIds)) {
+            if (array_values($cachedScenarioIds) !== array_values($currentScenarioIds)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
