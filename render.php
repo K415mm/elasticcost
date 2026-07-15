@@ -21,3 +21,14 @@ $response2 = $kernel->handle($request2);
 
 file_put_contents('rendered_sizing2.html', $response2->getContent());
 echo "Done rendering scenario 2\n";
+
+// Find first diagram ID to render it dynamically
+$diagram = App\Models\Diagram::first();
+if ($diagram) {
+    $request3 = Illuminate\Http\Request::create("/clients/{$diagram->client_id}/diagrams/{$diagram->id}", 'GET');
+    $response3 = $kernel->handle($request3);
+    file_put_contents('rendered_diagram.html', $response3->getContent());
+    echo "Done rendering diagram {$diagram->id}\n";
+} else {
+    echo "No diagrams found to render\n";
+}
