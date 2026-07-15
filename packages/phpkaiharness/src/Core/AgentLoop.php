@@ -256,6 +256,42 @@ class AgentLoop
         $this->complexityDomain = ComplexityClassifier::classify($userPrompt, $registeredToolNames);
         $this->logger->info('Cynefin Complexity Classification resolved to: '.strtoupper($this->complexityDomain));
 
+        // ── E5: Fast-Path Keyword Routing ─────────────────────────────────────
+        // Short-circuits to a static response when a configured keyword rule
+        // matches — skips LLM, cache, and all pipeline stages entirely.
+        if (function_exists('config')) {
+            try {
+                $keywordRules = config('harness.routing.keyword_rules', []);
+                foreach ($keywordRules as $rule) {
+                    $pattern = $rule['pattern'] ?? '';
+                    $ruleResponse = $rule['response'] ?? '';
+                    if (! empty($pattern) && ! empty($ruleResponse) && @preg_match($pattern, $userPrompt)) {
+                        $this->logger->info("Fast-path keyword match for prompt: {$userPrompt}");
+                        if ($collector && $resolvedSessionId) {
+                            $collector->startSession(
+                                $resolvedSessionId, $userPrompt, 'fast-path-keyword',
+                                $parentSessionId, $interactionIndex, $rootSessionId, $requestId, 'interaction'
+                            );
+                            $collector->recordEvent($resolvedSessionId, 'keyword_route', 'hit',
+                                ['pattern' => $pattern], json_encode(['response' => $ruleResponse]) ?: '{}'
+                            );
+                            $collector->endSession($resolvedSessionId, $ruleResponse, 0, 0);
+                        }
+                        $history[] = ['role' => 'user', 'content' => $userPrompt];
+                        $history[] = ['role' => 'assistant', 'content' => $ruleResponse];
+                        if ($onChunk !== null) {
+                            $onChunk($ruleResponse);
+                        }
+                        $this->dispatch(new AgentFinished($resolvedSessionId, $this->agentName, $ruleResponse, 0, 0));
+
+                        return $ruleResponse;
+                    }
+                }
+            } catch (\Throwable $e) {
+                $this->logger->debug('Fast-path keyword routing failed: '.$e->getMessage());
+            }
+        }
+
         // ── Config Mode: Philosophy vs Force ─────────────────────────────────
         //
         // In FORCE mode  : manager config is used as-is. Dirac domain informs
@@ -317,10 +353,19 @@ class AgentLoop
                             if (function_exists('app') && app()->bound(SemanticMemoryInterface::class)) {
                                 $semanticMemory = app(SemanticMemoryInterface::class);
                             }
+                            // E7: Use PHP session ID as cache namespace for per-session isolation
+                            $cacheNamespace = 'default';
+                            try {
+                                if (function_exists('session') && session()->isStarted()) {
+                                    $cacheNamespace = session()->getId() ?: 'default';
+                                }
+                            } catch (\Throwable $e) { /* keep default */
+                            }
                             $this->semanticCache = new SemanticCache(
                                 pdo: new \PDO('sqlite:'.$dbPath),
                                 threshold: (float) config('harness.cache.threshold', config('harness.semantic_cache.threshold', 0.88)),
-                                semanticMemory: $semanticMemory
+                                semanticMemory: $semanticMemory,
+                                namespace: $cacheNamespace
                             );
                         }
                     }
@@ -638,6 +683,11 @@ class AgentLoop
 
                 $llmDurationMs = (int) ((microtime(true) - $llmStartTime) * 1000);
                 $this->recordedDetailTypes[] = 'llm_call';
+                // E6: Extract real token usage from the LLM response (returned by QwenClient etc.)
+                $tokenUsage = [
+                    'prompt_tokens' => (int) ($response['usage']['prompt_tokens'] ?? 0),
+                    'completion_tokens' => (int) ($response['usage']['completion_tokens'] ?? 0),
+                ];
                 $this->dispatch(new LlmCallFinished(
                     $resolvedSessionId,
                     $this->agentName,
@@ -646,7 +696,7 @@ class AgentLoop
                     $response['content'] ?? null,
                     $response['tool_calls'] ?? [],
                     $llmDurationMs,
-                    ['prompt_tokens' => 0, 'completion_tokens' => 0]
+                    $tokenUsage
                 ));
             } catch (Exception $e) {
                 $this->logger->error('LLM Chat failed: '.$e->getMessage());

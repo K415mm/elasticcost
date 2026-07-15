@@ -950,6 +950,109 @@ class HarnessTelemetryController extends Controller
             }
         }
 
+        // E1: Dirac Domain Distribution — aggregate complexity routing stats across all session DBs
+        if ($action === 'domain_distribution') {
+            $distribution = ['simple' => 0, 'complicated' => 0, 'complex' => 0, 'unknown' => 0];
+            $domainByDay = [];
+
+            $dbsToQuery = [];
+
+            if ($this->isolationEnabled && $this->sessionManager) {
+                // Collect all per-session monitor.db paths
+                $sessionsBase = $this->sessionManager->getBasePath();
+                if (is_dir($sessionsBase)) {
+                    foreach (new \FilesystemIterator($sessionsBase) as $entry) {
+                        if ($entry->isDir()) {
+                            $dbFile = $entry->getPathname().DIRECTORY_SEPARATOR.'monitor.db';
+                            if (file_exists($dbFile) && (int) @filesize($dbFile) > 0) {
+                                $dbsToQuery[] = $dbFile;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Always include global monitor.db
+            $globalDb = config('harness.cache.db_path') ?: SqliteMonitorStore::defaultDbPath();
+            if (file_exists($globalDb) && ! in_array($globalDb, $dbsToQuery)) {
+                $dbsToQuery[] = $globalDb;
+            }
+
+            foreach ($dbsToQuery as $dbFile) {
+                try {
+                    $pdo = new \PDO('sqlite:'.$dbFile);
+                    $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
+                    // Extract complexity domain from session method field
+                    // (method stores 'executor-loop', 'fast-path-keyword', 'semantic-cache-hit', etc.)
+                    // Complexity domain is stored in harness_details payload for feature_matrix events
+                    $rows = $pdo->query(
+                        "SELECT
+                            COALESCE(json_extract(d.payload, '$.complexity'), 'simple') as domain,
+                            DATE(d.created_at) as day,
+                            COUNT(*) as cnt
+                         FROM harness_details d
+                         WHERE d.type = 'feature_matrix'
+                         GROUP BY domain, day
+                         ORDER BY day DESC"
+                    )->fetchAll(\PDO::FETCH_ASSOC);
+
+                    foreach ($rows as $row) {
+                        $domain = strtolower((string) ($row['domain'] ?? 'simple'));
+                        $cnt = (int) $row['cnt'];
+                        $day = (string) ($row['day'] ?? '');
+
+                        if (isset($distribution[$domain])) {
+                            $distribution[$domain] += $cnt;
+                        } else {
+                            $distribution['unknown'] += $cnt;
+                        }
+
+                        if ($day) {
+                            $domainByDay[$day][$domain] = ($domainByDay[$day][$domain] ?? 0) + $cnt;
+                        }
+                    }
+
+                    // Fallback: count sessions by method name as a proxy for domain
+                    // (fast-path-keyword → simple, semantic-cache → simple, executor-loop → varies)
+                    if (array_sum($distribution) === 0) {
+                        $methodRows = $pdo->query(
+                            'SELECT method, COUNT(*) as cnt FROM harness_sessions GROUP BY method'
+                        )->fetchAll(\PDO::FETCH_ASSOC);
+
+                        foreach ($methodRows as $mr) {
+                            $method = (string) $mr['method'];
+                            $cnt = (int) $mr['cnt'];
+                            if (str_contains($method, 'keyword') || str_contains($method, 'cache')) {
+                                $distribution['simple'] += $cnt;
+                            } else {
+                                $distribution['unknown'] += $cnt;
+                            }
+                        }
+                    }
+
+                    $pdo = null;
+                } catch (\Throwable $e) {
+                    // Skip unreadable DB
+                }
+            }
+
+            $total = max(1, array_sum($distribution));
+
+            return response()->json([
+                'success' => true,
+                'distribution' => $distribution,
+                'percentages' => [
+                    'simple' => round($distribution['simple'] / $total * 100, 1),
+                    'complicated' => round($distribution['complicated'] / $total * 100, 1),
+                    'complex' => round($distribution['complex'] / $total * 100, 1),
+                    'unknown' => round($distribution['unknown'] / $total * 100, 1),
+                ],
+                'total' => $total,
+                'by_day' => $domainByDay,
+            ]);
+        }
+
         return response()->json(['success' => false, 'error' => "Unknown action: $action"], 400);
     }
 

@@ -89,6 +89,37 @@ class SessionManager
     }
 
     /**
+     * E2: Get the path to the shared (cross-session) quantum memory DB.
+     *
+     * When harness.quantum_harness.shared_memory_enabled is true, all sessions
+     * read from and write to this single shared database, allowing accumulated
+     * knowledge to transfer across user sessions.
+     */
+    public function getSharedQuantumDbPath(): string
+    {
+        $configured = config('harness.quantum_harness.shared_db_path');
+        if (! empty($configured)) {
+            return (string) $configured;
+        }
+
+        if (function_exists('storage_path')) {
+            return storage_path('app/phpkaiharness/shared_memory.sqlite');
+        }
+
+        $home = getenv('HOME') ?: (getenv('USERPROFILE') ?: sys_get_temp_dir());
+
+        return $home.DIRECTORY_SEPARATOR.'.phpkaiharness'.DIRECTORY_SEPARATOR.'shared_memory.sqlite';
+    }
+
+    /**
+     * E2: Check whether cross-session shared quantum memory is enabled.
+     */
+    public function isSharedMemoryEnabled(): bool
+    {
+        return (bool) config('harness.quantum_harness.shared_memory_enabled', false);
+    }
+
+    /**
      * Get the context cache path for a session.
      */
     public function getContextPath(string $sessionId): string
@@ -156,14 +187,30 @@ class SessionManager
         $monitorDbPath = $this->getMonitorDbPath($sessionId);
         $quantumDbPath = $this->getQuantumDbPath($sessionId);
 
-        $globalQuantumDb = function_exists('storage_path')
-            ? storage_path('app/phpkaiharness/agent_memory.sqlite')
-            : $quantumDbPath;
+        // E2: When shared memory is enabled, all sessions share one global Quantum Memory DB.
+        // This allows accumulated knowledge (nodes, facts, embeddings) to persist across user sessions.
+        if ($this->isSharedMemoryEnabled()) {
+            $sharedPath = $this->getSharedQuantumDbPath();
+            // Bootstrap shared DB schema on first use
+            if (! file_exists($sharedPath) || (int) @filesize($sharedPath) === 0) {
+                try {
+                    (new QuantumInferenceEngine($sharedPath))->getPdo();
+                } catch (\Throwable $e) {
+                    // Non-fatal
+                }
+            }
+            $effectiveQuantumDb = $sharedPath;
+        } else {
+            $globalQuantumDb = function_exists('storage_path')
+                ? storage_path('app/phpkaiharness/agent_memory.sqlite')
+                : $quantumDbPath;
+            $effectiveQuantumDb = $globalQuantumDb;
+        }
 
         config([
             'harness.cache.db_path' => $monitorDbPath,
-            'harness.quantum_harness.db_path' => $globalQuantumDb,
-            'database.connections.agent_memory_sqlite.database' => $globalQuantumDb,
+            'harness.quantum_harness.db_path' => $effectiveQuantumDb,
+            'database.connections.agent_memory_sqlite.database' => $effectiveQuantumDb,
         ]);
 
         if (function_exists('app')) {

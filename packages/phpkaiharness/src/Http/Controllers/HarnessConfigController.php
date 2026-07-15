@@ -82,17 +82,22 @@ class HarnessConfigController extends Controller
         }
 
         // Programmatically reload Octane and Horizon workers to apply changes to all long-running processes
+        $reloadStatus = [];
         if (function_exists('app')) {
             try {
                 Artisan::call('config:clear');
+                $reloadStatus[] = '✓ config cleared';
             } catch (\Throwable $e) {
+                $reloadStatus[] = '✗ config:clear failed: '.$e->getMessage();
             }
             try {
                 Artisan::call('route:clear');
+                $reloadStatus[] = '✓ routes cleared';
             } catch (\Throwable $e) {
             }
             try {
                 Artisan::call('view:clear');
+                $reloadStatus[] = '✓ views cleared';
             } catch (\Throwable $e) {
             }
             try {
@@ -102,11 +107,14 @@ class HarnessConfigController extends Controller
             try {
                 if (app()->bound('octane') || config('octane.server')) {
                     Artisan::call('octane:reload');
+                    $reloadStatus[] = '✓ Octane workers reloaded';
                 }
             } catch (\Throwable $e) {
+                $reloadStatus[] = '✗ Octane reload failed (config applied via overrides file)';
             }
             try {
                 Artisan::call('reverb:restart');
+                $reloadStatus[] = '✓ Reverb restarted';
             } catch (\Throwable $e) {
             }
             try {
@@ -115,6 +123,7 @@ class HarnessConfigController extends Controller
             }
             try {
                 Artisan::call('horizon:terminate');
+                $reloadStatus[] = '✓ Horizon terminated (will restart)';
             } catch (\Throwable $e) {
             }
 
@@ -123,13 +132,15 @@ class HarnessConfigController extends Controller
                 if (function_exists('opcache_get_status') && function_exists('opcache_reset')) {
                     if (opcache_get_status() !== false) {
                         opcache_reset();
+                        $reloadStatus[] = '✓ OPcache reset';
                     }
                 }
             } catch (\Throwable $e) {
             }
         }
 
-        $message = $configWriteWarning ?? 'Configuration saved, all compiled caches cleared, and workers restarted.';
+        $reloadSummary = empty($reloadStatus) ? '' : ' — '.implode(', ', $reloadStatus);
+        $message = ($configWriteWarning ?? 'Configuration saved, caches cleared, workers reloaded.').$reloadSummary;
 
         return redirect()->route('harness.config')
             ->with($configWriteWarning ? 'warning' : 'success', $message);

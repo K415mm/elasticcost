@@ -24,36 +24,42 @@ class ComplexityClassifier
      */
     public static function classify(string $prompt, array $registeredTools = []): string
     {
+        // E4: Load tunable parameters from config (falls back to original defaults)
+        $cfg = [];
+        if (function_exists('config')) {
+            try {
+                $cfg = config('harness.routing.complexity', []);
+            } catch (\Throwable $e) { /* use defaults */
+            }
+        }
+
         $cleanPrompt = strtolower(trim($prompt));
 
         // 1. Tokenize query into high-value semantic particles (tokens)
         $tokens = self::tokenize($cleanPrompt);
 
         // 2. Program Permutations as Dynamical Variables & compute Class Operator average
-        // We represent the token matrix as a state vector |ψ⟩ where each element is the semantic weight of a token.
         $psi = self::buildTokenWeights($tokens);
-
-        // Calculate Class Operator average of transpositions: χ_c = n_c^-1 * Σ P_c
         $eigenvalue = self::evaluatePermutationSymmetry($psi);
 
-        // 3. Define the Hilbert space coefficients (probability amplitudes)
-        // |ψ⟩ = c_s |Simple⟩ + c_d |Complicated⟩ + c_x |Complex⟩
-        $c_s = 1.0; // Symmetrical / Einstein-Bose basis amplitude
-        $c_d = 0.0; // Complicated / Supplementary condition amplitude
-        $c_x = 0.0; // Complex / Fermionic basis amplitude
+        // 3. Define Hilbert space coefficients (probability amplitudes) — configurable seeds
+        $c_s = (float) ($cfg['simple_amplitude'] ?? 1.0);
+        $c_d = (float) ($cfg['complicated_amplitude'] ?? 0.0);
+        $c_x = (float) ($cfg['complex_amplitude'] ?? 0.0);
 
         // 4. Project Permutation Symmetry onto Symmetrical vs. Antisymmetrical bases
-        // Symmetrical (Einstein-Bose): eigenvalue ≈ 1 (order-invariant conversational query)
-        // Antisymmetrical (Fermionic): eigenvalue ≈ -1 or low (order-sensitive command/mutating intent)
-        if ($eigenvalue >= 0.8) {
+        $symmetryThreshold = (float) ($cfg['symmetry_threshold'] ?? 0.8);
+        if ($eigenvalue >= $symmetryThreshold) {
             $c_s += 1.2;
         } else {
             $c_x += 0.8 * (1.0 - $eigenvalue);
         }
 
-        // 5. Project mutating tools onto the Complex basis |Complex⟩
+        // 5. Project mutating tools onto the Complex basis
+        $mutatingKeywords = $cfg['mutating_keywords']
+            ?? ['update', 'delete', 'modify', 'create', 'run', 'simulate', 'change', 'ingest', 'set'];
+
         $hasActionTools = false;
-        $mutatingKeywords = ['update', 'delete', 'modify', 'create', 'run', 'simulate', 'change', 'ingest', 'set'];
         foreach ($registeredTools as $tool) {
             $toolLower = strtolower($tool);
             foreach ($mutatingKeywords as $keyword) {
@@ -64,7 +70,6 @@ class ComplexityClassifier
             }
         }
 
-        // Project mutating intent onto the Complex basis
         $hasMutatingIntent = false;
         foreach ($mutatingKeywords as $keyword) {
             if (preg_match("/\b{$keyword}\b/i", $cleanPrompt)) {
@@ -82,9 +87,10 @@ class ComplexityClassifier
             $c_s -= 0.8;
         }
 
-        // 6. Project database entities / RAG requirement onto the Complicated basis |Complicated⟩
-        // Mathematically represents checking the "Semantic Supplementary Condition" for external ground truth.
-        $entityKeywords = ['client', 'scenario', 'asset', 'sizing', 'profit', 'mssp', 'user', 'role', 'permission'];
+        // 6. Project database entities / RAG requirement onto the Complicated basis
+        $entityKeywords = $cfg['entity_keywords']
+            ?? ['client', 'scenario', 'asset', 'sizing', 'profit', 'mssp', 'user', 'role', 'permission'];
+
         $hasEntities = false;
         foreach ($entityKeywords as $entity) {
             if (preg_match("/\b{$entity}\b/i", $cleanPrompt)) {
@@ -102,12 +108,12 @@ class ComplexityClassifier
             $c_s -= 0.9;
         }
 
-        // 7. Calculate measurement probability densities: P(Domain) = |c_Domain|^2
+        // 7. Calculate measurement probability densities
         $p_simple = pow(max(0.0, $c_s), 2);
         $p_complicated = pow(max(0.0, $c_d), 2);
         $p_complex = pow(max(0.0, $c_x), 2);
 
-        // 8. Trigger spontaneous symmetry breaking / state collapse
+        // 8. Trigger state collapse
         $maxProb = max($p_simple, $p_complicated, $p_complex);
 
         if ($maxProb === $p_complex && $c_x > 0.0) {

@@ -289,7 +289,7 @@ class QwenClient implements LlmClientInterface
                 $collector->recordLlmCall($sessionId, $resolvedModel, $payload, $body, $durationMs, $usage);
             }
 
-            return ['content' => $content, 'tool_calls' => $formattedToolCalls];
+            return ['content' => $content, 'tool_calls' => $formattedToolCalls, 'usage' => $usage];
 
         } catch (Exception $e) {
             throw new Exception('Qwen Cloud connection failed: '.$e->getMessage(), 0, $e);

@@ -7,6 +7,26 @@ return [
             'enabled' => true,
             'confidence_threshold' => 0.9,
         ],
+        // E4: Dirac ComplexityClassifier tuning — adjust without code changes
+        'complexity' => [
+            'simple_amplitude' => 1.0,   // Base weight for Simple domain
+            'complicated_amplitude' => 0.0,   // Base weight for Complicated domain
+            'complex_amplitude' => 0.0,   // Base weight for Complex domain
+            'symmetry_threshold' => 0.8,   // Eigenvalue threshold for symmetry/antisymmetry split
+            'entity_keywords' => [
+                'client', 'scenario', 'asset', 'sizing', 'profit', 'mssp',
+                'user', 'role', 'permission',
+            ],
+            'mutating_keywords' => [
+                'update', 'delete', 'modify', 'create', 'run', 'simulate',
+                'change', 'ingest', 'set',
+            ],
+        ],
+        // E5: Keyword fast-path rules — each entry short-circuits to a static response
+        // Pattern must be a valid PHP regex string, e.g. '/hello|hi/i'
+        'keyword_rules' => [
+            // Example: ['pattern' => '/^hello$/i', 'response' => 'Hello! How can I help?'],
+        ],
     ],
     'default' => [
         'provider' => 'ollama',
@@ -163,6 +183,11 @@ return [
         'max_anchors' => 5,
         'coherence_decay' => 0.05,
         'density_matrix_bias' => 0.1,
+        // E2: Cross-session shared Quantum Memory
+        // When true, all user sessions read/write from a single shared_memory.sqlite
+        // enabling accumulated knowledge to persist across sessions.
+        'shared_memory_enabled' => false,
+        'shared_db_path' => null,  // null = storage/app/phpkaiharness/shared_memory.sqlite
     ],
     'qwen_provider' => [
         'enabled' => true,
