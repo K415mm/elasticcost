@@ -479,5 +479,6 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- ================== END core-js ================== -->
     @yield('scripts')
+    @stack('scripts')
 </body>
 </html>
