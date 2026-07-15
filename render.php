@@ -10,25 +10,23 @@ $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 $user = App\Models\User::first();
 Auth::login($user);
 
-$request = Illuminate\Http\Request::create('/clients/1/scenarios/1', 'GET');
-$response = $kernel->handle($request);
+// Loop through all clients and scenarios and render their sizing dashboard
+$clients = App\Models\Client::all();
+$scenarios = App\Models\Scenario::all();
 
-file_put_contents('rendered_sizing.html', $response->getContent());
-echo "Done rendering scenario 1\n";
-
-$request2 = Illuminate\Http\Request::create('/clients/1/scenarios/2', 'GET');
-$response2 = $kernel->handle($request2);
-
-file_put_contents('rendered_sizing2.html', $response2->getContent());
-echo "Done rendering scenario 2\n";
-
-// Find first diagram ID to render it dynamically
-$diagram = App\Models\Diagram::first();
-if ($diagram) {
-    $request3 = Illuminate\Http\Request::create("/clients/{$diagram->client_id}/diagrams/{$diagram->id}", 'GET');
-    $response3 = $kernel->handle($request3);
-    file_put_contents('rendered_diagram.html', $response3->getContent());
-    echo "Done rendering diagram {$diagram->id}\n";
-} else {
-    echo "No diagrams found to render\n";
+foreach ($clients as $c) {
+    foreach ($scenarios as $s) {
+        try {
+            $request = Illuminate\Http\Request::create("/clients/{$c->id}/scenarios/{$s->id}", 'GET');
+            $response = $kernel->handle($request);
+            $content = $response->getContent();
+            $lineCount = count(explode("\n", $content));
+            
+            $fileName = "rendered_c{$c->id}_s{$s->id}.html";
+            file_put_contents($fileName, $content);
+            echo "Client {$c->id} Scenario {$s->id} -> {$fileName} ({$lineCount} lines)\n";
+        } catch (\Exception $e) {
+            echo "Error rendering Client {$c->id} Scenario {$s->id}: " . $e->getMessage() . "\n";
+        }
+    }
 }
