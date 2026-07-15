@@ -30,3 +30,14 @@ foreach ($clients as $c) {
         }
     }
 }
+
+// Find a newly generated diagram to inspect its rendered HTML
+$diagram = App\Models\Diagram::whereIn('type', ['log_ingestion', 'node_specs', 'cluster_topology', 'node_clustering'])->first();
+if ($diagram) {
+    $request3 = Illuminate\Http\Request::create("/clients/{$diagram->client_id}/diagrams/{$diagram->id}", 'GET');
+    $response3 = $kernel->handle($request3);
+    file_put_contents('rendered_diagram5.html', $response3->getContent());
+    echo "Done rendering sizing diagram {$diagram->id} -> rendered_diagram5.html\n";
+} else {
+    echo "No sizing diagrams found to render\n";
+}
