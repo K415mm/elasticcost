@@ -22,6 +22,9 @@
         <button id="btn-ask-ai" type="button" class="btn btn-outline-info">
             <i class="bi bi-cpu me-1"></i> Analyze Sizing
         </button>
+        <button id="btn-sync-diagrams" type="button" class="btn btn-outline-primary">
+            <i class="bi bi-diagram-3 me-1"></i> Sync Diagrams
+        </button>
         <a href="{{ route('clients.show', $client->id) }}" class="btn btn-outline-secondary">
             <i class="bi bi-x-circle me-1"></i> {{ __('messages.close') }}
         </a>
@@ -493,6 +496,63 @@
         <div class="card-arrow-bottom-right"></div>
     </div>
 </div>
+
+<!-- 5. Generated Sizing Diagrams -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title mb-3 text-theme">
+            <i class="bi bi-diagram-3-fill me-2"></i> Scenario Architecture Diagrams (Draw.io)
+        </h5>
+        <p class="text-muted small mb-4">
+            These diagrams are automatically generated based on the sizing parameters above. They update automatically when you save custom node layouts or reset defaults. You can open any diagram in the full editor to customize it further.
+        </p>
+
+        @php
+            $scenarioDiagrams = $client->diagrams()->where('scenario_id', $scenario->id)->get();
+        @endphp
+
+        <div class="row g-3" id="sizing-diagrams-grid">
+            @if($scenarioDiagrams->isEmpty())
+                <div class="col-12 text-center py-4 text-muted">
+                    <i class="bi bi-info-circle me-1"></i> No generated diagrams found. Click <strong>Sync Diagrams</strong> above to auto-generate them.
+                </div>
+            @else
+                @foreach($scenarioDiagrams as $diag)
+                    <div class="col-xl-3 col-lg-6 col-md-6">
+                        <div class="card border-secondary border-opacity-25 bg-black bg-opacity-10 h-100">
+                            <div class="card-body d-flex flex-column justify-content-between p-3">
+                                <div>
+                                    <span class="badge bg-theme bg-opacity-20 text-theme border border-theme border-opacity-30 mb-2">
+                                        {{ strtoupper(str_replace('_', ' ', $diag->type)) }}
+                                    </span>
+                                    <h6 class="text-white fw-bold mb-1">{{ $diag->name }}</h6>
+                                    <p class="text-muted small mb-3">Last updated: {{ $diag->updated_at->diffForHumans() }}</p>
+                                </div>
+                                <div class="d-flex gap-2 border-top border-secondary border-opacity-20 pt-2">
+                                    <a href="{{ route('clients.diagrams.show', [$client->id, $diag->id]) }}" class="btn btn-outline-theme btn-xs flex-grow-1" target="_blank">
+                                        <i class="bi bi-pencil-square me-1"></i> Open Editor
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="card-arrow">
+                                <div class="card-arrow-top-left"></div>
+                                <div class="card-arrow-top-right"></div>
+                                <div class="card-arrow-bottom-left"></div>
+                                <div class="card-arrow-bottom-right"></div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            @endif
+        </div>
+    </div>
+    <div class="card-arrow">
+        <div class="card-arrow-top-left"></div>
+        <div class="card-arrow-top-right"></div>
+        <div class="card-arrow-bottom-left"></div>
+        <div class="card-arrow-bottom-right"></div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -719,6 +779,62 @@
                         tr.remove();
                     }
                 }
+            });
+        }
+
+        // Sync Sizing Diagrams Handler
+        var btnSyncDiag = document.getElementById("btn-sync-diagrams");
+        if (btnSyncDiag) {
+            btnSyncDiag.addEventListener("click", function() {
+                btnSyncDiag.disabled = true;
+                btnSyncDiag.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Syncing...';
+
+                fetch("{{ route('sizing.sync-diagrams', [$client->id, $scenario->id]) }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    btnSyncDiag.disabled = false;
+                    btnSyncDiag.innerHTML = '<i class="bi bi-diagram-3 me-1"></i> Sync Diagrams';
+                    
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: 'Sizing diagrams generated and synchronized successfully.',
+                            icon: 'success',
+                            confirmButtonColor: '#3cd2a5',
+                            background: '#1a2433',
+                            color: '#e0e8f0'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.message || 'Error generating sizing diagrams.',
+                            icon: 'error',
+                            confirmButtonColor: '#ff5b57',
+                            background: '#1a2433',
+                            color: '#e0e8f0'
+                        });
+                    }
+                })
+                .catch(err => {
+                    btnSyncDiag.disabled = false;
+                    btnSyncDiag.innerHTML = '<i class="bi bi-diagram-3 me-1"></i> Sync Diagrams';
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Network error or failed to sync: ' + err.message,
+                        icon: 'error',
+                        confirmButtonColor: '#ff5b57',
+                        background: '#1a2433',
+                        color: '#e0e8f0'
+                    });
+                });
             });
         }
     });

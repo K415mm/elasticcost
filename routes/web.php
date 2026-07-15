@@ -105,6 +105,7 @@ Route::middleware('auth')->group(function () {
         Route::post('clients/{client}/scenarios/{scenario}/sizing/analyze-ai', [SizingDashboardController::class, 'analyzeSizingAi'])->name('sizing.analyze-ai');
         Route::post('clients/{client}/scenarios/{scenario}/custom-nodes', [SizingDashboardController::class, 'saveCustomNodes'])->name('sizing.custom-nodes.save');
         Route::post('clients/{client}/scenarios/{scenario}/custom-nodes/reset', [SizingDashboardController::class, 'resetCustomNodes'])->name('sizing.custom-nodes.reset');
+        Route::post('clients/{client}/scenarios/{scenario}/sync-diagrams', [SizingDashboardController::class, 'syncDiagrams'])->name('sizing.sync-diagrams');
     });
 
     // MSSP / SOC Costing Dashboard

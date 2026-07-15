@@ -6,6 +6,7 @@ use App\Ai\Tools\CreateDrawioDiagramTool;
 use App\Ai\Tools\ViewDrawioDiagramsTool;
 use App\Models\Client;
 use App\Models\Diagram;
+use App\Models\Scenario;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -155,5 +156,110 @@ class DiagramTest extends TestCase
         $this->assertEquals('success', $result['status']);
         $this->assertEquals(1, $result['count']);
         $this->assertEquals('Existing Diagram 1', $result['data'][0]['name']);
+    }
+
+    /**
+     * Test syncDiagrams creates four diagrams.
+     */
+    public function test_sync_diagrams_creates_four_diagrams(): void
+    {
+        $scenario = Scenario::first();
+        $this->assertNotNull($scenario);
+
+        $response = $this->post(route('sizing.sync-diagrams', [$this->client->id, $scenario->id]));
+        $response->assertOk();
+        $response->assertJsonPath('success', true);
+
+        $diagrams = Diagram::where('scenario_id', $scenario->id)->get();
+        $this->assertCount(4, $diagrams);
+
+        $types = $diagrams->pluck('type')->toArray();
+        $this->assertContains('log_ingestion', $types);
+        $this->assertContains('node_specs', $types);
+        $this->assertContains('cluster_topology', $types);
+        $this->assertContains('node_clustering', $types);
+    }
+
+    /**
+     * Test syncDiagrams updates existing diagrams.
+     */
+    public function test_sync_diagrams_updates_existing_diagrams(): void
+    {
+        $scenario = Scenario::first();
+
+        // Sync first time
+        $this->post(route('sizing.sync-diagrams', [$this->client->id, $scenario->id]));
+        $this->assertCount(4, Diagram::where('scenario_id', $scenario->id)->get());
+
+        // Sync second time
+        $response = $this->post(route('sizing.sync-diagrams', [$this->client->id, $scenario->id]));
+        $response->assertOk();
+
+        // Assert total diagrams for this scenario remains exactly 4
+        $this->assertCount(4, Diagram::where('scenario_id', $scenario->id)->get());
+    }
+
+    /**
+     * Test save custom nodes automatically syncs diagrams.
+     */
+    public function test_save_custom_nodes_auto_syncs_diagrams(): void
+    {
+        $scenario = Scenario::first();
+
+        $payload = [
+            'nodes' => [
+                [
+                    'name' => 'custom-hot-01',
+                    'role' => 'Data (Hot)',
+                    'count' => 3,
+                    'ram_gb' => 32.0,
+                    'storage_gb' => 500.0,
+                    'storage_type' => 'NVMe SSD',
+                ],
+            ],
+        ];
+
+        $response = $this->post(route('sizing.custom-nodes.save', [$this->client->id, $scenario->id]), $payload);
+        $response->assertRedirect();
+
+        $diagrams = Diagram::where('scenario_id', $scenario->id)->get();
+        $this->assertCount(4, $diagrams);
+
+        $nodeSpecsDiagram = Diagram::where('scenario_id', $scenario->id)->where('type', 'node_specs')->first();
+        $this->assertNotNull($nodeSpecsDiagram);
+        $this->assertStringContainsString('custom-hot-01', $nodeSpecsDiagram->content);
+        $this->assertStringContainsString('32 GB', $nodeSpecsDiagram->content);
+    }
+
+    /**
+     * Test reset custom nodes automatically syncs diagrams.
+     */
+    public function test_reset_custom_nodes_auto_syncs_diagrams(): void
+    {
+        $scenario = Scenario::first();
+
+        $response = $this->post(route('sizing.custom-nodes.reset', [$this->client->id, $scenario->id]));
+        $response->assertRedirect();
+
+        $diagrams = Diagram::where('scenario_id', $scenario->id)->get();
+        $this->assertCount(4, $diagrams);
+    }
+
+    /**
+     * Test deleting a scenario cascade deletes all related diagrams.
+     */
+    public function test_delete_scenario_cascades_diagrams(): void
+    {
+        $scenario = Scenario::first();
+
+        // Sync first to create the 4 diagrams
+        $this->post(route('sizing.sync-diagrams', [$this->client->id, $scenario->id]));
+        $this->assertCount(4, Diagram::where('scenario_id', $scenario->id)->get());
+
+        // Delete the scenario
+        $scenario->delete();
+
+        // Assert all diagrams for this scenario are cascade-deleted
+        $this->assertCount(0, Diagram::where('scenario_id', $scenario->id)->get());
     }
 }

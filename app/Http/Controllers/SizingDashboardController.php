@@ -6,11 +6,14 @@ use App\Ai\Agents\SizingRegulator;
 use App\Ai\Middleware\InjectDocumentation;
 use App\Models\Client;
 use App\Models\ClientScenarioMsspDetail;
+use App\Models\Diagram;
 use App\Models\Scenario;
 use App\Services\AiConfigHelper;
 use App\Services\CurrencyHelper;
+use App\Services\SizingDiagramService;
 use App\Services\SizingEngine;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Laravel\Ai\Prompts\AgentPrompt;
 use Phpkaiharness\Core\AgentLoop;
@@ -1187,6 +1190,13 @@ class SizingDashboardController extends Controller
             'custom_nodes' => $validated['nodes'],
         ]);
 
+        // Auto-sync diagrams on update
+        try {
+            $this->performDiagramsSync($client, $scenario);
+        } catch (\Exception $e) {
+            \Log::error('Error auto-syncing diagrams on saveCustomNodes: '.$e->getMessage());
+        }
+
         return redirect()->back()->with('success', 'Custom node topology saved successfully.');
     }
 
@@ -1206,6 +1216,77 @@ class SizingDashboardController extends Controller
             ]);
         }
 
+        // Auto-sync diagrams on reset
+        try {
+            $this->performDiagramsSync($client, $scenario);
+        } catch (\Exception $e) {
+            \Log::error('Error auto-syncing diagrams on resetCustomNodes: '.$e->getMessage());
+        }
+
         return redirect()->back()->with('success', 'Node topology reset to auto-recommendations.');
+    }
+
+    /**
+     * Synchronize and auto-generate the 4 sizing diagrams for a specific client scenario.
+     */
+    public function syncDiagrams(Client $client, Scenario $scenario)
+    {
+        try {
+            $synced = $this->performDiagramsSync($client, $scenario);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sizing diagrams synchronized successfully.',
+                'diagrams' => $synced,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error syncing sizing diagrams: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error syncing diagrams: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Private helper to perform diagram generation and database persistence.
+     */
+    private function performDiagramsSync(Client $client, Scenario $scenario): array
+    {
+        $data = $this->sizingEngine->calculate($client, $scenario);
+
+        $diagramService = new SizingDiagramService;
+        $diagramsData = $diagramService->generateAll($client, $scenario, $data);
+
+        $synced = [];
+        foreach ($diagramsData as $type => $xmlContent) {
+            $name = match ($type) {
+                'log_ingestion' => "{$scenario->name} — Log Ingestion & Source Sizing",
+                'node_specs' => "{$scenario->name} — Recommended Node Specs",
+                'cluster_topology' => "{$scenario->name} — Cluster Topology (Editor)",
+                'node_clustering' => "{$scenario->name} — Node Clustering Topology",
+                default => "{$scenario->name} — Sizing Diagram ({$type})",
+            };
+
+            $diagram = Diagram::updateOrCreate([
+                'client_id' => $client->id,
+                'scenario_id' => $scenario->id,
+                'type' => $type,
+            ], [
+                'name' => $name,
+                'content' => $xmlContent,
+                'created_by' => Auth::id() ?? 1,
+            ]);
+
+            $synced[] = [
+                'id' => $diagram->id,
+                'name' => $diagram->name,
+                'type' => $diagram->type,
+                'url' => route('clients.diagrams.show', [$client->id, $diagram->id]),
+            ];
+        }
+
+        return $synced;
     }
 }
