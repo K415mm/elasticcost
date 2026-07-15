@@ -94,18 +94,8 @@ class ViewDrawioDiagramsTool implements Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'type' => 'object',
-            'properties' => [
-                'client_id' => [
-                    'type' => 'integer',
-                    'description' => 'The ID of the client whose diagrams to retrieve.',
-                ],
-                'diagram_id' => [
-                    'type' => 'integer',
-                    'description' => 'Optional ID of a specific diagram to fetch the raw XML content for.',
-                ],
-            ],
-            'required' => ['client_id'],
+            'client_id' => $schema->integer()->description('The ID of the client whose diagrams to retrieve.')->required(),
+            'diagram_id' => $schema->integer()->description('Optional ID of a specific diagram to fetch the raw XML content for.'),
         ];
     }
 }

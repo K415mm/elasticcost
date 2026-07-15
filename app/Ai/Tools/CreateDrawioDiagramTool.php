@@ -88,31 +88,11 @@ class CreateDrawioDiagramTool implements Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'type' => 'object',
-            'properties' => [
-                'client_id' => [
-                    'type' => 'integer',
-                    'description' => 'The ID of the client to associate this diagram with.',
-                ],
-                'scenario_id' => [
-                    'type' => 'integer',
-                    'description' => 'Optional ID of the scenario template to associate this diagram with.',
-                ],
-                'diagram_name' => [
-                    'type' => 'string',
-                    'description' => 'Descriptive name for the diagram (e.g. AWS Multi-AZ Network Diagram).',
-                ],
-                'diagram_type' => [
-                    'type' => 'string',
-                    'enum' => ['soc_architecture', 'deployment_topology', 'network_diagram', 'custom'],
-                    'description' => 'The category classification of the diagram.',
-                ],
-                'drawio_xml' => [
-                    'type' => 'string',
-                    'description' => 'The complete, valid, raw .drawio XML code representing the diagram structures, cells, shapes, and connections.',
-                ],
-            ],
-            'required' => ['client_id', 'diagram_name', 'drawio_xml'],
+            'client_id' => $schema->integer()->description('The ID of the client to associate this diagram with.')->required(),
+            'scenario_id' => $schema->integer()->description('Optional ID of the scenario template to associate this diagram with.'),
+            'diagram_name' => $schema->string()->description('Descriptive name for the diagram (e.g. AWS Multi-AZ Network Diagram).')->required(),
+            'diagram_type' => $schema->string()->description('The category classification of the diagram.')->enum(['soc_architecture', 'deployment_topology', 'network_diagram', 'custom']),
+            'drawio_xml' => $schema->string()->description('The complete, valid, raw .drawio XML code representing the diagram structures, cells, shapes, and connections.')->required(),
         ];
     }
 }
