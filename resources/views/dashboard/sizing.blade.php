@@ -732,6 +732,7 @@
                             <div class="toast-body">⚠️ Could not reach Laravel backend: ${err.message}</div>
                         </div>`);
                 });
+        }
         // Add Node Row
         var btnAddNode = document.getElementById("btn-add-node");
         var nodesTbody = document.getElementById("nodes-tbody");
