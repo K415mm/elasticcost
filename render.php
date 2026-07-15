@@ -4,6 +4,7 @@ use Illuminate\Contracts\Console\Kernel;
 require __DIR__.'/vendor/autoload.php';
 $app = require_once __DIR__.'/bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
 // Login a user so the view renders successfully without Auth redirection
 $user = App\Models\User::first();
