@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard &amp; Tool Links</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --border: #e5e7eb;
+      --code-bg: #f3f4f6;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --card: #1f2937;
+        --text: #f9fafb;
+        --muted: #9ca3af;
+        --accent: #60a5fa;
+        --accent-hover: #3b82f6;
+        --border: #374151;
+        --code-bg: #111827;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 2rem 1rem;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    header {
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 {
+      font-size: 1.75rem;
+      margin: 0 0 0.5rem;
+    }
+    .base-url {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .base-url code {
+      background: var(--code-bg);
+      padding: 0.15rem 0.4rem;
+      border-radius: 0.25rem;
+      font-size: 0.9rem;
+    }
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    h2 {
+      font-size: 1.2rem;
+      margin: 0 0 0.75rem;
+      color: var(--accent);
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    li {
+      padding: 0.45rem 0;
+      border-bottom: 1px solid var(--border);
+      word-break: break-word;
+    }
+    li:last-child { border-bottom: none; }
+    .route-name {
+      font-weight: 600;
+      display: inline-block;
+      min-width: 13rem;
+      color: var(--text);
+    }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.9rem;
+    }
+    a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+    .method {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-right: 0.5rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Dashboard &amp; Tool Links</h1>
+      <p class="base-url">Base URL: <code>http://47.251.180.213</code> — for local development use <code>http://localhost</code>. Routes with <code>{...}</code> need real IDs/slugs.</p>
+    </header>
+
+    <section>
+      <h2>Main App Dashboards</h2>
+      <ul>
+        <li><span class="route-name">dashboard</span> <a href="http://47.251.180.213/dashboard">http://47.251.180.213/dashboard</a></li>
+        <li><span class="route-name">simulator</span> <a href="http://47.251.180.213/simulator">http://47.251.180.213/simulator</a></li>
+        <li><span class="route-name">ai-chat.index</span> <a href="http://47.251.180.213/ai-chat">http://47.251.180.213/ai-chat</a></li>
+        <li><span class="route-name">test-compare.index</span> <a href="http://47.251.180.213/test-compare">http://47.251.180.213/test-compare</a></li>
+        <li><span class="route-name">test-compare.status</span> <a href="http://47.251.180.213/test-compare/status">http://47.251.180.213/test-compare/status</a></li>
+        <li><span class="route-name">test-compare.dataset</span> <a href="http://47.251.180.213/test-compare/dataset">http://47.251.180.213/test-compare/dataset</a></li>
+        <li><span class="route-name">test-compare.trace</span> <a href="http://47.251.180.213/test-compare/trace/{mode}/{index}">http://47.251.180.213/test-compare/trace/{mode}/{index}</a></li>
+        <li><span class="route-name">test-compare.saved-runs</span> <a href="http://47.251.180.213/test-compare/saved-runs">http://47.251.180.213/test-compare/saved-runs</a></li>
+        <li><span class="route-name">test-compare.saved-run-report</span> <a href="http://47.251.180.213/test-compare/saved-runs/{slug}/report">http://47.251.180.213/test-compare/saved-runs/{slug}/report</a></li>
+        <li><span class="route-name">experiments/pipeline</span> <a href="http://47.251.180.213/experiments/pipeline">http://47.251.180.213/experiments/pipeline</a></li>
+        <li><span class="route-name">experiments/precognition</span> <a href="http://47.251.180.213/experiments/precognition">http://47.251.180.213/experiments/precognition</a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Client / Sizing / Costing</h2>
+      <ul>
+        <li><span class="route-name">clients.index</span> <a href="http://47.251.180.213/clients">http://47.251.180.213/clients</a></li>
+        <li><span class="route-name">clients.show</span> <a href="http://47.251.180.213/clients/{client}">http://47.251.180.213/clients/{client}</a></li>
+        <li><span class="route-name">sizing.show</span> <a href="http://47.251.180.213/clients/{client}/scenarios/{scenario}">http://47.251.180.213/clients/{client}/scenarios/{scenario}</a></li>
+        <li><span class="route-name">sizing.export.excel</span> <a href="http://47.251.180.213/clients/{client}/scenarios/{scenario}/export/excel">http://47.251.180.213/clients/{client}/scenarios/{scenario}/export/excel</a></li>
+        <li><span class="route-name">sizing.export.markdown</span> <a href="http://47.251.180.213/clients/{client}/scenarios/{scenario}/export/markdown">http://47.251.180.213/clients/{client}/scenarios/{scenario}/export/markdown</a></li>
+        <li><span class="route-name">sizing.export.word</span> <a href="http://47.251.180.213/clients/{client}/scenarios/{scenario}/export/word">http://47.251.180.213/clients/{client}/scenarios/{scenario}/export/word</a></li>
+        <li><span class="route-name">mssp.show</span> <a href="http://47.251.180.213/clients/{client}/scenarios/{scenario}/mssp-cost">http://47.251.180.213/clients/{client}/scenarios/{scenario}/mssp-cost</a></li>
+        <li><span class="route-name">mssp.export.excel</span> <a href="http://47.251.180.213/clients/{client}/scenarios/{scenario}/mssp-cost/export/excel">http://47.251.180.213/clients/{client}/scenarios/{scenario}/mssp-cost/export/excel</a></li>
+        <li><span class="route-name">mssp.export.markdown</span> <a href="http://47.251.180.213/clients/{client}/scenarios/{scenario}/mssp-cost/export/markdown">http://47.251.180.213/clients/{client}/scenarios/{scenario}/mssp-cost/export/markdown</a></li>
+        <li><span class="route-name">mssp.export.word</span> <a href="http://47.251.180.213/clients/{client}/scenarios/{scenario}/mssp-cost/export/word">http://47.251.180.213/clients/{client}/scenarios/{scenario}/mssp-cost/export/word</a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Settings / Admin</h2>
+      <ul>
+        <li><span class="route-name">settings.system</span> <a href="http://47.251.180.213/settings/system">http://47.251.180.213/settings/system</a></li>
+        <li><span class="route-name">settings.agents</span> <a href="http://47.251.180.213/settings/agents">http://47.251.180.213/settings/agents</a></li>
+        <li><span class="route-name">settings.files</span> <a href="http://47.251.180.213/settings/files">http://47.251.180.213/settings/files</a></li>
+        <li><span class="route-name">settings.files.chunks</span> <a href="http://47.251.180.213/settings/files/{document}/chunks">http://47.251.180.213/settings/files/{document}/chunks</a></li>
+        <li><span class="route-name">asset-types.index</span> <a href="http://47.251.180.213/settings/asset-types">http://47.251.180.213/settings/asset-types</a></li>
+        <li><span class="route-name">scenarios.index</span> <a href="http://47.251.180.213/settings/scenarios">http://47.251.180.213/settings/scenarios</a></li>
+        <li><span class="route-name">scenarios.create</span> <a href="http://47.251.180.213/settings/scenarios/create">http://47.251.180.213/settings/scenarios/create</a></li>
+        <li><span class="route-name">scenarios.edit</span> <a href="http://47.251.180.213/settings/scenarios/{scenario}/edit">http://47.251.180.213/settings/scenarios/{scenario}/edit</a></li>
+        <li><span class="route-name">users.index</span> <a href="http://47.251.180.213/users">http://47.251.180.213/users</a></li>
+        <li><span class="route-name">roles.permissions</span> <a href="http://47.251.180.213/roles/permissions">http://47.251.180.213/roles/permissions</a></li>
+        <li><span class="route-name">tokens.index</span> <a href="http://47.251.180.213/tokens">http://47.251.180.213/tokens</a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>phpkaiharness</h2>
+      <ul>
+        <li><span class="route-name">harness/dashboard</span> <a href="http://47.251.180.213/harness/dashboard">http://47.251.180.213/harness/dashboard</a></li>
+        <li><span class="route-name">harness/config</span> <a href="http://47.251.180.213/harness/config">http://47.251.180.213/harness/config</a></li>
+        <li><span class="route-name">harness/api/stats</span> <a href="http://47.251.180.213/harness/api/stats">http://47.251.180.213/harness/api/stats</a></li>
+        <li><span class="route-name">harness/api/sessions</span> <a href="http://47.251.180.213/harness/api/sessions">http://47.251.180.213/harness/api/sessions</a></li>
+        <li><span class="route-name">harness/api/sessions/{id}</span> <a href="http://47.251.180.213/harness/api/sessions/{id}">http://47.251.180.213/harness/api/sessions/{id}</a></li>
+        <li><span class="route-name">harness/api/sessions-list</span> <a href="http://47.251.180.213/harness/api/sessions-list">http://47.251.180.213/harness/api/sessions-list</a></li>
+        <li><span class="route-name">harness/api/sessions-list/{sessionId}</span> <a href="http://47.251.180.213/harness/api/sessions-list/{sessionId}">http://47.251.180.213/harness/api/sessions-list/{sessionId}</a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Horizon</h2>
+      <ul>
+        <li><span class="route-name">horizon.index</span> <a href="http://47.251.180.213/horizon">http://47.251.180.213/horizon</a></li>
+        <li><span class="route-name">horizon.jobs-batches.index</span> <a href="http://47.251.180.213/horizon/api/batches">http://47.251.180.213/horizon/api/batches</a></li>
+        <li><span class="route-name">horizon.jobs-batches.show</span> <a href="http://47.251.180.213/horizon/api/batches/{id}">http://47.251.180.213/horizon/api/batches/{id}</a></li>
+        <li><span class="route-name">horizon.jobs.show</span> <a href="http://47.251.180.213/horizon/api/jobs/{id}">http://47.251.180.213/horizon/api/jobs/{id}</a></li>
+        <li><span class="route-name">horizon.completed-jobs.index</span> <a href="http://47.251.180.213/horizon/api/jobs/completed">http://47.251.180.213/horizon/api/jobs/completed</a></li>
+        <li><span class="route-name">horizon.failed-jobs.index</span> <a href="http://47.251.180.213/horizon/api/jobs/failed">http://47.251.180.213/horizon/api/jobs/failed</a></li>
+        <li><span class="route-name">horizon.failed-jobs.show</span> <a href="http://47.251.180.213/horizon/api/jobs/failed/{id}">http://47.251.180.213/horizon/api/jobs/failed/{id}</a></li>
+        <li><span class="route-name">horizon.pending-jobs.index</span> <a href="http://47.251.180.213/horizon/api/jobs/pending">http://47.251.180.213/horizon/api/jobs/pending</a></li>
+        <li><span class="route-name">horizon.silenced-jobs.index</span> <a href="http://47.251.180.213/horizon/api/jobs/silenced">http://47.251.180.213/horizon/api/jobs/silenced</a></li>
+        <li><span class="route-name">horizon.masters.index</span> <a href="http://47.251.180.213/horizon/api/masters">http://47.251.180.213/horizon/api/masters</a></li>
+        <li><span class="route-name">horizon.jobs-metrics.index</span> <a href="http://47.251.180.213/horizon/api/metrics/jobs">http://47.251.180.213/horizon/api/metrics/jobs</a></li>
+        <li><span class="route-name">horizon.jobs-metrics.show</span> <a href="http://47.251.180.213/horizon/api/metrics/jobs/{id}">http://47.251.180.213/horizon/api/metrics/jobs/{id}</a></li>
+        <li><span class="route-name">horizon.queues-metrics.index</span> <a href="http://47.251.180.213/horizon/api/metrics/queues">http://47.251.180.213/horizon/api/metrics/queues</a></li>
+        <li><span class="route-name">horizon.queues-metrics.show</span> <a href="http://47.251.180.213/horizon/api/metrics/queues/{id}">http://47.251.180.213/horizon/api/metrics/queues/{id}</a></li>
+        <li><span class="route-name">horizon.monitoring.index</span> <a href="http://47.251.180.213/horizon/api/monitoring">http://47.251.180.213/horizon/api/monitoring</a></li>
+        <li><span class="route-name">horizon.monitoring-tag.paginate</span> <a href="http://47.251.180.213/horizon/api/monitoring/{tag}">http://47.251.180.213/horizon/api/monitoring/{tag}</a></li>
+        <li><span class="route-name">horizon.stats.index</span> <a href="http://47.251.180.213/horizon/api/stats">http://47.251.180.213/horizon/api/stats</a></li>
+        <li><span class="route-name">horizon.workload.index</span> <a href="http://47.251.180.213/horizon/api/workload">http://47.251.180.213/horizon/api/workload</a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Pulse / SQLite Viewer / Boost</h2>
+      <ul>
+        <li><span class="route-name">pulse</span> <a href="http://47.251.180.213/pulse">http://47.251.180.213/pulse</a></li>
+        <li><span class="route-name">sqlite.index</span> <a href="http://47.251.180.213/settings/sqlite">http://47.251.180.213/settings/sqlite</a></li>
+        <li><span class="route-name">sqlite.explore</span> <a href="http://47.251.180.213/settings/sqlite/explore">http://47.251.180.213/settings/sqlite/explore</a></li>
+        <li><span class="route-name">boost.browser-logs</span> <span class="method">POST</span> <a href="http://47.251.180.213/_boost/browser-logs">http://47.251.180.213/_boost/browser-logs</a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Public / Auth / Utility</h2>
+      <ul>
+        <li><span class="route-name">login</span> <a href="http://47.251.180.213/login">http://47.251.180.213/login</a></li>
+        <li><span class="route-name">register</span> <a href="http://47.251.180.213/register">http://47.251.180.213/register</a></li>
+        <li><span class="route-name">home</span> <a href="http://47.251.180.213/">http://47.251.180.213/</a></li>
+        <li><span class="route-name">ollama.ping</span> <a href="http://47.251.180.213/api/ollama-ping">http://47.251.180.213/api/ollama-ping</a></li>
+        <li><span class="route-name">agent.job.status</span> <a href="http://47.251.180.213/api/agent-job-status/{jobId}">http://47.251.180.213/api/agent-job-status/{jobId}</a></li>
+        <li><span class="route-name">storage.local</span> <a href="http://47.251.180.213/storage/{path}">http://47.251.180.213/storage/{path}</a></li>
+        <li><span class="route-name">up</span> <a href="http://47.251.180.213/up">http://47.251.180.213/up</a></li>
+      </ul>
+    </section>
+
+    <footer>
+      Generated from the application route list.
+    </footer>
+  </div>
+</body>
+</html>
