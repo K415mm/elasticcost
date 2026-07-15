@@ -25,14 +25,18 @@
  
         // Listen for draw.io messages
         window.addEventListener('message', function(event) {
-            if (event.origin !== 'https://embed.diagrams.net') return;
+            if (!event.origin.includes('diagrams.net')) return;
             
-            let msg = {};
-            try {
-                msg = JSON.parse(event.data);
-            } catch(e) {
-                return;
+            let msg = event.data;
+            if (typeof msg === 'string') {
+                try {
+                    msg = JSON.parse(msg);
+                } catch(e) {
+                    return;
+                }
             }
+ 
+            if (!msg || typeof msg !== 'object') return;
  
             if (msg.event === 'init') {
                 // Hide loader
