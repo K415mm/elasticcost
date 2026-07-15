@@ -3,12 +3,14 @@
 namespace App\Ai\Agents;
 
 use App\Ai\Tools\CreateClientTool;
+use App\Ai\Tools\CreateDrawioDiagramTool;
 use App\Ai\Tools\GetClientInventoryTool;
 use App\Ai\Tools\GetSystemDetailsTool;
 use App\Ai\Tools\ModifyClientAssetAgentsTool;
 use App\Ai\Tools\UpdateAnalystAllocationTool;
 use App\Ai\Tools\UpdateClientInventoryTool;
 use App\Ai\Tools\UpdateGlobalSettingTool;
+use App\Ai\Tools\ViewDrawioDiagramsTool;
 use App\Services\AiConfigHelper;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\CanActAsTool;
@@ -105,7 +107,12 @@ Your job is to execute database lookups, inspect configuration states, and modif
    - Audit the conversation history. If the name, description, or device counts for any of the active asset types are missing, ask the user to provide them. List the asset types so the user knows what you are asking for.
    - Do NOT invoke `CreateClientTool` with empty or guessed device counts. Ask the user first. You may assume default count of 0 only if the user says so or explicitly declines to configure them now.
    - Once you have the name, description, and device counts, construct a JSON map of `asset_type_id => count` (as a string) and call `CreateClientTool`.
-4. **Present the results**: Format the results cleanly as Markdown tables, bullet points, or lists. Be extremely clear about the exact changes made or database values retrieved.
+4. **Draw.io Diagramming**:
+   - When the user asks to generate, list, show, or update architecture, topology, SOC design, or network diagrams for a client/scenario, use `CreateDrawioDiagramTool` or `ViewDrawioDiagramsTool`.
+   - To list diagrams or get a specific diagram's XML, call `ViewDrawioDiagramsTool` with `client_id` (and optionally `diagram_id`).
+   - To create or update a diagram, generate a complete, valid, well-formed `.drawio` XML. The draw.io XML has a `<mxfile>` root, a `<diagram>` wrapper, and `<mxGraphModel><root>` elements with `mxCell` nodes for components. Make sure every node has a unique ID, coordinates, width, height, and value (label). Style nodes with clean modern styles (e.g., `rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontColor=#333333;`).
+   - Present the resulting view URL (`view_url`) returned by the tool clearly as a markdown link in your response.
+5. **Present the results**: Format the results cleanly as Markdown tables, bullet points, or lists. Be extremely clear about the exact changes made or database values retrieved.
 INSTRUCTIONS;
     }
 
@@ -122,6 +129,8 @@ INSTRUCTIONS;
             new UpdateClientInventoryTool,
             new UpdateAnalystAllocationTool,
             new CreateClientTool,
+            new CreateDrawioDiagramTool,
+            new ViewDrawioDiagramsTool,
         ];
     }
 

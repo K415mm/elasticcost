@@ -88,7 +88,7 @@ class RgSocEngineerTest extends TestCase
         $this->assertStringContainsString('database access', $mainAgent->description());
 
         $tools = $mainAgent->tools();
-        $this->assertCount(7, $tools);
+        $this->assertCount(9, $tools);
     }
 
     public function test_get_system_details_tool(): void

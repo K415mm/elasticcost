@@ -22,7 +22,7 @@ class ClientController extends Controller
      */
     public function index()
     {
-        $clients = Client::withCount('clientAssets')->get();
+        $clients = Client::withCount(['clientAssets', 'diagrams'])->get();
 
         return view('clients.index', compact('clients'));
     }

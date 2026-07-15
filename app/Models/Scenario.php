@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Scenario extends Model
 {
@@ -42,5 +43,10 @@ class Scenario extends Model
     public function getDaysRetentionAttribute(): int
     {
         return (int) ($this->attributes['retention_days'] ?? 0);
+    }
+
+    public function diagrams(): HasMany
+    {
+        return $this->hasMany(Diagram::class);
     }
 }

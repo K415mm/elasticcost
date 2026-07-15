@@ -8,6 +8,7 @@ use App\Http\Controllers\AssetTypeController;
 use App\Http\Controllers\ClientAssetController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DiagramController;
 use App\Http\Controllers\FileManagerController;
 use App\Http\Controllers\MsspCostingController;
 use App\Http\Controllers\PrecognitionExperimentController;
@@ -56,6 +57,9 @@ Route::middleware('auth')->group(function () {
         Route::put('clients/{client}/assets-bulk', [ClientAssetController::class, 'updateBulk'])->name('client-assets.update-bulk');
         Route::put('clients/{client}/assets/{clientAsset}', [ClientAssetController::class, 'update'])->name('client-assets.update');
         Route::delete('clients/{client}/assets/{clientAsset}', [ClientAssetController::class, 'destroy'])->name('client-assets.destroy');
+
+        // Client Diagrams Integration
+        Route::resource('clients.diagrams', DiagramController::class);
     });
 
     // Benchmarks (Asset Types) Management

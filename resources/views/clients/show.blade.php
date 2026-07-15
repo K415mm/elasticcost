@@ -14,7 +14,10 @@
             {{ $client->name }} <small class="d-block mt-1">{{ $client->description ?? __('No description provided.') }}</small>
         </h1>
     </div>
-    <div>
+    <div class="d-flex gap-2">
+        <a href="{{ route('clients.diagrams.index', $client->id) }}" class="btn btn-outline-theme">
+            <i class="bi bi-diagram-3 me-1"></i> Architecture Diagrams
+        </a>
         <a href="{{ route('clients.index') }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> {{ __('messages.back_to_clients') }}
         </a>

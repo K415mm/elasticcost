@@ -61,8 +61,11 @@
                                             </div>
                                         </td>
                                         <td class="mono-cell text-white">
-                                            <span class="badge bg-theme bg-opacity-15 text-theme border border-theme border-opacity-30">
+                                            <span class="badge bg-theme bg-opacity-15 text-theme border border-theme border-opacity-30 me-1">
                                                 {{ $c->client_assets_count }} sources
+                                            </span>
+                                            <span class="badge bg-info bg-opacity-15 text-info border border-info border-opacity-30">
+                                                {{ $c->diagrams_count }} diagrams
                                             </span>
                                         </td>
                                         <td class="small text-muted">
