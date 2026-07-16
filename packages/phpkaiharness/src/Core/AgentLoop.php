@@ -940,7 +940,7 @@ class AgentLoop
      */
     protected function ingestQuantumMemory(?string $sessionId, string $prompt, string $response, ?AnalyticsCollectorInterface $collector): void
     {
-        if (! function_exists('config') || ! HarnessConfig::isNodeEnabled('quantum_harness', 'harness.quantum_harness.enabled', false)) {
+        if (! function_exists('config') || ! HarnessConfig::isNodeEnabled('quantum_harness', 'harness.quantum_harness.enabled', true)) {
             return;
         }
 
@@ -961,13 +961,29 @@ class AgentLoop
             $responseId = $nodeBase.'response_'.$timestamp;
             $storedResponse = $engine->storeNode($responseId, 'semantic', $response, $phaseAngle);
 
+            // Link the prompt → response with a directional edge and a bidirectional entanglement pair
+            $storedEdge = false;
+            $storedEntanglement = false;
+            if ($storedPrompt && $storedResponse) {
+                $storedEdge = $engine->storeEdge($promptId, $responseId, 'LEADS_TO', 1.0);
+                $storedEntanglement = $engine->storeEntanglement($promptId, $responseId, 1.0);
+            }
+
             if ($collector && $sessionId && ($storedPrompt || $storedResponse)) {
                 $collector->recordEvent(
                     $sessionId,
                     'quantum_collapse',
                     'QuantumMemoryIngestion',
-                    ['prompt_node' => $promptId, 'response_node' => $responseId, 'stored' => true],
-                    json_encode(['status' => 'Ingested '.((int) $storedPrompt + (int) $storedResponse).' memory nodes'], JSON_UNESCAPED_UNICODE) ?: '{}'
+                    [
+                        'prompt_node' => $promptId,
+                        'response_node' => $responseId,
+                        'edge_stored' => $storedEdge,
+                        'entangled' => $storedEntanglement,
+                        'stored' => true,
+                    ],
+                    json_encode([
+                        'status' => 'Ingested '.((int) $storedPrompt + (int) $storedResponse).' nodes, edge='.($storedEdge ? 'yes' : 'no').', entanglement='.($storedEntanglement ? 'yes' : 'no'),
+                    ], JSON_UNESCAPED_UNICODE) ?: '{}'
                 );
                 $this->recordedDetailTypes[] = 'quantum_collapse';
             }

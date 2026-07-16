@@ -274,7 +274,7 @@ return [
     |
     */
     'quantum_harness' => [
-        'enabled' => env('PHPKAIHARNESS_QUANTUM_ENABLED', false),
+        'enabled' => env('PHPKAIHARNESS_QUANTUM_ENABLED', true),
         'db_path' => env('PHPKAIHARNESS_QUANTUM_DB') ?: (function_exists('app') && method_exists(app(), 'storagePath') ? storage_path('app/phpkaiharness/agent_memory.sqlite') : null),
         'alpha' => env('PHPKAIHARNESS_QUANTUM_ALPHA', 0.7),
         'beta' => env('PHPKAIHARNESS_QUANTUM_BETA', 0.3),
@@ -347,7 +347,7 @@ return [
                 'enabled' => env('PHPKAIHARNESS_COG_MEMORY_ENABLED', true),
             ],
             'quantum_harness' => [
-                'enabled' => env('PHPKAIHARNESS_QUANTUM_ENABLED', false),
+                'enabled' => env('PHPKAIHARNESS_QUANTUM_ENABLED', true),
             ],
         ],
     ],

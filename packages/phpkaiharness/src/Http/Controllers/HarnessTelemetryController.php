@@ -2,6 +2,7 @@
 
 namespace Phpkaiharness\Http\Controllers;
 
+use App\Models\DocumentationChunk;
 use App\Services\AiConfigHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -10,6 +11,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Redis;
 use Laravel\Ai\Ai;
+use Laravel\Ai\Prompts\AgentPrompt;
 use Phpkaiharness\Core\AgentLoop;
 use Phpkaiharness\Core\AgentSelector;
 use Phpkaiharness\Core\Registry\ToolRegistry;
@@ -18,6 +20,8 @@ use Phpkaiharness\Monitor\MonitorReport;
 use Phpkaiharness\Monitor\SqliteMonitorStore;
 use Phpkaiharness\Optimize\ContextCompactor;
 use Phpkaiharness\Optimize\Guardrails;
+use Phpkaiharness\Optimize\OntologicalContextInjector;
+use Phpkaiharness\Optimize\QuantumInferenceEngine;
 use Phpkaiharness\Optimize\SemanticCache;
 use Phpkaiharness\Session\SessionManager;
 use Phpkaiharness\Support\TraceEvaluator;
@@ -1184,5 +1188,273 @@ class HarnessTelemetryController extends Controller
         $count = $manager->cleanupOld($maxAge);
 
         return response()->json(['success' => true, 'message' => "Cleaned up {$count} session(s) older than {$maxAge}h"]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Memory Explorer Endpoints
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Explore quantum memory: node counts, recent nodes, edges, and entanglement pairs.
+     *
+     * GET /harness/api/quantum-memory
+     *
+     * Query params:
+     *   limit  int   Max nodes to return (default 20)
+     *   offset int   Pagination offset (default 0)
+     */
+    public function exploreQuantumMemory(Request $request): JsonResponse
+    {
+        try {
+            $engine = app(QuantumInferenceEngine::class);
+            $pdo = $engine->getPdo();
+
+            $limit = max(1, min(200, (int) $request->query('limit', 20)));
+            $offset = max(0, (int) $request->query('offset', 0));
+
+            $nodeCount = (int) $pdo->query('SELECT COUNT(*) FROM memory_nodes')->fetchColumn();
+            $edgeCount = (int) $pdo->query('SELECT COUNT(*) FROM memory_edges')->fetchColumn();
+            $entanglementCount = (int) $pdo->query('SELECT COUNT(*) FROM entanglement_pairs')->fetchColumn();
+            $vectorCount = (int) $pdo->query('SELECT COUNT(*) FROM memory_vectors')->fetchColumn();
+
+            $nodeStmt = $pdo->prepare('SELECT id, type, phase_angle, created_at, SUBSTR(content, 1, 120) AS preview FROM memory_nodes ORDER BY created_at DESC LIMIT :lim OFFSET :off');
+            $nodeStmt->bindValue(':lim', $limit, \PDO::PARAM_INT);
+            $nodeStmt->bindValue(':off', $offset, \PDO::PARAM_INT);
+            $nodeStmt->execute();
+            $nodes = $nodeStmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            $edgeStmt = $pdo->prepare('SELECT id, source_id, target_id, edge_type, coherence_factor FROM memory_edges ORDER BY rowid DESC LIMIT :lim OFFSET :off');
+            $edgeStmt->bindValue(':lim', $limit, \PDO::PARAM_INT);
+            $edgeStmt->bindValue(':off', $offset, \PDO::PARAM_INT);
+            $edgeStmt->execute();
+            $edges = $edgeStmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            $entStmt = $pdo->prepare('SELECT node_a_id, node_b_id, entanglement_force FROM entanglement_pairs ORDER BY rowid DESC LIMIT :lim OFFSET :off');
+            $entStmt->bindValue(':lim', $limit, \PDO::PARAM_INT);
+            $entStmt->bindValue(':off', $offset, \PDO::PARAM_INT);
+            $entStmt->execute();
+            $entanglements = $entStmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            $dbPath = config('harness.quantum_harness.db_path')
+                ?: storage_path('app/phpkaiharness/agent_memory.sqlite');
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'db_path' => $dbPath,
+                    'db_size_bytes' => File::exists($dbPath) ? File::size($dbPath) : 0,
+                    'quantum_enabled' => (bool) config('harness.quantum_harness.enabled', true),
+                    'counts' => [
+                        'nodes' => $nodeCount,
+                        'vectors' => $vectorCount,
+                        'edges' => $edgeCount,
+                        'entanglements' => $entanglementCount,
+                    ],
+                    'recent_nodes' => $nodes,
+                    'recent_edges' => $edges,
+                    'recent_entanglements' => $entanglements,
+                    'pagination' => ['limit' => $limit, 'offset' => $offset],
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Explore the Semantic Cache: list cached prompt→response entries.
+     *
+     * GET /harness/api/semantic-cache
+     *
+     * Query params:
+     *   limit     int     Max entries (default 20)
+     *   namespace string  Filter by namespace (optional)
+     */
+    public function exploreSemanticCache(Request $request): JsonResponse
+    {
+        try {
+            $dbPath = config('harness.cache.db_path') ?: SqliteMonitorStore::defaultDbPath();
+            $pdo = new \PDO('sqlite:'.$dbPath);
+            $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+            $pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
+
+            $limit = max(1, min(200, (int) $request->query('limit', 20)));
+            $namespace = $request->query('namespace');
+
+            // Check table exists
+            $tableExists = (bool) $pdo->query("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='semantic_cache'")->fetchColumn();
+            if (! $tableExists) {
+                return response()->json(['success' => true, 'data' => ['counts' => ['entries' => 0], 'entries' => [], 'note' => 'semantic_cache table does not exist yet']]);
+            }
+
+            $totalStmt = $namespace
+                ? $pdo->prepare('SELECT COUNT(*) FROM semantic_cache WHERE namespace = :ns')
+                : $pdo->query('SELECT COUNT(*) FROM semantic_cache');
+            if ($namespace) {
+                $totalStmt->execute([':ns' => $namespace]);
+            }
+            $total = (int) $totalStmt->fetchColumn();
+
+            $sql = 'SELECT id, namespace, SUBSTR(prompt_hash, 1, 16) AS prompt_hash_short, SUBSTR(prompt, 1, 100) AS prompt_preview, SUBSTR(response, 1, 120) AS response_preview, hits, created_at, expires_at FROM semantic_cache';
+            if ($namespace) {
+                $sql .= ' WHERE namespace = :ns';
+            }
+            $sql .= ' ORDER BY created_at DESC LIMIT :lim';
+            $stmt = $pdo->prepare($sql);
+            $stmt->bindValue(':lim', $limit, \PDO::PARAM_INT);
+            if ($namespace) {
+                $stmt->bindValue(':ns', $namespace);
+            }
+            $stmt->execute();
+            $entries = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            $nsStmt = $pdo->query('SELECT DISTINCT namespace FROM semantic_cache ORDER BY namespace');
+            $namespaces = $nsStmt->fetchAll(\PDO::FETCH_COLUMN);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'db_path' => $dbPath,
+                    'cache_enabled' => (bool) config('harness.cache.enabled', true),
+                    'cache_threshold' => (float) config('harness.cache.threshold', 0.88),
+                    'redis_enabled' => (bool) config('harness.cache.redis.enabled', true),
+                    'counts' => ['entries' => $total],
+                    'namespaces' => $namespaces,
+                    'entries' => $entries,
+                    'filter_namespace' => $namespace,
+                    'pagination' => ['limit' => $limit],
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Explore Cognitive Graph Memory: extracted facts stored by CognitiveGraphMemory.
+     *
+     * GET /harness/api/cognitive-graph
+     *
+     * Query params:
+     *   limit     int     Max facts (default 30)
+     *   session   string  Filter by session ID (optional)
+     *   category  string  Filter by category (optional)
+     */
+    public function exploreCognitiveGraph(Request $request): JsonResponse
+    {
+        try {
+            $dbPath = config('harness.cache.db_path') ?: SqliteMonitorStore::defaultDbPath();
+            $pdo = new \PDO('sqlite:'.$dbPath);
+            $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+            $pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
+
+            $limit = max(1, min(200, (int) $request->query('limit', 30)));
+            $session = $request->query('session');
+            $category = $request->query('category');
+
+            // Check facts table
+            $tableExists = (bool) $pdo->query("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='harness_facts'")->fetchColumn();
+            if (! $tableExists) {
+                return response()->json(['success' => true, 'data' => ['counts' => ['facts' => 0], 'facts' => [], 'note' => 'harness_facts table does not exist yet — CognitiveGraphMemory has not run yet']]);
+            }
+
+            $conditions = [];
+            $bindings = [];
+            if ($session) {
+                $conditions[] = 'session_id = :sid';
+                $bindings[':sid'] = $session;
+            }
+            if ($category) {
+                $conditions[] = 'category = :cat';
+                $bindings[':cat'] = $category;
+            }
+            $where = $conditions ? 'WHERE '.implode(' AND ', $conditions) : '';
+
+            $countSql = "SELECT COUNT(*) FROM harness_facts {$where}";
+            $cStmt = $pdo->prepare($countSql);
+            $cStmt->execute($bindings);
+            $total = (int) $cStmt->fetchColumn();
+
+            $sql = "SELECT id, session_id, fact, confidence, category, source_type, created_at FROM harness_facts {$where} ORDER BY created_at DESC LIMIT :lim";
+            $stmt = $pdo->prepare($sql);
+            $stmt->bindValue(':lim', $limit, \PDO::PARAM_INT);
+            foreach ($bindings as $k => $v) {
+                $stmt->bindValue($k, $v);
+            }
+            $stmt->execute();
+            $facts = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            $catStmt = $pdo->query('SELECT category, COUNT(*) AS cnt FROM harness_facts GROUP BY category ORDER BY cnt DESC');
+            $categoryBreakdown = $catStmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'db_path' => $dbPath,
+                    'cognitive_enabled' => (bool) config('harness.cognitive_memory.enabled', true),
+                    'counts' => ['facts' => $total],
+                    'category_breakdown' => $categoryBreakdown,
+                    'facts' => $facts,
+                    'filters' => ['session' => $session, 'category' => $category],
+                    'pagination' => ['limit' => $limit],
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Live-test the Ontology RAG injector: run a query and see which records are injected.
+     *
+     * GET /harness/api/ontology-rag
+     *
+     * Query params:
+     *   query      string  Semantic query to run (default: "elasticsearch sizing")
+     *   model      string  Eloquent model class to search (default: App\Models\DocumentationChunk)
+     *   threshold  float   Cosine similarity threshold (default: 0.30)
+     *   limit      int     Max records to retrieve (default: 5)
+     */
+    public function exploreOntologyRag(Request $request): JsonResponse
+    {
+        try {
+            $query = (string) ($request->query('query') ?: 'elasticsearch sizing');
+            $modelClass = (string) ($request->query('model') ?: DocumentationChunk::class);
+            $threshold = (float) ($request->query('threshold') ?: config('harness.ontology.similarity_threshold', 0.30));
+            $limit = max(1, min(20, (int) $request->query('limit', 5)));
+
+            if (! class_exists($modelClass)) {
+                return response()->json(['success' => false, 'error' => "Model class '{$modelClass}' not found"], 422);
+            }
+
+            $injector = new OntologicalContextInjector;
+
+            // Build a minimal AgentPrompt-like object for the injector
+            $fakePrompt = new AgentPrompt(
+                prompt: $query,
+                systemPrompt: '',
+            );
+
+            $metadata = [];
+            $injected = $injector->inject($fakePrompt, $modelClass, 'embedding', $threshold, $limit, $metadata);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'query' => $query,
+                    'model_class' => $modelClass,
+                    'threshold' => $threshold,
+                    'limit' => $limit,
+                    'ontology_enabled' => (bool) config('harness.ontology.enabled', false),
+                    'embedding_provider' => $metadata['embedding_provider'] ?? 'unknown',
+                    'embedding_model' => $metadata['embedding_model'] ?? '',
+                    'evaluated_records' => $metadata['evaluated_records'] ?? [],
+                    'injected_context' => $metadata['injected_context'] ?? ($injected->systemPrompt ?? ''),
+                    'error' => $metadata['error'] ?? null,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
     }
 }

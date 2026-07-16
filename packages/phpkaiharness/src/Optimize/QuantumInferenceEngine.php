@@ -436,6 +436,86 @@ class QuantumInferenceEngine
     }
 
     /**
+     * Store a directed edge between two memory nodes in the quantum graph.
+     *
+     * @param  string  $sourceId  The source memory node ID.
+     * @param  string  $targetId  The target memory node ID.
+     * @param  string  $edgeType  One of: 'LEADS_TO', 'CONTAINS', 'EXPRESSES', 'INFLUENCES'.
+     * @param  float  $coherenceFactor  Strength of the connection (default 1.0).
+     * @return bool True if stored successfully.
+     */
+    public function storeEdge(string $sourceId, string $targetId, string $edgeType = 'LEADS_TO', float $coherenceFactor = 1.0): bool
+    {
+        try {
+            $pdo = $this->getPdo();
+            $this->initSchema();
+
+            // Derive a deterministic ID from the source/target/type triplet
+            $id = md5($sourceId.'|'.$targetId.'|'.$edgeType);
+
+            $stmt = $pdo->prepare(
+                'INSERT OR REPLACE INTO memory_edges (id, source_id, target_id, edge_type, coherence_factor)
+                 VALUES (:id, :source, :target, :type, :coherence)'
+            );
+            $stmt->execute([
+                ':id' => $id,
+                ':source' => $sourceId,
+                ':target' => $targetId,
+                ':type' => $edgeType,
+                ':coherence' => $coherenceFactor,
+            ]);
+
+            return true;
+        } catch (\Throwable $e) {
+            if (function_exists('info') && function_exists('app') && app()->bound('log')) {
+                info('Quantum storeEdge failed: '.$e->getMessage());
+            }
+
+            return false;
+        }
+    }
+
+    /**
+     * Store a bidirectional quantum entanglement pair between two memory nodes.
+     *
+     * Uses canonical ID ordering (lexicographic) so that (A,B) and (B,A) resolve
+     * to the same row, preventing duplicates.
+     *
+     * @param  string  $nodeAId  First memory node ID.
+     * @param  string  $nodeBId  Second memory node ID.
+     * @param  float  $force  Entanglement strength (default 1.0).
+     * @return bool True if stored successfully.
+     */
+    public function storeEntanglement(string $nodeAId, string $nodeBId, float $force = 1.0): bool
+    {
+        try {
+            $pdo = $this->getPdo();
+            $this->initSchema();
+
+            // Canonical ordering: always store the lexicographically smaller ID as node_a
+            [$a, $b] = $nodeAId < $nodeBId ? [$nodeAId, $nodeBId] : [$nodeBId, $nodeAId];
+
+            $stmt = $pdo->prepare(
+                'INSERT OR REPLACE INTO entanglement_pairs (node_a_id, node_b_id, entanglement_force)
+                 VALUES (:node_a, :node_b, :force)'
+            );
+            $stmt->execute([
+                ':node_a' => $a,
+                ':node_b' => $b,
+                ':force' => $force,
+            ]);
+
+            return true;
+        } catch (\Throwable $e) {
+            if (function_exists('info') && function_exists('app') && app()->bound('log')) {
+                info('Quantum storeEntanglement failed: '.$e->getMessage());
+            }
+
+            return false;
+        }
+    }
+
+    /**
      * Retrieve query embedding vector using the shared embedding generator.
      */
     protected function getQueryEmbedding(string $text): array

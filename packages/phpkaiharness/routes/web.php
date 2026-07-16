@@ -58,6 +58,19 @@ Route::group(['prefix' => $prefix, 'middleware' => $middleware], static function
 
         Route::post('sessions-cleanup', [HarnessTelemetryController::class, 'cleanupOldSessions'])
             ->name('harness.api.sessions.cleanup');
+
+        // Memory Explorer
+        Route::get('quantum-memory', [HarnessTelemetryController::class, 'exploreQuantumMemory'])
+            ->name('harness.api.quantum-memory');
+
+        Route::get('semantic-cache', [HarnessTelemetryController::class, 'exploreSemanticCache'])
+            ->name('harness.api.semantic-cache');
+
+        Route::get('cognitive-graph', [HarnessTelemetryController::class, 'exploreCognitiveGraph'])
+            ->name('harness.api.cognitive-graph');
+
+        Route::get('ontology-rag', [HarnessTelemetryController::class, 'exploreOntologyRag'])
+            ->name('harness.api.ontology-rag');
     });
 
 });
