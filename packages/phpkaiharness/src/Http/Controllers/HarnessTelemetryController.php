@@ -1279,50 +1279,108 @@ class HarnessTelemetryController extends Controller
             $pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
 
             $limit = max(1, min(200, (int) $request->query('limit', 20)));
-            $namespace = $request->query('namespace');
 
-            // Check table exists
-            $tableExists = (bool) $pdo->query("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='semantic_cache'")->fetchColumn();
-            if (! $tableExists) {
-                return response()->json(['success' => true, 'data' => ['counts' => ['entries' => 0], 'entries' => [], 'note' => 'semantic_cache table does not exist yet']]);
+            // 1. Fetch from SQLite harness_sessions (String/Fuzzy Cache)
+            $sqliteSessionEntries = [];
+            $tableExists = (bool) $pdo->query("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='harness_sessions'")->fetchColumn();
+            if ($tableExists) {
+                // Get reject patterns from config to filter out ineligible cache records
+                $cfg = config('harness.cache.eligibility', []);
+                $rejectPatterns = $cfg['reject_patterns'] ?? ['⚠️', 'cURL error', 'LLM execution error', 'iteration limit'];
+                $clauses = [
+                    "response != ''",
+                    "method != 'semantic-cache-hit'",
+                ];
+                foreach ($rejectPatterns as $pattern) {
+                    $escaped = str_replace("'", "''", $pattern);
+                    $clauses[] = "response NOT LIKE '%{$escaped}%'";
+                }
+                $rejectClause = implode(' AND ', $clauses);
+
+                $stmt = $pdo->prepare("SELECT id, prompt AS prompt_preview, response AS response_preview, created_at FROM harness_sessions WHERE {$rejectClause} ORDER BY created_at DESC LIMIT :lim");
+                $stmt->bindValue(':lim', $limit, \PDO::PARAM_INT);
+                $stmt->execute();
+                $sqliteSessionEntries = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             }
 
-            $totalStmt = $namespace
-                ? $pdo->prepare('SELECT COUNT(*) FROM semantic_cache WHERE namespace = :ns')
-                : $pdo->query('SELECT COUNT(*) FROM semantic_cache');
-            if ($namespace) {
-                $totalStmt->execute([':ns' => $namespace]);
-            }
-            $total = (int) $totalStmt->fetchColumn();
+            // 2. Fetch from SQLite agent_memory.sqlite (Vector Semantic Memory Cache)
+            $sqliteVectorEntries = [];
+            $quantumDbPath = config('harness.quantum_harness.db_path') ?: storage_path('app/phpkaiharness/agent_memory.sqlite');
+            if (File::exists($quantumDbPath)) {
+                try {
+                    $qpdo = new \PDO('sqlite:'.$quantumDbPath);
+                    $qpdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+                    $qpdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
 
-            $sql = 'SELECT id, namespace, SUBSTR(prompt_hash, 1, 16) AS prompt_hash_short, SUBSTR(prompt, 1, 100) AS prompt_preview, SUBSTR(response, 1, 120) AS response_preview, hits, created_at, expires_at FROM semantic_cache';
-            if ($namespace) {
-                $sql .= ' WHERE namespace = :ns';
-            }
-            $sql .= ' ORDER BY created_at DESC LIMIT :lim';
-            $stmt = $pdo->prepare($sql);
-            $stmt->bindValue(':lim', $limit, \PDO::PARAM_INT);
-            if ($namespace) {
-                $stmt->bindValue(':ns', $namespace);
-            }
-            $stmt->execute();
-            $entries = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+                    $memTableExists = (bool) $qpdo->query("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='harness_memories'")->fetchColumn();
+                    if ($memTableExists) {
+                        $stmt = $qpdo->prepare("SELECT id, source, text AS response_preview, created_at FROM harness_memories WHERE source LIKE 'semantic-cache:%' ORDER BY id DESC LIMIT :lim");
+                        $stmt->bindValue(':lim', $limit, \PDO::PARAM_INT);
+                        $stmt->execute();
+                        $sqliteVectorEntries = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-            $nsStmt = $pdo->query('SELECT DISTINCT namespace FROM semantic_cache ORDER BY namespace');
-            $namespaces = $nsStmt->fetchAll(\PDO::FETCH_COLUMN);
+                        // Clean up source prefix 'semantic-cache:' for cleaner display
+                        foreach ($sqliteVectorEntries as &$entry) {
+                            $entry['prompt_preview'] = str_starts_with($entry['source'], 'semantic-cache:')
+                                ? substr($entry['source'], 15)
+                                : $entry['source'];
+                            unset($entry['source']);
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // Non-fatal
+                }
+            }
+
+            // 3. Fetch from L1 Redis Cache
+            $redisEntries = [];
+            $redisEnabled = (bool) config('harness.cache.redis.enabled', true);
+            if ($redisEnabled && class_exists(Redis::class)) {
+                try {
+                    $redis = Redis::connection(config('harness.cache.redis.connection', 'default'));
+                    // Use connection client to scan for keys
+                    $keys = $redis->keys('harness:cache:core:*');
+                    if (! empty($keys)) {
+                        // Take most recent or limit
+                        $keys = array_slice($keys, 0, $limit);
+                        foreach ($keys as $key) {
+                            // Strip prefix if returned by connection client
+                            $cleanKey = str_replace('harness:cache:core:', '', $key);
+                            $val = $redis->get("harness:cache:core:{$cleanKey}");
+                            if ($val) {
+                                $data = json_decode($val, true);
+                                if ($data) {
+                                    $redisEntries[] = [
+                                        'key' => $cleanKey,
+                                        'prompt_preview' => $data['prompt'] ?? '',
+                                        'response_preview' => $data['response'] ?? '',
+                                        'created_at' => isset($data['created_at']) ? date('Y-m-d H:i:s', $data['created_at']) : null,
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // Non-fatal
+                }
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'db_path' => $dbPath,
+                    'quantum_db_path' => $quantumDbPath,
                     'cache_enabled' => (bool) config('harness.cache.enabled', true),
                     'cache_threshold' => (float) config('harness.cache.threshold', 0.88),
-                    'redis_enabled' => (bool) config('harness.cache.redis.enabled', true),
-                    'counts' => ['entries' => $total],
-                    'namespaces' => $namespaces,
-                    'entries' => $entries,
-                    'filter_namespace' => $namespace,
-                    'pagination' => ['limit' => $limit],
+                    'redis_enabled' => $redisEnabled,
+                    'counts' => [
+                        'sqlite_session_entries' => count($sqliteSessionEntries),
+                        'sqlite_vector_entries' => count($sqliteVectorEntries),
+                        'redis_entries' => count($redisEntries),
+                    ],
+                    'sqlite_session_entries' => $sqliteSessionEntries,
+                    'sqlite_vector_entries' => $sqliteVectorEntries,
+                    'redis_entries' => $redisEntries,
                 ],
             ]);
         } catch (\Throwable $e) {
