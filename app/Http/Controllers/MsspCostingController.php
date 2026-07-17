@@ -1261,7 +1261,10 @@ class MsspCostingController extends Controller
             $provider = $aiConfig['provider'];
             $providerStr = $provider instanceof \BackedEnum ? $provider->value : (string) $provider;
 
-            $llmClient = new LaravelAiClient($providerStr, $aiConfig['model']);
+            $llmClient = app(LaravelAiClient::class, [
+                'provider' => $providerStr,
+                'model' => $aiConfig['model'],
+            ]);
 
             $registry = new ToolRegistry;
             foreach ($agent->tools() as $laravelTool) {
@@ -1284,6 +1287,10 @@ class MsspCostingController extends Controller
                 sessionId: $sessionId,
                 collector: $analytics
             );
+
+            if (str_contains($analysisText, 'LLM execution error:')) {
+                throw new \Exception($analysisText);
+            }
 
             $analytics->endSession($sessionId, $analysisText, 0, 1);
 

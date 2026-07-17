@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Ai\Agents\OfferAnalyst;
 use App\Models\Client;
 use App\Models\ClientAsset;
 use App\Models\ClientScenarioAnalystAllocation;
@@ -15,6 +14,7 @@ use Database\Seeders\PermissionSeeder;
 use Database\Seeders\SizingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Ai\Embeddings;
+use Phpkaiharness\Llm\LaravelAiClient;
 use Tests\TestCase;
 
 class MsspCostingTest extends TestCase
@@ -29,6 +29,10 @@ class MsspCostingTest extends TestCase
         $this->seed(SizingSeeder::class);
         $this->seed(MsspSeeder::class);
         Embeddings::fake();
+        config([
+            'harness.feature_graph.nodes.semantic_cache.enabled' => false,
+            'harness.failover.enabled' => false,
+        ]);
         $user = User::factory()->ceo()->create();
         $this->actingAs($user);
     }
@@ -358,18 +362,14 @@ class MsspCostingTest extends TestCase
         $client = Client::create(['name' => 'Acme AI Test client']);
         $scenario = Scenario::first();
 
-        // Fake the AI agent response with structured output
-        OfferAnalyst::fake([
-            [
-                'health_score' => 9,
-                'margin_status' => 'Optimal',
-                'sanity_checks' => [],
-                'staffing_status' => 'Balanced',
-                'infrastructure_status' => 'Optimal',
-                'recommendations' => [],
-                'full_critique' => 'Mock AI Analysis Output from Gemma',
-            ],
+        // Mock LaravelAiClient to return a successful critique
+        $mockClient = \Mockery::mock(LaravelAiClient::class);
+        $mockClient->shouldReceive('chat')->andReturn([
+            'content' => 'Mock AI Analysis Output from Gemma',
+            'tool_calls' => [],
         ]);
+        $mockClient->shouldReceive('getResolvedModel')->andReturn('gemma4:e2b');
+        $this->app->bind(LaravelAiClient::class, fn () => $mockClient);
 
         $response = $this->post(route('mssp.ask-ai', [$client->id, $scenario->id]));
 
@@ -393,10 +393,11 @@ class MsspCostingTest extends TestCase
         $client = Client::create(['name' => 'Acme AI Test client']);
         $scenario = Scenario::first();
 
-        // Fake a failure by making the agent throw an exception when prompted
-        OfferAnalyst::fake(function () {
-            throw new \Exception('Connection refused to local Ollama');
-        });
+        // Mock LaravelAiClient to throw an exception
+        $mockClient = \Mockery::mock(LaravelAiClient::class);
+        $mockClient->shouldReceive('chat')->andThrow(new \Exception('Connection refused to local Ollama'));
+        $mockClient->shouldReceive('getResolvedModel')->andReturn('gemma4:e2b');
+        $this->app->bind(LaravelAiClient::class, fn () => $mockClient);
 
         $response = $this->post(route('mssp.ask-ai', [$client->id, $scenario->id]));
 
