@@ -1,5 +1,5 @@
 {
-    "name": "K415mm/phpkaiharness",
+    "name": "k415mm/phpkaiharness",
     "description": "A pluggable agent harness framework for PHP supporting dynamic tool registries, vector memory, LLM client pipelines, and optional Laravel integration.",
     "keywords": [
         "php",

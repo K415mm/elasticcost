@@ -98,13 +98,13 @@ Created the `harness:install` command in [InstallCommand.php](file:///s:/elastic
 ### 5. [RESOLVED] Package Not on Packagist — README Install Instructions Fail
 
 **Problem:**
-README says `composer require K415mm/phpkaiharness` but it is not on Packagist.
+README says `composer require k415mm/phpkaiharness` but it is not on Packagist.
 
 **Resolution:**
 Updated the [README.md](file:///s:/elasticcost/packages/phpkaiharness/README.md) to document the correct VCS repository installation steps:
 ```bash
 composer config repositories.phpkaiharness vcs "https://github.com/K415mm/phpkaiharness.git"
-composer require K415mm/phpkaiharness:dev-main
+composer require k415mm/phpkaiharness:dev-main
 ```
 
 ---

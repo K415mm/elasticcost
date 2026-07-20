@@ -146,7 +146,7 @@ return [
 ## Installation
 
 ```bash
-composer require K415mm/phpkaiharness
+composer require k415mm/phpkaiharness
 php artisan vendor:publish --tag=harness-config
 php artisan migrate
 ```

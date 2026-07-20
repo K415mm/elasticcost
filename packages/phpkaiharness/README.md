@@ -206,7 +206,7 @@ echo $response;
 1. **Install Package**: Add the VCS repository to your `composer.json` and require the package:
    ```bash
    composer config repositories.phpkaiharness vcs "https://github.com/K415mm/phpkaiharness.git"
-   composer require K415mm/phpkaiharness:dev-main
+   composer require k415mm/phpkaiharness:dev-main
    ```
 2. **Publish & Install Config & Assets**: Run the installer command to publish configuration and assets and initialize the SQLite DB:
    ```bash
