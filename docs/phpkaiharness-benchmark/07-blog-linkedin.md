@@ -69,7 +69,7 @@ Because `phpkaiharness` is built with web developers in mind, you can integrate 
 1. **Install Package**:
 
     ```bash
-    composer require kai/phpkaiharness:dev-main
+    composer require K415mm/phpkaiharness:dev-main
     ```
 
 2. **Publish config & initialize SQLite**:

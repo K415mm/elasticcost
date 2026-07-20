@@ -1,0 +1,2059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElasticCost — Route Directory</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0c1017;
+            --card-bg: #161b22;
+            --text-color: #c9d1d9;
+            --text-muted: #8b949e;
+            --primary: #3cd2a5;
+            --primary-glow: rgba(60, 210, 165, 0.15);
+            --accent: #2188ff;
+            --danger: #ff7b72;
+            --warning: #d29922;
+            --success: #56d364;
+            --border: #30363d;
+            --font-sans: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-sans);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .logo-section h1 {
+            color: var(--primary);
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .logo-section p {
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-size: 1.05rem;
+        }
+
+        .stats {
+            display: flex;
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-val {
+            color: var(--primary);
+            font-family: var(--font-mono);
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .stat-lbl {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        input, select {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-color);
+            padding: 14px 18px;
+            border-radius: 8px;
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .routes-table-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background-color: rgba(22, 27, 34, 0.8);
+            border-bottom: 2px solid var(--border);
+            padding: 16px 20px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-get {
+            background-color: rgba(86, 211, 100, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(86, 211, 100, 0.3);
+        }
+
+        .badge-post {
+            background-color: rgba(33, 136, 255, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(33, 136, 255, 0.3);
+        }
+
+        .badge-put-patch {
+            background-color: rgba(210, 153, 34, 0.15);
+            color: var(--warning);
+            border: 1px solid rgba(210, 153, 34, 0.3);
+        }
+
+        .badge-delete {
+            background-color: rgba(255, 123, 114, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(255, 123, 114, 0.3);
+        }
+
+        .badge-other {
+            background-color: rgba(139, 148, 158, 0.15);
+            color: var(--text-muted);
+            border: 1px solid rgba(139, 148, 158, 0.3);
+        }
+
+        .route-uri {
+            font-family: var(--font-mono);
+            color: var(--primary);
+            font-weight: 500;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .route-uri:hover {
+            color: #fff;
+            text-decoration: underline;
+        }
+
+        .route-name {
+            font-family: var(--font-mono);
+            color: #58a6ff;
+            font-size: 0.85rem;
+        }
+
+        .route-action {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .middleware-list {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .mw-badge {
+            background-color: rgba(48, 54, 61, 0.6);
+            color: var(--text-muted);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            border: 1px solid var(--border);
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-section">
+                <h1>🤖 ELASTICCOST</h1>
+                <p>Routing Map — Web & API Directory</p>
+            </div>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-val" id="total-routes">0</div>
+                    <div class="stat-lbl">Total Routes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val" id="web-routes">0</div>
+                    <div class="stat-lbl">Web Routes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val" id="api-routes">0</div>
+                    <div class="stat-lbl">API Routes</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="controls">
+            <input type="text" id="search" placeholder="Search URI, Name, Action, or Middleware...">
+            <select id="type-filter">
+                <option value="all">All Routes</option>
+                <option value="web">Web Only</option>
+                <option value="api">API Only</option>
+            </select>
+            <select id="method-filter">
+                <option value="all">All Methods</option>
+                <option value="GET">GET / HEAD</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT / PATCH</option>
+                <option value="DELETE">DELETE</option>
+            </select>
+        </div>
+
+        <div class="routes-table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 12%">Method</th>
+                        <th style="width: 33%">URI / Path</th>
+                        <th style="width: 20%">Route Name</th>
+                        <th style="width: 20%">Action</th>
+                        <th style="width: 15%">Middleware</th>
+                    </tr>
+                </thead>
+                <tbody id="routes-body">
+                    <!-- Dynamic Rows -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const routes = [
+    {
+        "method": "POST",
+        "uri": "_boost\/browser-logs",
+        "name": "boost.browser-logs",
+        "action": "Closure",
+        "middleware": []
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/stats",
+        "name": "horizon.stats.index",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\DashboardStatsController@index",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/workload",
+        "name": "horizon.workload.index",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\WorkloadController@index",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/masters",
+        "name": "horizon.masters.index",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\MasterSupervisorController@index",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/monitoring",
+        "name": "horizon.monitoring.index",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\MonitoringController@index",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "horizon\/api\/monitoring",
+        "name": "horizon.monitoring.store",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\MonitoringController@store",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/monitoring\/{tag}",
+        "name": "horizon.monitoring-tag.paginate",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\MonitoringController@paginate",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "DELETE",
+        "uri": "horizon\/api\/monitoring\/{tag}",
+        "name": "horizon.monitoring-tag.destroy",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\MonitoringController@destroy",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/metrics\/jobs",
+        "name": "horizon.jobs-metrics.index",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\JobMetricsController@index",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/metrics\/jobs\/{id}",
+        "name": "horizon.jobs-metrics.show",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\JobMetricsController@show",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/metrics\/queues",
+        "name": "horizon.queues-metrics.index",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\QueueMetricsController@index",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/metrics\/queues\/{id}",
+        "name": "horizon.queues-metrics.show",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\QueueMetricsController@show",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/batches",
+        "name": "horizon.jobs-batches.index",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\BatchesController@index",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/batches\/{id}",
+        "name": "horizon.jobs-batches.show",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\BatchesController@show",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "horizon\/api\/batches\/retry\/{id}",
+        "name": "horizon.jobs-batches.retry",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\BatchesController@retry",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/jobs\/pending",
+        "name": "horizon.pending-jobs.index",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\PendingJobsController@index",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/jobs\/completed",
+        "name": "horizon.completed-jobs.index",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\CompletedJobsController@index",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/jobs\/silenced",
+        "name": "horizon.silenced-jobs.index",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\SilencedJobsController@index",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/jobs\/failed",
+        "name": "horizon.failed-jobs.index",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\FailedJobsController@index",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/jobs\/failed\/{id}",
+        "name": "horizon.failed-jobs.show",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\FailedJobsController@show",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "horizon\/api\/jobs\/retry\/{id}",
+        "name": "horizon.retry-jobs.show",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\RetryController@store",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/api\/jobs\/{id}",
+        "name": "horizon.jobs.show",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\JobsController@show",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "horizon\/{view?}",
+        "name": "horizon.index",
+        "action": "Laravel\\Horizon\\Http\\Controllers\\HomeController@index",
+        "middleware": [
+            "horizon"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "oauth\/token",
+        "name": "passport.token",
+        "action": "Laravel\\Passport\\Http\\Controllers\\AccessTokenController@issueToken",
+        "middleware": [
+            "throttle"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "oauth\/authorize",
+        "name": "passport.authorizations.authorize",
+        "action": "Laravel\\Passport\\Http\\Controllers\\AuthorizationController@authorize",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "oauth\/device",
+        "name": "passport.device",
+        "action": "Laravel\\Passport\\Http\\Controllers\\DeviceUserCodeController",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "oauth\/device\/code",
+        "name": "passport.device.code",
+        "action": "Laravel\\Passport\\Http\\Controllers\\DeviceCodeController",
+        "middleware": [
+            "throttle"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "oauth\/token\/refresh",
+        "name": "passport.token.refresh",
+        "action": "Laravel\\Passport\\Http\\Controllers\\TransientTokenController@refresh",
+        "middleware": [
+            "web",
+            "auth:web"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "oauth\/authorize",
+        "name": "passport.authorizations.approve",
+        "action": "Laravel\\Passport\\Http\\Controllers\\ApproveAuthorizationController@approve",
+        "middleware": [
+            "web",
+            "auth:web"
+        ]
+    },
+    {
+        "method": "DELETE",
+        "uri": "oauth\/authorize",
+        "name": "passport.authorizations.deny",
+        "action": "Laravel\\Passport\\Http\\Controllers\\DenyAuthorizationController@deny",
+        "middleware": [
+            "web",
+            "auth:web"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "oauth\/device\/authorize",
+        "name": "passport.device.authorizations.authorize",
+        "action": "Laravel\\Passport\\Http\\Controllers\\DeviceAuthorizationController",
+        "middleware": [
+            "web",
+            "auth:web"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "oauth\/device\/authorize",
+        "name": "passport.device.authorizations.approve",
+        "action": "Laravel\\Passport\\Http\\Controllers\\ApproveDeviceAuthorizationController",
+        "middleware": [
+            "web",
+            "auth:web"
+        ]
+    },
+    {
+        "method": "DELETE",
+        "uri": "oauth\/device\/authorize",
+        "name": "passport.device.authorizations.deny",
+        "action": "Laravel\\Passport\\Http\\Controllers\\DenyDeviceAuthorizationController",
+        "middleware": [
+            "web",
+            "auth:web"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "pulse",
+        "name": "pulse",
+        "action": "Closure",
+        "middleware": [
+            "pulse"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "livewire-4ecb4cc6\/update",
+        "name": "default-livewire.update",
+        "action": "Livewire\\Mechanisms\\HandleRequests\\HandleRequests@handleUpdate",
+        "middleware": [
+            "web",
+            "Livewire\\Mechanisms\\HandleRequests\\RequireLivewireHeaders"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "livewire-4ecb4cc6\/livewire.js",
+        "name": null,
+        "action": "Livewire\\Mechanisms\\FrontendAssets\\FrontendAssets@returnJavaScriptAsFile",
+        "middleware": []
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "livewire-4ecb4cc6\/livewire.min.js.map",
+        "name": null,
+        "action": "Livewire\\Mechanisms\\FrontendAssets\\FrontendAssets@maps",
+        "middleware": []
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "livewire-4ecb4cc6\/livewire.csp.min.js.map",
+        "name": null,
+        "action": "Livewire\\Mechanisms\\FrontendAssets\\FrontendAssets@cspMaps",
+        "middleware": []
+    },
+    {
+        "method": "POST",
+        "uri": "livewire-4ecb4cc6\/upload-file",
+        "name": "livewire.upload-file",
+        "action": "Livewire\\Features\\SupportFileUploads\\FileUploadController@handle",
+        "middleware": []
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "livewire-4ecb4cc6\/preview-file\/{filename}",
+        "name": "livewire.preview-file",
+        "action": "Livewire\\Features\\SupportFileUploads\\FilePreviewController@handle",
+        "middleware": []
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "livewire-4ecb4cc6\/js\/{component}.js",
+        "name": null,
+        "action": "Closure",
+        "middleware": []
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "livewire-4ecb4cc6\/css\/{component}.css",
+        "name": null,
+        "action": "Closure",
+        "middleware": []
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "livewire-4ecb4cc6\/css\/{component}.global.css",
+        "name": null,
+        "action": "Closure",
+        "middleware": []
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "{fallbackPlaceholder}",
+        "name": "laravel-folio",
+        "action": "Laravel\\Folio\\FolioManager@handle",
+        "middleware": []
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "harness\/dashboard",
+        "name": "harness.dashboard",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessTelemetryController@dashboard",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "GET|HEAD|POST|PUT|PATCH|DELETE|OPTIONS",
+        "uri": "harness\/api",
+        "name": "harness.api",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessTelemetryController@api",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "harness\/config",
+        "name": "harness.config",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessConfigController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "harness\/config",
+        "name": "harness.config.save",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessConfigController@save",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "harness\/api\/stats",
+        "name": "harness.api.stats",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessTelemetryController@stats",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "harness\/api\/sessions",
+        "name": "harness.api.sessions",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessTelemetryController@sessions",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "harness\/api\/sessions\/{id}",
+        "name": "harness.api.session.show",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessTelemetryController@show",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "harness\/api\/sessions-list",
+        "name": "harness.api.sessions.list",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessTelemetryController@listIsolatedSessions",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "harness\/api\/sessions-list\/{sessionId}",
+        "name": "harness.api.sessions.show",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessTelemetryController@showIsolatedSession",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "DELETE",
+        "uri": "harness\/api\/sessions-list\/{sessionId}",
+        "name": "harness.api.sessions.delete",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessTelemetryController@deleteIsolatedSession",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "harness\/api\/sessions-purge",
+        "name": "harness.api.sessions.purge",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessTelemetryController@purgeAllSessions",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "harness\/api\/sessions-cleanup",
+        "name": "harness.api.sessions.cleanup",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessTelemetryController@cleanupOldSessions",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "harness\/api\/quantum-memory",
+        "name": "harness.api.quantum-memory",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessTelemetryController@exploreQuantumMemory",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "harness\/api\/semantic-cache",
+        "name": "harness.api.semantic-cache",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessTelemetryController@exploreSemanticCache",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "harness\/api\/cognitive-graph",
+        "name": "harness.api.cognitive-graph",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessTelemetryController@exploreCognitiveGraph",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "harness\/api\/ontology-rag",
+        "name": "harness.api.ontology-rag",
+        "action": "Phpkaiharness\\Http\\Controllers\\HarnessTelemetryController@exploreOntologyRag",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:harness_analytics",
+            "Phpkaiharness\\Http\\Middleware\\Authorize"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "api\/v1\/auth\/register",
+        "name": "api.v1.auth.register",
+        "action": "App\\Http\\Controllers\\Api\\AuthController@register",
+        "middleware": [
+            "api"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "api\/v1\/auth\/login",
+        "name": "api.v1.auth.login",
+        "action": "App\\Http\\Controllers\\Api\\AuthController@login",
+        "middleware": [
+            "api"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "api\/v1\/auth\/me",
+        "name": "api.v1.auth.me",
+        "action": "App\\Http\\Controllers\\Api\\AuthController@me",
+        "middleware": [
+            "api",
+            "auth:api"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "api\/v1\/auth\/logout",
+        "name": "api.v1.auth.logout",
+        "action": "App\\Http\\Controllers\\Api\\AuthController@logout",
+        "middleware": [
+            "api",
+            "auth:api"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "api\/v1\/auth\/refresh",
+        "name": "api.v1.auth.refresh",
+        "action": "App\\Http\\Controllers\\Api\\AuthController@refresh",
+        "middleware": [
+            "api",
+            "auth:api"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "up",
+        "name": null,
+        "action": "Closure",
+        "middleware": []
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "login",
+        "name": "login",
+        "action": "App\\Http\\Controllers\\WebAuthController@showLogin",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "login",
+        "name": "login.post",
+        "action": "App\\Http\\Controllers\\WebAuthController@login",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "register",
+        "name": "register",
+        "action": "App\\Http\\Controllers\\WebAuthController@showRegister",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "register",
+        "name": "register.post",
+        "action": "App\\Http\\Controllers\\WebAuthController@register",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "logout",
+        "name": "logout",
+        "action": "App\\Http\\Controllers\\WebAuthController@logout",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "\/",
+        "name": null,
+        "action": "Closure",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "simulator",
+        "name": "simulator.index",
+        "action": "App\\Http\\Controllers\\AgentProfitSimulatorController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:profit_simulator"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "simulator\/{client}\/{scenario}",
+        "name": "simulator.update",
+        "action": "App\\Http\\Controllers\\AgentProfitSimulatorController@update",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:profit_simulator"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "simulator\/{client}\/{scenario}\/ai-analysis",
+        "name": "simulator.ai-analysis",
+        "action": "App\\Http\\Controllers\\AgentProfitSimulatorController@runAiAnalysis",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:profit_simulator"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "dashboard",
+        "name": "dashboard",
+        "action": "App\\Http\\Controllers\\DashboardController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:dashboard"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "clients",
+        "name": "clients.index",
+        "action": "App\\Http\\Controllers\\ClientController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:clients"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "clients",
+        "name": "clients.store",
+        "action": "App\\Http\\Controllers\\ClientController@store",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:clients"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "clients\/{client}",
+        "name": "clients.show",
+        "action": "App\\Http\\Controllers\\ClientController@show",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:clients"
+        ]
+    },
+    {
+        "method": "DELETE",
+        "uri": "clients\/{client}",
+        "name": "clients.destroy",
+        "action": "App\\Http\\Controllers\\ClientController@destroy",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:clients"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "clients\/{client}\/assets",
+        "name": "client-assets.store",
+        "action": "App\\Http\\Controllers\\ClientAssetController@store",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:clients"
+        ]
+    },
+    {
+        "method": "PUT",
+        "uri": "clients\/{client}\/assets-bulk",
+        "name": "client-assets.update-bulk",
+        "action": "App\\Http\\Controllers\\ClientAssetController@updateBulk",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:clients"
+        ]
+    },
+    {
+        "method": "PUT",
+        "uri": "clients\/{client}\/assets\/{clientAsset}",
+        "name": "client-assets.update",
+        "action": "App\\Http\\Controllers\\ClientAssetController@update",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:clients"
+        ]
+    },
+    {
+        "method": "DELETE",
+        "uri": "clients\/{client}\/assets\/{clientAsset}",
+        "name": "client-assets.destroy",
+        "action": "App\\Http\\Controllers\\ClientAssetController@destroy",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:clients"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "clients\/{client}\/diagrams",
+        "name": "clients.diagrams.index",
+        "action": "App\\Http\\Controllers\\DiagramController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:clients"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "clients\/{client}\/diagrams\/create",
+        "name": "clients.diagrams.create",
+        "action": "App\\Http\\Controllers\\DiagramController@create",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:clients"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "clients\/{client}\/diagrams",
+        "name": "clients.diagrams.store",
+        "action": "App\\Http\\Controllers\\DiagramController@store",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:clients"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "clients\/{client}\/diagrams\/{diagram}",
+        "name": "clients.diagrams.show",
+        "action": "App\\Http\\Controllers\\DiagramController@show",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:clients"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "clients\/{client}\/diagrams\/{diagram}\/edit",
+        "name": "clients.diagrams.edit",
+        "action": "App\\Http\\Controllers\\DiagramController@edit",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:clients"
+        ]
+    },
+    {
+        "method": "PUT|PATCH",
+        "uri": "clients\/{client}\/diagrams\/{diagram}",
+        "name": "clients.diagrams.update",
+        "action": "App\\Http\\Controllers\\DiagramController@update",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:clients"
+        ]
+    },
+    {
+        "method": "DELETE",
+        "uri": "clients\/{client}\/diagrams\/{diagram}",
+        "name": "clients.diagrams.destroy",
+        "action": "App\\Http\\Controllers\\DiagramController@destroy",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:clients"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "settings\/asset-types",
+        "name": "asset-types.index",
+        "action": "App\\Http\\Controllers\\AssetTypeController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:asset_types"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "settings\/asset-types",
+        "name": "asset-types.store",
+        "action": "App\\Http\\Controllers\\AssetTypeController@store",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:asset_types"
+        ]
+    },
+    {
+        "method": "PUT",
+        "uri": "settings\/asset-types\/{assetType}",
+        "name": "asset-types.update",
+        "action": "App\\Http\\Controllers\\AssetTypeController@update",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:asset_types"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "settings\/scenarios",
+        "name": "scenarios.index",
+        "action": "App\\Http\\Controllers\\ScenarioController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:scenarios"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "settings\/scenarios\/create",
+        "name": "scenarios.create",
+        "action": "App\\Http\\Controllers\\ScenarioController@create",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:scenarios"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "settings\/scenarios",
+        "name": "scenarios.store",
+        "action": "App\\Http\\Controllers\\ScenarioController@store",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:scenarios"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "settings\/scenarios\/{scenario}\/edit",
+        "name": "scenarios.edit",
+        "action": "App\\Http\\Controllers\\ScenarioController@edit",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:scenarios"
+        ]
+    },
+    {
+        "method": "PUT|PATCH",
+        "uri": "settings\/scenarios\/{scenario}",
+        "name": "scenarios.update",
+        "action": "App\\Http\\Controllers\\ScenarioController@update",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:scenarios"
+        ]
+    },
+    {
+        "method": "DELETE",
+        "uri": "settings\/scenarios\/{scenario}",
+        "name": "scenarios.destroy",
+        "action": "App\\Http\\Controllers\\ScenarioController@destroy",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:scenarios"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "settings\/system",
+        "name": "settings.system",
+        "action": "App\\Http\\Controllers\\SystemSettingsController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:system_settings"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "settings\/system",
+        "name": "settings.system.update",
+        "action": "App\\Http\\Controllers\\SystemSettingsController@update",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:system_settings"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "settings\/system\/translations",
+        "name": "settings.system.translations.update",
+        "action": "App\\Http\\Controllers\\SystemSettingsController@updateTranslation",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:system_settings"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "settings\/system\/ai",
+        "name": "settings.system.ai.update",
+        "action": "App\\Http\\Controllers\\SystemSettingsController@updateAi",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:system_settings"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "settings\/sqlite",
+        "name": "sqlite.index",
+        "action": "App\\Http\\Controllers\\SqliteMonitorController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:system_settings"
+        ]
+    },
+    {
+        "method": "GET|POST|HEAD",
+        "uri": "settings\/sqlite\/explore",
+        "name": "sqlite.explore",
+        "action": "App\\Http\\Controllers\\SqliteMonitorController@explore",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:system_settings"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "settings\/files",
+        "name": "settings.files",
+        "action": "App\\Http\\Controllers\\FileManagerController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:file_manager"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "settings\/files",
+        "name": "settings.files.store",
+        "action": "App\\Http\\Controllers\\FileManagerController@store",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:file_manager"
+        ]
+    },
+    {
+        "method": "DELETE",
+        "uri": "settings\/files\/{document}",
+        "name": "settings.files.destroy",
+        "action": "App\\Http\\Controllers\\FileManagerController@destroy",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:file_manager"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "settings\/files\/agent-config",
+        "name": "settings.files.agent-config",
+        "action": "App\\Http\\Controllers\\FileManagerController@updateAgentConfig",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:file_manager"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "settings\/files\/embedding-config",
+        "name": "settings.files.embedding-config",
+        "action": "App\\Http\\Controllers\\FileManagerController@updateEmbeddingSettings",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:file_manager"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "settings\/files\/{document}\/chunks",
+        "name": "settings.files.chunks",
+        "action": "App\\Http\\Controllers\\FileManagerController@showChunks",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:file_manager"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "clients\/{client}\/scenarios\/{scenario}",
+        "name": "sizing.show",
+        "action": "App\\Http\\Controllers\\SizingDashboardController@show",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:sizing"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "clients\/{client}\/scenarios\/{scenario}\/export\/excel",
+        "name": "sizing.export.excel",
+        "action": "App\\Http\\Controllers\\SizingDashboardController@exportExcel",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:sizing"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "clients\/{client}\/scenarios\/{scenario}\/export\/markdown",
+        "name": "sizing.export.markdown",
+        "action": "App\\Http\\Controllers\\SizingDashboardController@exportMarkdown",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:sizing"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "clients\/{client}\/scenarios\/{scenario}\/export\/word",
+        "name": "sizing.export.word",
+        "action": "App\\Http\\Controllers\\SizingDashboardController@exportWord",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:sizing"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "clients\/{client}\/scenarios\/{scenario}\/sizing\/analyze-ai",
+        "name": "sizing.analyze-ai",
+        "action": "App\\Http\\Controllers\\SizingDashboardController@analyzeSizingAi",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:sizing"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "clients\/{client}\/scenarios\/{scenario}\/custom-nodes",
+        "name": "sizing.custom-nodes.save",
+        "action": "App\\Http\\Controllers\\SizingDashboardController@saveCustomNodes",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:sizing"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "clients\/{client}\/scenarios\/{scenario}\/custom-nodes\/reset",
+        "name": "sizing.custom-nodes.reset",
+        "action": "App\\Http\\Controllers\\SizingDashboardController@resetCustomNodes",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:sizing"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "clients\/{client}\/scenarios\/{scenario}\/sync-diagrams",
+        "name": "sizing.sync-diagrams",
+        "action": "App\\Http\\Controllers\\SizingDashboardController@syncDiagrams",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:sizing"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "clients\/{client}\/scenarios\/{scenario}\/mssp-cost",
+        "name": "mssp.show",
+        "action": "App\\Http\\Controllers\\MsspCostingController@show",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:mssp_costing"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "clients\/{client}\/scenarios\/{scenario}\/mssp-cost",
+        "name": "mssp.update",
+        "action": "App\\Http\\Controllers\\MsspCostingController@update",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:mssp_costing"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "clients\/{client}\/scenarios\/{scenario}\/mssp-cost\/export\/excel",
+        "name": "mssp.export.excel",
+        "action": "App\\Http\\Controllers\\MsspCostingController@exportExcel",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:mssp_costing"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "clients\/{client}\/scenarios\/{scenario}\/mssp-cost\/export\/word",
+        "name": "mssp.export.word",
+        "action": "App\\Http\\Controllers\\MsspCostingController@exportWord",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:mssp_costing"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "clients\/{client}\/scenarios\/{scenario}\/mssp-cost\/export\/markdown",
+        "name": "mssp.export.markdown",
+        "action": "App\\Http\\Controllers\\MsspCostingController@exportMarkdown",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:mssp_costing"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "clients\/{client}\/scenarios\/{scenario}\/mssp-cost\/ask-ai",
+        "name": "mssp.ask-ai",
+        "action": "App\\Http\\Controllers\\MsspCostingController@askAi",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:mssp_costing"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "clients\/{client}\/scenarios\/{scenario}\/mssp-cost\/reset-simulation",
+        "name": "mssp.reset-simulation",
+        "action": "App\\Http\\Controllers\\MsspCostingController@resetSimulation",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:mssp_costing"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "api\/ollama-ping",
+        "name": "ollama.ping",
+        "action": "App\\Http\\Controllers\\MsspCostingController@ollamaPing",
+        "middleware": [
+            "web",
+            "auth"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "ai-chat\/{id?}",
+        "name": "ai-chat.index",
+        "action": "App\\Http\\Controllers\\AiChatController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:ai_chat"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "ai-chat\/message\/{id?}",
+        "name": "ai-chat.message",
+        "action": "App\\Http\\Controllers\\AiChatController@storeMessage",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:ai_chat"
+        ]
+    },
+    {
+        "method": "DELETE",
+        "uri": "ai-chat\/{id}",
+        "name": "ai-chat.destroy",
+        "action": "App\\Http\\Controllers\\AiChatController@destroy",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:ai_chat"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "api\/agent-job-status\/{jobId}",
+        "name": "agent.job.status",
+        "action": "App\\Http\\Controllers\\AgentJobStatusController@show",
+        "middleware": [
+            "web",
+            "auth"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "test-compare",
+        "name": "test-compare.index",
+        "action": "App\\Http\\Controllers\\TestCompareController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:test_compare"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "test-compare\/run",
+        "name": "test-compare.run",
+        "action": "App\\Http\\Controllers\\TestCompareController@run",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:test_compare"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "test-compare\/status",
+        "name": "test-compare.status",
+        "action": "App\\Http\\Controllers\\TestCompareController@status",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:test_compare"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "test-compare\/dataset",
+        "name": "test-compare.dataset",
+        "action": "App\\Http\\Controllers\\TestCompareController@dataset",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:test_compare"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "test-compare\/trace\/{mode}\/{index}",
+        "name": "test-compare.trace",
+        "action": "App\\Http\\Controllers\\TestCompareController@trace",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:test_compare"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "test-compare\/purge",
+        "name": "test-compare.purge",
+        "action": "App\\Http\\Controllers\\TestCompareController@purge",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:test_compare"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "test-compare\/save-run",
+        "name": "test-compare.save-run",
+        "action": "App\\Http\\Controllers\\TestCompareController@saveRun",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:test_compare"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "test-compare\/saved-runs",
+        "name": "test-compare.saved-runs",
+        "action": "App\\Http\\Controllers\\TestCompareController@savedRuns",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:test_compare"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "test-compare\/saved-runs\/{slug}\/report",
+        "name": "test-compare.saved-run-report",
+        "action": "App\\Http\\Controllers\\TestCompareController@savedRunReport",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:test_compare"
+        ]
+    },
+    {
+        "method": "DELETE",
+        "uri": "test-compare\/saved-runs\/{slug}",
+        "name": "test-compare.delete-saved-run",
+        "action": "App\\Http\\Controllers\\TestCompareController@deleteSavedRun",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:test_compare"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "settings\/agents",
+        "name": "settings.agents",
+        "action": "App\\Http\\Controllers\\AiAgentController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:ai_agents"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "settings\/agents\/config",
+        "name": "settings.agents.config",
+        "action": "App\\Http\\Controllers\\AiAgentController@updateConfig",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:ai_agents"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "settings\/agents\/analyze",
+        "name": "settings.agents.analyze",
+        "action": "App\\Http\\Controllers\\AiAgentController@runAnalysis",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:ai_agents"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "settings\/agents\/orchestrate",
+        "name": "settings.agents.orchestrate",
+        "action": "App\\Http\\Controllers\\AiAgentController@runOrchestratedAction",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:ai_agents"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "users",
+        "name": "users.index",
+        "action": "App\\Http\\Controllers\\UserManagementController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:user_management"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "users",
+        "name": "users.store",
+        "action": "App\\Http\\Controllers\\UserManagementController@store",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:user_management",
+            "precognitive"
+        ]
+    },
+    {
+        "method": "PUT",
+        "uri": "users\/{user}",
+        "name": "users.update",
+        "action": "App\\Http\\Controllers\\UserManagementController@update",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:user_management",
+            "precognitive"
+        ]
+    },
+    {
+        "method": "DELETE",
+        "uri": "users\/{user}",
+        "name": "users.destroy",
+        "action": "App\\Http\\Controllers\\UserManagementController@destroy",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:user_management"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "roles\/permissions",
+        "name": "roles.permissions",
+        "action": "App\\Http\\Controllers\\RolePermissionController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:user_management"
+        ]
+    },
+    {
+        "method": "PUT",
+        "uri": "roles\/permissions",
+        "name": "roles.permissions.update",
+        "action": "App\\Http\\Controllers\\RolePermissionController@update",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:user_management"
+        ]
+    },
+    {
+        "method": "POST",
+        "uri": "experiments\/precognition",
+        "name": "experiments.precognition.store",
+        "action": "App\\Http\\Controllers\\PrecognitionExperimentController@store",
+        "middleware": [
+            "web",
+            "auth",
+            "precognitive"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "tokens",
+        "name": "tokens.index",
+        "action": "App\\Http\\Controllers\\TokenManagementController@index",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:token_management"
+        ]
+    },
+    {
+        "method": "DELETE",
+        "uri": "tokens\/{tokenId}",
+        "name": "tokens.destroy",
+        "action": "App\\Http\\Controllers\\TokenManagementController@destroy",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:token_management"
+        ]
+    },
+    {
+        "method": "DELETE",
+        "uri": "tokens\/user\/{user}\/all",
+        "name": "tokens.revoke-all",
+        "action": "App\\Http\\Controllers\\TokenManagementController@revokeAllForUser",
+        "middleware": [
+            "web",
+            "auth",
+            "permission:token_management"
+        ]
+    },
+    {
+        "method": "GET|POST|HEAD",
+        "uri": "broadcasting\/auth",
+        "name": null,
+        "action": "\\Illuminate\\Broadcasting\\BroadcastController@authenticate",
+        "middleware": [
+            "web"
+        ]
+    },
+    {
+        "method": "GET|HEAD",
+        "uri": "storage\/{path}",
+        "name": "storage.local",
+        "action": "Closure",
+        "middleware": []
+    },
+    {
+        "method": "PUT",
+        "uri": "storage\/{path}",
+        "name": "storage.local.upload",
+        "action": "Closure",
+        "middleware": []
+    }
+];
+
+        const routesBody = document.getElementById('routes-body');
+        const searchInput = document.getElementById('search');
+        const typeFilter = document.getElementById('type-filter');
+        const methodFilter = document.getElementById('method-filter');
+
+        // Statistics elements
+        const totalRoutesEl = document.getElementById('total-routes');
+        const webRoutesEl = document.getElementById('web-routes');
+        const apiRoutesEl = document.getElementById('api-routes');
+
+        function getMethodBadgeClass(methods) {
+            const m = methods.toUpperCase();
+            if (m.includes('GET')) return 'badge-get';
+            if (m.includes('POST')) return 'badge-post';
+            if (m.includes('PUT') || m.includes('PATCH')) return 'badge-put-patch';
+            if (m.includes('DELETE')) return 'badge-delete';
+            return 'badge-other';
+        }
+
+        function renderRoutes() {
+            const query = searchInput.value.toLowerCase();
+            const type = typeFilter.value;
+            const method = methodFilter.value;
+
+            let filtered = routes.filter(route => {
+                // Search match
+                const matchSearch = 
+                    route.uri.toLowerCase().includes(query) ||
+                    (route.name && route.name.toLowerCase().includes(query)) ||
+                    route.action.toLowerCase().includes(query) ||
+                    route.middleware.some(mw => mw.toLowerCase().includes(query));
+
+                // Type match (API routes start with api/ or have api middleware)
+                const isApi = route.uri.startsWith('api') || route.middleware.includes('api');
+                const matchType = 
+                    type === 'all' ||
+                    (type === 'web' && !isApi) ||
+                    (type === 'api' && isApi);
+
+                // Method match
+                const matchMethod = 
+                    method === 'all' ||
+                    route.method.toUpperCase().includes(method);
+
+                return matchSearch && matchType && matchMethod;
+            });
+
+            // Update stats
+            let webCount = 0;
+            let apiCount = 0;
+            routes.forEach(route => {
+                const isApi = route.uri.startsWith('api') || route.middleware.includes('api');
+                if (isApi) apiCount++;
+                else webCount++;
+            });
+
+            totalRoutesEl.textContent = routes.length;
+            webRoutesEl.textContent = webCount;
+            apiRoutesEl.textContent = apiCount;
+
+            routesBody.innerHTML = '';
+            
+            if (filtered.length === 0) {
+                routesBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">No routes matched the selected criteria.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(route => {
+                const methodBadge = `<span class="badge ${getMethodBadgeClass(route.method)}">${route.method}</span>`;
+                
+                // Construct relative URL for linking if it is GET
+                const isGet = route.method.toUpperCase().includes('GET');
+                const routeUriLink = isGet && !route.uri.includes('{') 
+                    ? `<a href="/${route.uri}" target="_blank" class="route-uri">/${route.uri}</a>`
+                    : `<span class="route-uri" style="cursor: default;">/${route.uri}</span>`;
+
+                const routeName = route.name ? `<span class="route-name">${route.name}</span>` : '<span style="color: var(--text-muted); font-style: italic;">None</span>';
+                
+                // Clean action name
+                const action = route.action.replace('App\\Http\\Controllers\\', '');
+                
+                // Middleware list
+                const mwHtml = route.middleware.map(mw => {
+                    const cleanMw = mw.replace('Illuminate\\Auth\\Middleware\\', 'Auth:')
+                                      .replace('App\\Http\\Middleware\\', '');
+                    return `<span class="mw-badge">${cleanMw}</span>`;
+                }).join('');
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${methodBadge}</td>
+                    <td>${routeUriLink}</td>
+                    <td>${routeName}</td>
+                    <td><span class="route-action" title="${route.action}">${action}</span></td>
+                    <td><div class="middleware-list">${mwHtml}</div></td>
+                `;
+                routesBody.appendChild(row);
+            });
+        }
+
+        // Add event listeners
+        searchInput.addEventListener('input', renderRoutes);
+        typeFilter.addEventListener('change', renderRoutes);
+        methodFilter.addEventListener('change', renderRoutes);
+
+        // Initial render
+        renderRoutes();
+    </script>
+</body>
+</html>

@@ -201,10 +201,7 @@ class SessionManager
             }
             $effectiveQuantumDb = $sharedPath;
         } else {
-            $globalQuantumDb = function_exists('storage_path')
-                ? storage_path('app/phpkaiharness/agent_memory.sqlite')
-                : $quantumDbPath;
-            $effectiveQuantumDb = $globalQuantumDb;
+            $effectiveQuantumDb = $quantumDbPath;
         }
 
         config([

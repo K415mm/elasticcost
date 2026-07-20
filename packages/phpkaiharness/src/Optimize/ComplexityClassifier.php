@@ -79,12 +79,12 @@ class ComplexityClassifier
         }
 
         if ($hasActionTools) {
-            $c_x += 1.5;
+            $c_x += 2.0;
             $c_s -= 1.0;
         }
         if ($hasMutatingIntent) {
-            $c_x += 1.2;
-            $c_s -= 0.8;
+            $c_x += 2.0;
+            $c_s -= 1.0;
         }
 
         // 6. Project database entities / RAG requirement onto the Complicated basis
@@ -100,12 +100,12 @@ class ComplexityClassifier
         }
 
         if ($hasEntities) {
-            $c_d += 0.9;
-            $c_s -= 0.8;
+            $c_d += 1.8;
+            $c_s -= 1.0;
         }
-        if (count($registeredTools) > 0) {
-            $c_d += 1.0;
-            $c_s -= 0.9;
+        if (count($registeredTools) > 0 && ! $hasActionTools) {
+            $c_d += 1.8;
+            $c_s -= 1.0;
         }
 
         // 7. Calculate measurement probability densities

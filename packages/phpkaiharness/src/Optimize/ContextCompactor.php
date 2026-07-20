@@ -123,21 +123,26 @@ class ContextCompactor
     private function compactWithSlidingWindow(array &$history): array
     {
         $total = count($history);
-        if ($total <= 3) {
+        if ($total <= 2) {
             return $history;
         }
 
         // Keep the root request (usually index 0)
         $rootUserQuery = $history[0];
 
-        // Keep the last maxTurns messages
-        $lastMessages = array_slice($history, -$this->maxTurns);
+        $droppedCount = $total - 1 - $this->maxTurns;
 
-        // Reconstruct history: [rootUserQuery] + [pruned indicator] + [lastMessages]
+        if ($droppedCount <= 0) {
+            // Prune intermediate messages to reduce token count when triggered by token threshold
+            $keepCount = max(1, (int) floor(($total - 1) / 2));
+            $droppedCount = $total - 1 - $keepCount;
+            $lastMessages = array_slice($history, -$keepCount);
+        } else {
+            $lastMessages = array_slice($history, -$this->maxTurns);
+        }
+
         $newHistory = [$rootUserQuery];
 
-        // If we dropped messages, insert a marker
-        $droppedCount = $total - 1 - count($lastMessages);
         if ($droppedCount > 0) {
             $newHistory[] = [
                 'role' => 'system',

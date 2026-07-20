@@ -19,7 +19,7 @@ The project is built on the modern Laravel ecosystem and leverages specialized l
 *   **Framework**: Laravel `13` (using the modern bootstrap configuration in [app.php](file:///s:/elasticcost/bootstrap/app.php))
 *   **AI Integration**: `laravel/ai` SDK (v0.7.2) for managing text gateways, providers, and message formatting
 *   **Queueing**: Laravel Horizon & Redis (handling asynchronous, long-running agent execution tasks)
-*   **Diagnostics Package**: `kai/phpkaiharness` (located in [packages/phpkaiharness](file:///s:/elasticcost/packages/phpkaiharness) - a standalone, pluggable PHP harness library)
+*   **Diagnostics Package**: `K415mm/phpkaiharness` (located in [packages/phpkaiharness](file:///s:/elasticcost/packages/phpkaiharness) - a standalone, pluggable PHP harness library)
 *   **Databases**:
     *   **Main App**: PostgreSQL (for client, asset, and global configuration states)
     *   **Telemetry/Monitor**: SQLite (located at `~/.phpkaiharness/monitor.db` for zero-overhead, multi-process CLI tracing)

@@ -218,7 +218,11 @@ PHP;
         $prompt = new AgentPrompt($dummyAgent, 'Check the code', [$attachment], $dummyProvider, 'gemma');
 
         // Set compression threshold high to trigger normal comment-stripping (not signature extraction)
-        config(['harness.compression.line_threshold' => 150]);
+        config([
+            'harness.feature_graph.nodes.context_compression.enabled' => true,
+            'harness.compression.enabled' => true,
+            'harness.compression.line_threshold' => 150,
+        ]);
 
         $middleware = new CompressContextMiddleware;
         $compressed = $middleware->handle($prompt, fn ($p) => $p);
@@ -236,7 +240,10 @@ PHP;
         $this->assertStringContainsString('public function helloWorld', $compressedContent);
 
         // Now set line threshold low (e.g. 5 lines) to trigger JIT signature-only representation
-        config(['harness.compression.line_threshold' => 5]);
+        config([
+            'harness.compression.line_threshold' => 5,
+            'harness.compaction.compression.line_threshold' => 5,
+        ]);
         $compressed2 = $middleware->handle($prompt, fn ($p) => $p);
         $compressedContent2 = file_get_contents($compressed2->attachments[0]->path);
 
@@ -303,8 +310,12 @@ PHP;
         $stmt = $pdo->prepare("INSERT INTO harness_details (session_id, type, tokens_prompt, tokens_completion) VALUES (?, 'llm_call', ?, ?)");
         $stmt->execute(['sess-budget-123', 500, 600]); // Total 1100 tokens
 
-        config(['harness.cache.db_path' => $dbPath]);
-        config(['harness.budget.max_tokens' => 1000]); // Limit 1000, usage is 1100
+        config([
+            'harness.budget.enabled' => true,
+            'harness.cache.db_path' => $dbPath,
+            'harness.semantic_cache.db_path' => $dbPath,
+            'harness.budget.max_tokens' => 1000,
+        ]);
 
         $client = new ThinkingBudgetLlmClient($innerMock, 1000);
         $client->chat('Base instructions', [], [], 'mock', 'sess-budget-123');

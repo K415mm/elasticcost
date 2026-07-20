@@ -70,7 +70,7 @@ class HarnessConfig
      */
     public static function reloadOverrides(): void
     {
-        if (function_exists('app') && app()->runningUnitTests()) {
+        if (function_exists('app') && method_exists(app(), 'runningUnitTests') && app()->runningUnitTests()) {
             return;
         }
 

@@ -25,13 +25,13 @@ If you are developing locally and want to load the package from a folder, add th
 
 Then run:
 ```bash
-composer require kai/phpkaiharness
+composer require K415mm/phpkaiharness
 ```
 
 ### Option B: Remote VCS or Packagist
 If the package is published, install it directly:
 ```bash
-composer require kai/phpkaiharness
+composer require K415mm/phpkaiharness
 ```
 
 ---

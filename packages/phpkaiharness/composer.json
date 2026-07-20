@@ -1,14 +1,31 @@
 {
-    "name": "kai/phpkaiharness",
-    "description": "A pluggable agent harness framework for PHP supporting dynamic tool registries, microservice tools, and Kali WSL execution.",
+    "name": "K415mm/phpkaiharness",
+    "description": "A pluggable agent harness framework for PHP supporting dynamic tool registries, vector memory, LLM client pipelines, and optional Laravel integration.",
+    "keywords": [
+        "php",
+        "laravel",
+        "ai",
+        "agent",
+        "agent-harness",
+        "llm",
+        "vector-memory",
+        "tool-registry",
+        "ollama",
+        "qwen"
+    ],
+    "homepage": "https://github.com/K415mm/phpkaiharness",
     "license": "MIT",
     "type": "library",
     "authors": [
         {
-            "name": "Kai",
-            "email": "kai@example.com"
+            "name": "kais madi",
+            "email": "K415mm@example.com"
         }
     ],
+    "support": {
+        "issues": "https://github.com/K415mm/phpkaiharness/issues",
+        "source": "https://github.com/K415mm/phpkaiharness"
+    },
     "require": {
         "php": "^8.2 || ^8.3 || ^8.4 || ^8.5",
         "guzzlehttp/guzzle": "^7.8 || ^8.0",

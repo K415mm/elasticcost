@@ -85,7 +85,9 @@ class ThinkingBudgetLlmClient implements LlmClientInterface
     protected function getSessionTokenCount(string $sessionId): int
     {
         try {
-            $dbPath = (function_exists('config') && function_exists('app') && app()->bound('config')) ? config('harness.cache.db_path', config('harness.semantic_cache.db_path')) : null;
+            $dbPath = (function_exists('config') && function_exists('app') && app()->bound('config'))
+                ? (config('harness.cache.db_path') ?: config('harness.semantic_cache.db_path'))
+                : null;
             $dbPath = $dbPath ?: SqliteMonitorStore::defaultDbPath();
 
             if (file_exists($dbPath)) {

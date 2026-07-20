@@ -21,7 +21,7 @@ class CompressContextMiddleware
      */
     public function handle(AgentPrompt $prompt, Closure $next)
     {
-        $enabled = HarnessConfig::isNodeEnabled('context_compression', 'harness.compaction.compression.enabled', false);
+        $enabled = HarnessConfig::isNodeEnabled('context_compression', 'harness.compaction.compression.enabled', config('harness.compression.enabled', true));
         if (! $enabled) {
             return $next($prompt);
         }
@@ -35,7 +35,9 @@ class CompressContextMiddleware
 
         $revisedAttachments = [];
         $compressedFiles = [];
-        $lineThreshold = (function_exists('config') && function_exists('app') && app()->bound('config')) ? (int) config('harness.compaction.compression.line_threshold', 150) : 150;
+        $lineThreshold = (function_exists('config') && function_exists('app') && app()->bound('config'))
+            ? (int) (config('harness.compaction.compression.line_threshold') ?? config('harness.compression.line_threshold') ?? 150)
+            : 150;
 
         foreach ($prompt->attachments as $attachment) {
             if ($attachment instanceof LocalDocument) {

@@ -1,7 +1,7 @@
 # phpkaiharness Integration Issues Report (Resolved)
 
 ## Context
-Integrated `kai/phpkaiharness` (dev-main, commit acc7ddf) into a production Laravel 13 CTI application.
+Integrated `K415mm/phpkaiharness` (dev-main, commit acc7ddf) into a production Laravel 13 CTI application.
 The app uses Laravel 13, PHP 8.5, `laravel/ai` v0.8.1, and runs on Windows with Kali WSL.
 
 All 20 reported integration issues have been resolved. See resolutions below.
@@ -36,7 +36,7 @@ Added the `extra.laravel.providers` block to the package's [composer.json](file:
 ### 2. [RESOLVED] Published Config Loses All `env()` Calls — Hardcodes `false` Everywhere
 
 **Problem:**
-The source config at `vendor/kai/phpkaiharness/config/harness.php` correctly uses `env()` calls:
+The source config at `vendor/K415mm/phpkaiharness/config/harness.php` correctly uses `env()` calls:
 ```php
 'telemetry' => [
     'enabled' => env('PHPKAIHARNESS_TELEMETRY_ENABLED', true),
@@ -98,13 +98,13 @@ Created the `harness:install` command in [InstallCommand.php](file:///s:/elastic
 ### 5. [RESOLVED] Package Not on Packagist — README Install Instructions Fail
 
 **Problem:**
-README says `composer require kai/phpkaiharness` but it is not on Packagist.
+README says `composer require K415mm/phpkaiharness` but it is not on Packagist.
 
 **Resolution:**
 Updated the [README.md](file:///s:/elasticcost/packages/phpkaiharness/README.md) to document the correct VCS repository installation steps:
 ```bash
-composer config repositories.phpkaiharness vcs "https://github.com/K415mm/phpkaiharness-.git"
-composer require kai/phpkaiharness:dev-main
+composer config repositories.phpkaiharness vcs "https://github.com/K415mm/phpkaiharness.git"
+composer require K415mm/phpkaiharness:dev-main
 ```
 
 ---

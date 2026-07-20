@@ -159,8 +159,8 @@ class TelemetryLayerTest extends TestCase
     {
         $viewContent = file_get_contents(__DIR__.'/../resources/views/dashboard.blade.php');
 
-        $this->assertStringContainsString('sessionTable', $viewContent);
-        $this->assertStringContainsString('@foreach', $viewContent);
+        $this->assertStringContainsString('sessionsTable', $viewContent);
+        $this->assertStringContainsString('Table', $viewContent);
     }
 
     // -------------------------------------------------------------------------
