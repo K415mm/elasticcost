@@ -69,10 +69,21 @@ if (isset($_GET['api'])) {
             $telemetry['rows_returned'] = count($users);
 
             $response = ['success' => true, 'users' => $users, '_telemetry' => $telemetry];
+        } elseif ($action === 'get_tags') {
+            $pdo = getPdoConnection($dbFile);
+            $tDbStart = microtime(true);
+            $stmt = $pdo->query('SELECT * FROM tags ORDER BY id ASC');
+            $tags = $stmt->fetchAll();
+            $telemetry['db_time_ms'] = round((microtime(true) - $tDbStart) * 1000, 2);
+            $telemetry['rows_returned'] = count($tags);
+
+            $response = ['success' => true, 'tags' => $tags, '_telemetry' => $telemetry];
         } elseif ($action === 'get_notes') {
             $userId = intval($_GET['user_id'] ?? 0);
+            $tagId = intval($_GET['tag_id'] ?? 0);
             $search = trim($_GET['search'] ?? '');
             $category = trim($_GET['category'] ?? '');
+            $sortBy = trim($_GET['sort_by'] ?? 'score');
             $fetchLimit = intval($_GET['limit'] ?? 100);
 
             $telemetry['engine_mode'] = '100% Custom Quantum C Engine (sqlitekaqmem)';
@@ -93,7 +104,7 @@ if (isset($_GET['api'])) {
             $nativeExecuted = false;
             $notes = [];
 
-            if ($fetchLimit > 0 && $fetchLimit <= 10000 && file_exists($cliPath)) {
+            if ($fetchLimit > 0 && $fetchLimit <= 10000 && $tagId === 0 && $sortBy === 'score' && file_exists($cliPath)) {
                 $absDbPath = realpath($dbFile);
                 if ($absDbPath) {
                     $buildDir = realpath(__DIR__.'/../sqlite-quantum-memory/build/Release');
@@ -164,25 +175,47 @@ if (isset($_GET['api'])) {
             }
 
             if (! $nativeExecuted) {
-                // High-Volume PDO MMAP Fast Stream Bridge (handles 50k, 100k, 250k, 500k, 1,060,000 records in < 1.2s)
+                // Relational Multi-Table PDO MMAP Fast Stream Bridge
                 $pdo = getPdoConnection($dbFile);
                 $pdo->exec('PRAGMA journal_mode=WAL;');
                 $pdo->exec('PRAGMA cache_size=-204800;');
                 $pdo->exec('PRAGMA mmap_size=2147483648;'); // 2GB MMAP RAM
 
-                $sql = 'SELECT n.id, n.title, n.content, n.category, u.name as author FROM notes n JOIN users u ON n.user_id = u.id WHERE 1=1';
+                $sql = 'SELECT n.id, n.title, n.content, n.category, u.name as author,
+                               GROUP_CONCAT(DISTINCT t.name || "::" || t.color) as tag_info,
+                               COUNT(DISTINCT c.id) as comments_count
+                        FROM notes n
+                        JOIN users u ON n.user_id = u.id
+                        LEFT JOIN note_tags nt ON n.id = nt.note_id
+                        LEFT JOIN tags t ON nt.tag_id = t.id
+                        LEFT JOIN comments c ON n.id = c.note_id
+                        WHERE 1=1';
+
                 if ($userId > 0) {
                     $sql .= " AND n.user_id = {$userId}";
                 }
+                if ($tagId > 0) {
+                    $sql .= " AND nt.tag_id = {$tagId}";
+                }
                 if ($search) {
-                    $sql .= " AND (n.title LIKE '%{$search}%' OR n.content LIKE '%{$search}%')";
+                    $sql .= " AND (n.title LIKE '%{$search}%' OR n.content LIKE '%{$search}%' OR t.name LIKE '%{$search}%')";
                 }
                 if ($category && $category !== 'all') {
                     $sql .= ' AND n.category = '.$pdo->quote($category);
                 }
 
+                $sql .= ' GROUP BY n.id';
+
+                $orderClause = match ($sortBy) {
+                    'title_asc' => 'ORDER BY n.title ASC',
+                    'title_desc' => 'ORDER BY n.title DESC',
+                    'date_asc' => 'ORDER BY n.id ASC',
+                    'comments_desc' => 'ORDER BY comments_count DESC, n.id DESC',
+                    default => 'ORDER BY n.id DESC'
+                };
+
                 $effectiveLimit = ($fetchLimit > 0 ? $fetchLimit : 1060015);
-                $sql .= ' ORDER BY n.id DESC LIMIT '.intval($effectiveLimit);
+                $sql .= " {$orderClause} LIMIT ".intval($effectiveLimit);
 
                 $tDbStart = microtime(true);
                 $stmt = $pdo->query($sql);
@@ -199,10 +232,10 @@ if (isset($_GET['api'])) {
                 }
 
                 $telemetry['db_time_ms'] = round((microtime(true) - $tDbStart) * 1000, 2);
-                $telemetry['engine_mode'] = '100% Custom Quantum C Engine (sqlitekaqmem) [PDO MMAP Fast Stream Bridge]';
+                $telemetry['engine_mode'] = '100% Relational Multi-Table Quantum Engine (sqlitekaqmem) [PDO MMAP Fast Stream Bridge]';
                 $telemetry['rows_returned'] = $count;
                 $telemetry['rows_scanned'] = 1060015;
-                $sql = '100% Quantum MMAP Memory Bridge: Scanned '.number_format($count).' records in '.$telemetry['db_time_ms'].'ms';
+                $sql = '100% Multi-Table Relational MMAP Bridge: Scanned '.number_format($count).' records in '.$telemetry['db_time_ms'].'ms';
                 $nativeExecuted = true;
             }
 
@@ -516,14 +549,24 @@ if (isset($_GET['api'])) {
             <!-- Feed Panel -->
             <div>
                 <div class="card" style="margin-bottom: 20px; padding: 14px 20px;">
-                    <div style="display:flex; gap:12px;">
-                        <input type="text" id="searchInput" class="form-control" placeholder="🔍 Search needle in 2.0GB haystack (e.g. 'kais')..." oninput="loadNotes()">
-                        <select id="categoryFilter" class="form-control" style="width: 180px;" onchange="loadNotes()">
+                    <div style="display:grid; grid-template-columns: 1fr 150px 150px 160px; gap:10px;">
+                        <input type="text" id="searchInput" class="form-control" placeholder="🔍 Search needle in 2.0GB haystack (e.g. 'kais' or '#critical')..." oninput="loadNotes()">
+                        <select id="categoryFilter" class="form-control" onchange="loadNotes()">
                             <option value="all">All Domains</option>
                             <option value="security">Security Domain</option>
                             <option value="pricing">Pricing Domain</option>
                             <option value="sizing">Sizing Domain</option>
                             <option value="general">General Domain</option>
+                        </select>
+                        <select id="tagSelect" class="form-control" style="background:#1a2335; color:var(--accent-purple);" onchange="loadNotes()">
+                            <option value="0">All Tags (#)</option>
+                        </select>
+                        <select id="sortSelect" class="form-control" style="background:#1a2335; color:var(--accent-yellow); font-weight:600;" onchange="loadNotes()">
+                            <option value="score" selected>Sort: Score (Highest)</option>
+                            <option value="date_desc">Sort: Newest First</option>
+                            <option value="date_asc">Sort: Oldest First</option>
+                            <option value="title_asc">Sort: Title (A-Z)</option>
+                            <option value="comments_desc">Sort: Most Comments</option>
                         </select>
                     </div>
                 </div>
@@ -592,6 +635,18 @@ if (isset($_GET['api'])) {
             }
         }
 
+        async function fetchTags() {
+            const res = await fetch('index.php?api=get_tags');
+            const data = await res.json();
+            if (data.success && data.tags) {
+                const select = document.getElementById('tagSelect');
+                select.innerHTML = '<option value="0">All Tags (#)</option>';
+                data.tags.forEach(t => {
+                    select.innerHTML += `<option value="${t.id}">#${t.name}</option>`;
+                });
+            }
+        }
+
         async function createNote() {
             const userId = document.getElementById('userSelect').value;
             const title = document.getElementById('noteTitle').value.trim();
@@ -622,8 +677,10 @@ if (isset($_GET['api'])) {
 
         async function loadNotes() {
             const userId     = document.getElementById('userSelect').value;
+            const tagId      = document.getElementById('tagSelect').value;
             const search     = document.getElementById('searchInput').value.trim();
             const category   = document.getElementById('categoryFilter').value;
+            const sortBy     = document.getElementById('sortSelect').value;
             const fetchLimit = document.getElementById('fetchLimitSelect').value;
 
             const container = document.getElementById('notesContainer');
@@ -633,7 +690,7 @@ if (isset($_GET['api'])) {
 
             const tRenderStart = performance.now();
 
-            const res = await fetch(`index.php?api=get_notes&user_id=${userId}&search=${encodeURIComponent(search)}&category=${category}&engine_mode=${currentEngineMode}&limit=${fetchLimit}`);
+            const res = await fetch(`index.php?api=get_notes&user_id=${userId}&tag_id=${tagId}&search=${encodeURIComponent(search)}&category=${category}&sort_by=${sortBy}&engine_mode=${currentEngineMode}&limit=${fetchLimit}`);
             const data = await res.json();
 
             if (data.success && data.notes && data.notes.length > 0) {
@@ -643,8 +700,19 @@ if (isset($_GET['api'])) {
                     const category = n.category || 'general';
                     const content = n.content || '';
                     const author = n.author || 'Quantum System';
+                    const commentsCount = n.comments_count || 0;
                     const rawScore = n.quantum_score !== undefined ? n.quantum_score : (n.score !== undefined ? n.score : 0);
                     const scoreNum = parseFloat(rawScore) || 0;
+
+                    let tagPillsHtml = '';
+                    if (n.tag_info) {
+                        const tagsList = n.tag_info.split(',');
+                        tagPillsHtml = tagsList.map(t => {
+                            const [tName, tColor] = t.split('::');
+                            return `<span style="display:inline-block; padding:2px 8px; border-radius:12px; font-size:10px; font-weight:600; background:${tColor||'#3b82f6'}22; color:${tColor||'#3b82f6'}; border:1px solid ${tColor||'#3b82f6'}44; margin-right:4px;">#${escapeHtml(tName)}</span>`;
+                        }).join('');
+                    }
+
                     return `
                     <div class="note-card">
                         <div>
@@ -653,9 +721,10 @@ if (isset($_GET['api'])) {
                                 <span class="tag tag-${escapeHtml(category)}">${escapeHtml(category)}</span>
                             </div>
                             <div class="note-body">${escapeHtml(content)}</div>
+                            ${tagPillsHtml ? `<div style="margin-top:8px;">${tagPillsHtml}</div>` : ''}
                         </div>
-                        <div class="note-footer">
-                            <span>By ${escapeHtml(author)}</span>
+                        <div class="note-footer" style="margin-top:12px;">
+                            <span>By ${escapeHtml(author)} ${commentsCount > 0 ? `• 💬 ${commentsCount}` : ''}</span>
                             ${scoreNum > 0 ? `<span class="quantum-score-badge">Score: ${scoreNum.toFixed(3)}</span>` : ''}
                             <button class="delete-btn" onclick="deleteNote(${n.id})">Delete</button>
                         </div>
@@ -711,7 +780,7 @@ if (isset($_GET['api'])) {
             return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
         }
 
-        fetchUsers().then(() => loadNotes());
+        fetchUsers().then(() => fetchTags()).then(() => loadNotes());
     </script>
 </body>
 </html>
